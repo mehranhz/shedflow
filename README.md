@@ -29,7 +29,132 @@
 
 ```bash
 $ pnpm install
+$ cp .env.example .env
 ```
+
+## Database
+
+The app persists data in PostgreSQL through [Prisma](https://www.prisma.io). Start a
+local database and apply the schema:
+
+```bash
+# starts Postgres on localhost:5432 with a `shedflow` and a `shedflow_test` database
+$ docker compose up -d
+
+# creates/applies migrations and regenerates Prisma Client
+$ pnpm db:migrate
+```
+
+Other database commands:
+
+```bash
+$ pnpm db:generate       # regenerate Prisma Client into src/generated/prisma
+$ pnpm db:migrate:deploy  # apply pending migrations (use this in production)
+$ pnpm db:reset           # drop and recreate the database from migrations
+$ pnpm db:studio          # browse the data in Prisma Studio
+```
+
+Prisma Client is generated code and is not committed. It is rebuilt automatically on
+`pnpm install`, so run `pnpm db:generate` after editing `prisma/schema.prisma`.
+
+## Persistence architecture
+
+Services depend on repository contracts, never on an ORM. There are two layers:
+
+| Layer | Location | Knows about Prisma? |
+| --- | --- | --- |
+| Contracts | `src/common/persistence/` | No |
+| Prisma adapters | `src/prisma/` | Yes |
+| Feature modules | `src/<module>/` | Only in `prisma-<entity>.repository.ts` |
+
+`src/common/persistence/` is the ORM-agnostic core, reused by every module:
+
+- `Repository<TEntity, TCreateData, TUpdateData, TId>` — generic CRUD contract
+  (`create`, `findById`, `findAll`, `update`, `delete`, `exists`, `count`).
+- `Page` / `PageRequest` / `Sort` — pagination and sorting, with limits clamped
+  centrally so no implementation can be asked for an unbounded page.
+- `RepositoryError` and friends (`EntityNotFoundError`, `UniqueConstraintError`,
+  `ForeignKeyConstraintError`) — the only failures a repository may throw, so
+  services never branch on driver error codes.
+- `TransactionManager` — commit across several repositories atomically without
+  knowing who provides the transaction.
+- `InMemoryRepository` — a complete implementation for unit tests and prototyping.
+
+`src/prisma/` implements those contracts once:
+
+- `PrismaRepository` — the whole `Repository` surface on top of Prisma, including
+  pagination, error translation, and transaction awareness.
+- `PrismaTransactionManager` — `TransactionManager` backed by `$transaction`.
+  `PrismaService` carries the transaction client in an `AsyncLocalStorage`, so
+  repositories used inside `runInTransaction` join it automatically and nothing
+  has to be threaded through method signatures.
+
+### Adding a module
+
+Define the entity and its create/update payloads, extend the generic contract
+with only the queries that are specific to the module, then implement it:
+
+```ts
+// orders/order.repository.ts
+export abstract class OrderRepository extends Repository<
+  Order,
+  CreateOrderData,
+  UpdateOrderData
+> {
+  abstract findByCustomerId(customerId: string): Promise<Order[]>;
+}
+
+// orders/prisma-order.repository.ts
+@Injectable()
+export class PrismaOrderRepository
+  extends PrismaRepository<OrderRecord, Order, CreateOrderData, UpdateOrderData>
+  implements OrderRepository
+{
+  constructor(prisma: PrismaService) {
+    super(prisma, 'Order');
+  }
+
+  protected delegate(client: Prisma.TransactionClient) {
+    return client.order;
+  }
+
+  protected toEntity(record: OrderRecord): Order {
+    /* explicit field mapping */
+  }
+
+  findByCustomerId(customerId: string): Promise<Order[]> {
+    return this.findManyWhere({ customerId });
+  }
+}
+```
+
+Then bind the contract to the implementation in the module:
+
+```ts
+providers: [
+  OrdersService,
+  { provide: OrderRepository, useClass: PrismaOrderRepository },
+],
+```
+
+Filtering beyond identity lookups is declared as an explicit method
+(`findByCustomerId`) rather than a generic query language. That is deliberate: a
+half-generic `where` object would leak Prisma's operators and quietly become
+impossible to reimplement on another ORM. Use the protected `findOneWhere` /
+`findManyWhere` helpers to keep those methods to a single line.
+
+### Swapping the ORM or database
+
+Write a class implementing the module's contract and rebind it — the service
+layer, guards and strategies are untouched:
+
+```ts
+{ provide: UserRepository, useClass: TypeOrmUserRepository }
+```
+
+The contract semantics are pinned by
+`src/common/persistence/in-memory.repository.spec.ts`, which is the suite a new
+implementation should be checked against.
 
 ## Compile and run the project
 
@@ -50,7 +175,7 @@ $ pnpm run start:prod
 # unit tests
 $ pnpm run test
 
-# e2e tests
+# e2e tests (needs a running database; migrates and truncates TEST_DATABASE_URL)
 $ pnpm run test:e2e
 
 # test coverage

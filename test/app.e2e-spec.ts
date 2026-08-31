@@ -1,14 +1,23 @@
+import 'dotenv/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { PrismaService } from './../src/prisma/prisma.service';
+import { TransactionManager } from './../src/common/persistence';
+import { UserRepository } from './../src/users/user.repository';
 
 describe('Auth (e2e)', () => {
   let app: INestApplication<App>;
+  let prisma: PrismaService;
 
   beforeAll(() => {
     process.env.JWT_SECRET ??= 'test-secret';
+    // Redirect the suite at the throwaway database so it never truncates dev data.
+    if (process.env.TEST_DATABASE_URL) {
+      process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+    }
   });
 
   beforeEach(async () => {
@@ -25,6 +34,9 @@ describe('Auth (e2e)', () => {
       }),
     );
     await app.init();
+
+    prisma = app.get(PrismaService);
+    await prisma.user.deleteMany();
   });
 
   afterEach(async () => {
@@ -82,5 +94,23 @@ describe('Auth (e2e)', () => {
 
     const loggedIn = login.body as { accessToken: string };
     expect(loggedIn.accessToken).toEqual(expect.any(String));
+  });
+
+  it('rolls back repository writes when a transaction fails', async () => {
+    const transactions = app.get(TransactionManager);
+    const users = app.get(UserRepository);
+
+    await expect(
+      transactions.runInTransaction(async () => {
+        await users.create({
+          email: 'rollback@example.com',
+          passwordHash: 'hash',
+        });
+        expect(await users.findByEmail('rollback@example.com')).not.toBeNull();
+        throw new Error('failing after a write');
+      }),
+    ).rejects.toThrow('failing after a write');
+
+    expect(await users.findByEmail('rollback@example.com')).toBeNull();
   });
 });

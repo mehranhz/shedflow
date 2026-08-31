@@ -3,6 +3,9 @@
 /node_modules
 /build
 
+# generated Prisma Client (recreated by `pnpm db:generate`)
+/src/generated
+
 # Logs
 logs
 *.log

@@ -1,31 +1,42 @@
-import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { UniqueConstraintError } from '../common/persistence';
 import { PublicUser, User } from './user';
+import { UserRepository } from './user.repository';
+
+// Addresses are compared case-insensitively, so they are stored and looked up in
+// one canonical form. Kept here rather than in a repository so that every
+// implementation behaves the same way.
+function normalizeEmail(email: string): string {
+  return email.toLowerCase();
+}
 
 @Injectable()
 export class UsersService {
-  private readonly users = new Map<string, User>();
+  constructor(private readonly users: UserRepository) {}
 
-  create(email: string, passwordHash: string): Promise<User> {
-    const user: User = {
-      id: randomUUID(),
-      email: email.toLowerCase(),
-      passwordHash,
-      createdAt: new Date(),
-    };
-    this.users.set(user.id, user);
-    return Promise.resolve(user);
+  async create(email: string, passwordHash: string): Promise<User> {
+    try {
+      return await this.users.create({
+        email: normalizeEmail(email),
+        passwordHash,
+      });
+    } catch (error) {
+      if (
+        error instanceof UniqueConstraintError &&
+        error.fields.includes('email')
+      ) {
+        throw new ConflictException('Email is already registered');
+      }
+      throw error;
+    }
   }
 
-  findByEmail(email: string): Promise<User | undefined> {
-    const normalized = email.toLowerCase();
-    return Promise.resolve(
-      [...this.users.values()].find((user) => user.email === normalized),
-    );
+  findByEmail(email: string): Promise<User | null> {
+    return this.users.findByEmail(normalizeEmail(email));
   }
 
-  findById(id: string): Promise<User | undefined> {
-    return Promise.resolve(this.users.get(id));
+  findById(id: string): Promise<User | null> {
+    return this.users.findById(id);
   }
 
   toPublic(user: User): PublicUser {
