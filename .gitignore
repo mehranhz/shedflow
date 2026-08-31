@@ -1,10 +1,11 @@
 # compiled output
-/dist
-/node_modules
-/build
+dist
+node_modules
+build
+.turbo
 
 # generated Prisma Client (recreated by `pnpm db:generate`)
-/src/generated
+apps/api/src/generated
 
 # Logs
 logs

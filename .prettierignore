@@ -1,4 +1,5 @@
 dist
 coverage
-src/generated
-prisma/migrations
+.turbo
+apps/api/src/generated
+apps/api/prisma/migrations

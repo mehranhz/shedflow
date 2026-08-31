@@ -1,5 +1,9 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
 import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
+
+config({ path: resolve(__dirname, '../../.env') });
+config({ path: resolve(__dirname, '../.env') });
 
 // Runs once before the e2e suite: point Prisma at the throwaway database and
 // make sure its schema matches the committed migrations.
