@@ -1,9 +1,16 @@
 {
+  "extends": "@shedflow/typescript-config/react.json",
     "compilerOptions": {
+      "lib":["DOM"],
         "baseUrl": ".",
         "paths": {
-          "@/*": ["./*"]
-        },
+      "@shedflow/ui/*": [
+        "./src/*"
+      ]
+    },
         "ignoreDeprecations": "6.0"
-    }
+    },
+    "--jsx": "react-jsx",
+    "include": ["src"],
+    "exclude": ["node_modules", "dist"]
   }

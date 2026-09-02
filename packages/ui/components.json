@@ -11,9 +11,8 @@
       "prefix": ""
     },
     "aliases": {
-      "components": "@/components",
+      "components": "@shedflow/ui/components",
       "utils": "@/lib/utils",
-      "ui": "@/components/ui",
       "lib": "@/lib",
       "hooks": "@/hooks"
     },
