@@ -1,4 +1,113 @@
 services:
+  prometheus:
+    image: docker.arvancloud.ir/prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ./observability/prometheus/prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+        read_only: true
+        bind:
+          create_host_path: false
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=5GB'
+      - '--web.enable-lifecycle'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+    mem_limit: 2g
+    mem_reservation: 1g
+
+  grafana:
+    image: docker.arvancloud.ir/grafana/grafana:10.4.0
+    container_name: grafana
+    restart: unless-stopped
+    user: "472"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_HTTP_ADDR=0.0.0.0
+      - GF_SERVER_HTTP_PORT=3000
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_SERVER_PROTOCOL=http
+      - GF_LOG_LEVEL=info
+      # Option 2: Use the new preinstall method (replaces deprecated GF_INSTALL_PLUGINS)
+      - GF_PLUGINS_PREINSTALL=grafana-clock-panel,grafana-simple-json-datasource
+      # If you want to skip plugin installation entirely, use:
+      # - GF_PLUGINS_PREINSTALL=
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - type: bind
+        source: ./observability/grafana/provisioning
+        target: /etc/grafana/provisioning
+        read_only: true
+        bind:
+          create_host_path: false
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+    mem_limit: 1g
+    mem_reservation: 512m
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  node-exporter:
+    image: docker.arvancloud.ir/prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)'
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring
+    mem_limit: 256m
+    mem_reservation: 128m
+
+  alertmanager:
+    image: docker.arvancloud.ir/prom/alertmanager:latest
+    container_name: alertmanager
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ./observability/alertmanager/alertmanager.yml
+        target: /etc/alertmanager/alertmanager.yml
+        read_only: true
+        bind:
+          create_host_path: false
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    ports:
+      - "9093:9093"
+    networks:
+      - monitoring
+    mem_limit: 256m
+    mem_reservation: 128m
+
   postgres:
     image: postgres:16-alpine
     container_name: shedflow-postgres
@@ -11,12 +120,28 @@ services:
       - '5434:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./docker/postgres/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+      - type: bind
+        source: ./docker/postgres/init-test-db.sql
+        target: /docker-entrypoint-initdb.d/init-test-db.sql
+        read_only: true
+        bind:
+          create_host_path: false
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U shedflow -d shedflow']
       interval: 5s
       timeout: 5s
       retries: 10
 
+networks:
+  monitoring:
+    driver: bridge
+
 volumes:
   postgres-data:
+
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local

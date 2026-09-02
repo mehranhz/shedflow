@@ -1,5 +1,0 @@
-{
-  "registry-mirrors": [
-    "https://docker-mirror.liara.ir"
-  ]
-} /etc/docker/daemon.json
