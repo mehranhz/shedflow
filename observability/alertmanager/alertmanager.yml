@@ -1,0 +1,27 @@
+route:
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+  receiver: 'webhook'
+
+receivers:
+  - name: 'webhook'
+    webhook_configs:
+      - url: 'http://localhost:5000/webhook'  # Replace with your webhook URL
+        send_resolved: true
+
+  - name: 'email'
+    email_configs:
+      - to: 'alerts@example.com'  # Replace with your email
+        from: 'alertmanager@example.com'
+        smarthost: 'smtp.gmail.com:587'
+        auth_username: 'your-email@gmail.com'
+        auth_password: 'your-app-password'
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
