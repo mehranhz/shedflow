@@ -11,4 +11,8 @@ export class PrismaTransactionManager extends TransactionManager {
   runInTransaction<T>(work: () => Promise<T>): Promise<T> {
     return this.prisma.runInTransaction(work);
   }
+
+  isInTransaction(): boolean {
+    return this.prisma.isInTransaction();
+  }
 }

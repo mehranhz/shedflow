@@ -36,6 +36,10 @@ docker compose up -d postgres
 pnpm db:migrate
 ```
 
+Compose profiles: `core` (Postgres) and `observability` (Prometheus/Grafana/…).
+`.env.example` sets `COMPOSE_PROFILES=core,observability` so `docker compose up -d`
+starts both; `docker compose up -d postgres` is enough for app work.
+
 ```bash
 pnpm db:generate         # regenerate Prisma Client
 pnpm db:migrate:deploy   # apply pending migrations (production)
@@ -43,8 +47,8 @@ pnpm db:reset            # drop and recreate (local only)
 pnpm db:studio
 ```
 
-Prisma Client is generated and gitignored. After T-001 the schema lives in
-`packages/db`; until then it is `apps/api/prisma/schema.prisma`.
+Prisma Client is generated and gitignored. The schema lives in
+`packages/db` (`@shedflow/db`).
 
 ## Persistence architecture
 

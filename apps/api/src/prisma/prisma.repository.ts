@@ -6,7 +6,7 @@ import {
   buildPage,
   resolvePageRequest,
 } from '../common/persistence';
-import { Prisma } from '../generated/prisma/client';
+import { Prisma } from '@shedflow/db';
 import { toRepositoryError } from './prisma-error';
 import { PrismaService } from './prisma.service';
 

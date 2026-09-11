@@ -6,7 +6,7 @@
 
 ## T-006 — Organizations, memberships, invitations, RBAC
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-001, T-003  
 **Apps:** `apps/api`
 
@@ -28,16 +28,16 @@ Multi-tenant core. Every subsequent module depends on this.
 
 ### Acceptance
 
-- [ ] Create org → creator is OWNER.
-- [ ] Second user invited ADMIN can list members; MEMBER cannot PATCH org slug.
-- [ ] IDOR: org A user `GET` org B by UUID → 404 (not 403).
-- [ ] Unique slug conflict → `SLUG_TAKEN`.
+- [x] Create org → creator is OWNER.
+- [x] Second user invited ADMIN can list members; MEMBER cannot PATCH org slug.
+- [x] IDOR: org A user `GET` org B by UUID → 404 (not 403).
+- [x] Unique slug conflict → `SLUG_TAKEN`.
 
 ---
 
 ## T-007 — Register creates workspace; JWT carries `orgId` + `role`
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-006, T-004  
 **Design:** `mvp/03` §5.3, `mvp/04` §9
 
@@ -51,15 +51,15 @@ Multi-tenant core. Every subsequent module depends on this.
 
 ### Acceptance
 
-- [ ] New register yields one org and OWNER JWT.
-- [ ] Switch org (user in two orgs) changes `orgId` in subsequent `/auth/me`.
-- [ ] Existing users without org can still POST organization.
+- [x] New register yields one org and OWNER JWT.
+- [x] Switch org (user in two orgs) changes `orgId` in subsequent `/auth/me`.
+- [x] Existing users without org can still POST organization.
 
 ---
 
 ## T-008 — Idempotency, outbox, audit log
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-001, T-003, T-006 (orgId on audit)  
 **Design:** `mvp/02` IdempotencyKey, DomainEvent, AuditLog; `mvp/03` §7; `mvp/10` §7
 
@@ -74,9 +74,9 @@ Multi-tenant core. Every subsequent module depends on this.
 
 ### Acceptance
 
-- [ ] Two identical POSTs with same Idempotency-Key + body → one org row, same response.
-- [ ] Same key different body → 409 `IDEMPOTENCY_MISMATCH`.
-- [ ] Creating an org writes `audit_logs` and a `domain_events` row in the same transaction (query DB in e2e).
+- [x] Two identical POSTs with same Idempotency-Key + body → one org row, same response.
+- [x] Same key different body → 409 `IDEMPOTENCY_MISMATCH`.
+- [x] Creating an org writes `audit_logs` and a `domain_events` row in the same transaction (query DB in e2e).
 
 ---
 

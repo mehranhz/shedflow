@@ -1,8 +1,11 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaPg } from '@prisma/adapter-pg';
+import {
+  createPrismaAdapter,
+  Prisma,
+  PrismaClient,
+} from '@shedflow/db';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { Prisma, PrismaClient } from '../generated/prisma/client';
 
 @Injectable()
 export class PrismaService
@@ -16,9 +19,9 @@ export class PrismaService
 
   constructor(configService: ConfigService) {
     super({
-      adapter: new PrismaPg({
-        connectionString: configService.getOrThrow<string>('DATABASE_URL'),
-      }),
+      adapter: createPrismaAdapter(
+        configService.getOrThrow<string>('DATABASE_URL'),
+      ),
     });
   }
 
@@ -33,6 +36,10 @@ export class PrismaService
   /** The transaction client while inside {@link runInTransaction}, else the root client. */
   activeClient(): Prisma.TransactionClient {
     return this.transaction.getStore() ?? this;
+  }
+
+  isInTransaction(): boolean {
+    return this.transaction.getStore() != null;
   }
 
   runInTransaction<T>(work: () => Promise<T>): Promise<T> {

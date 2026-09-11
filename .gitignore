@@ -5,7 +5,8 @@ build
 .turbo
 
 # generated Prisma Client (recreated by `pnpm db:generate`)
-apps/api/src/generated
+packages/db/src/generated
+packages/db/dist
 
 # Logs
 logs
@@ -49,6 +50,7 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+.vendor
 
 # Runtime data
 pids

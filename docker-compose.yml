@@ -1,7 +1,18 @@
+# Profiles:
+#   core            — Postgres. `docker compose up -d postgres` still works.
+#   observability   — Prometheus, Grafana, node-exporter, Alertmanager
+#
+#   docker compose --profile core up -d
+#   docker compose --profile observability up -d
+#   docker compose --profile core --profile observability up -d
+#
+# With COMPOSE_PROFILES=core,observability in `.env`, `docker compose up -d`
+# starts both stacks.
 services:
   prometheus:
     image: docker.arvancloud.ir/prom/prometheus:latest
     container_name: prometheus
+    profiles: ['observability']
     restart: unless-stopped
     volumes:
       - type: bind
@@ -29,6 +40,7 @@ services:
   grafana:
     image: docker.arvancloud.ir/grafana/grafana:10.4.0
     container_name: grafana
+    profiles: ['observability']
     restart: unless-stopped
     user: "472"
     environment:
@@ -53,7 +65,7 @@ services:
         bind:
           create_host_path: false
     ports:
-      - "3000:3000"
+      - "3002:3000"
     networks:
       - monitoring
     depends_on:
@@ -69,6 +81,7 @@ services:
   node-exporter:
     image: docker.arvancloud.ir/prom/node-exporter:latest
     container_name: node-exporter
+    profiles: ['observability']
     restart: unless-stopped
     volumes:
       - /proc:/host/proc:ro
@@ -89,6 +102,7 @@ services:
   alertmanager:
     image: docker.arvancloud.ir/prom/alertmanager:latest
     container_name: alertmanager
+    profiles: ['observability']
     restart: unless-stopped
     volumes:
       - type: bind
@@ -111,13 +125,14 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: shedflow-postgres
+    profiles: ['core']
     restart: unless-stopped
     environment:
       POSTGRES_USER: shedflow
       POSTGRES_PASSWORD: shedflow
       POSTGRES_DB: shedflow
     ports:
-      - '5434:5432'
+      - '5533:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - type: bind

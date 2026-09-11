@@ -88,6 +88,15 @@ export function LoginForm() {
       </button>
 
       <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+        <Link
+          href="/reset-password"
+          className="font-medium text-foreground underline"
+        >
+          Forgot password?
+        </Link>
+      </p>
+
+      <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
         Don&apos;t have an account?{" "}
         <Link href="/register" className="font-medium text-foreground underline">
           Create one

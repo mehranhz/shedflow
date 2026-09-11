@@ -14,11 +14,17 @@ function normalizeEmail(email: string): string {
 export class UsersService {
   constructor(private readonly users: UserRepository) {}
 
-  async create(email: string, passwordHash: string): Promise<User> {
+  async create(
+    email: string,
+    passwordHash: string,
+    extras: { name?: string | null; timezone?: string } = {},
+  ): Promise<User> {
     try {
       return await this.users.create({
         email: normalizeEmail(email),
         passwordHash,
+        ...(extras.name !== undefined ? { name: extras.name } : {}),
+        ...(extras.timezone !== undefined ? { timezone: extras.timezone } : {}),
       });
     } catch (error) {
       if (
@@ -39,11 +45,20 @@ export class UsersService {
     return this.users.findById(id);
   }
 
+  setPassword(userId: string, passwordHash: string): Promise<User> {
+    return this.users.update(userId, { passwordHash });
+  }
+
+  markEmailVerified(userId: string, verifiedAt: Date): Promise<User> {
+    return this.users.update(userId, { emailVerifiedAt: verifiedAt });
+  }
+
   toPublic(user: User): PublicUser {
     return {
       id: user.id,
       email: user.email,
       createdAt: user.createdAt,
+      emailVerifiedAt: user.emailVerifiedAt,
     };
   }
 }

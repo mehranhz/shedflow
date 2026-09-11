@@ -14,11 +14,11 @@
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
     "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md}\"",
-    "db:generate": "pnpm --filter @shedflow/api db:generate",
-    "db:migrate": "pnpm --filter @shedflow/api db:migrate",
-    "db:migrate:deploy": "pnpm --filter @shedflow/api db:migrate:deploy",
-    "db:reset": "pnpm --filter @shedflow/api db:reset",
-    "db:studio": "pnpm --filter @shedflow/api db:studio"
+    "db:generate": "pnpm --filter @shedflow/db db:generate",
+    "db:migrate": "pnpm --filter @shedflow/db db:migrate",
+    "db:migrate:deploy": "pnpm --filter @shedflow/db db:migrate:deploy",
+    "db:reset": "pnpm --filter @shedflow/db db:reset",
+    "db:studio": "pnpm --filter @shedflow/db db:studio"
   },
   "devDependencies": {
     "prettier": "^3.4.2",

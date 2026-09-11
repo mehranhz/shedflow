@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 
 import { apiFetch, ApiError } from "@/lib/api";
 
-type RegisterBody = { email?: unknown; password?: unknown };
+type RegisterBody = {
+  email?: unknown;
+  password?: unknown;
+  name?: unknown;
+  organizationName?: unknown;
+  timezone?: unknown;
+};
 
 export async function POST(request: Request) {
   let body: RegisterBody;
@@ -12,7 +18,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid request body" }, { status: 400 });
   }
 
-  const { email, password } = body;
+  const { email, password, name, organizationName, timezone } = body;
   if (typeof email !== "string" || typeof password !== "string") {
     return NextResponse.json(
       { message: "Email and password are required" },
@@ -25,7 +31,13 @@ export async function POST(request: Request) {
     // here; the browser then establishes a session via the credentials sign-in.
     await apiFetch("/auth/register", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({
+        email,
+        password,
+        ...(typeof name === "string" ? { name } : {}),
+        ...(typeof organizationName === "string" ? { organizationName } : {}),
+        ...(typeof timezone === "string" ? { timezone } : {}),
+      }),
     });
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (error) {

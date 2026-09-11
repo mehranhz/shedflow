@@ -15,7 +15,7 @@
 
 - Prisma `Schedule`, `AvailabilityRule`, `DateOverride` + check constraints SQL (`02` §3 minutes chk).
 - CRUD routes `04` §8. `PUT rules` is replace-all; reject overlapping windows same `dayOfWeek`.
-- `createDefaultSchedule(orgId, hostUserId, timezone)` used from T-007 if available.
+- `createDefaultSchedule(orgId, hostUserId, timezone)` used from T-007 if available. **T-007 left a no-op** `OrganizationsService.createDefaultScheduleIfAvailable` — replace that body and call it from org create.
 - MEMBER may only write own `hostUserId` schedules; OWNER/ADMIN any member of org.
 - Only one `isDefault` per host: setting default unsets others.
 

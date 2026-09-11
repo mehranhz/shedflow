@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, type User as UserRecord } from '../generated/prisma/client';
+import { Prisma, type User as UserRecord } from '@shedflow/db';
 import {
   PrismaModelDelegate,
   PrismaRepository,
@@ -28,12 +28,21 @@ export class PrismaUserRepository
       id: record.id,
       email: record.email,
       passwordHash: record.passwordHash,
+      name: record.name,
+      timezone: record.timezone,
+      locale: record.locale,
+      emailVerifiedAt: record.emailVerifiedAt,
+      deletedAt: record.deletedAt,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };
   }
 
+  findById(id: string): Promise<User | null> {
+    return this.findOneWhere({ id, deletedAt: null });
+  }
+
   findByEmail(email: string): Promise<User | null> {
-    return this.findOneWhere({ email });
+    return this.findOneWhere({ email, deletedAt: null });
   }
 }

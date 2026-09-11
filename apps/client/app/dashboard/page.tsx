@@ -3,8 +3,14 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { apiFetch, ApiError } from "@/lib/api";
 import { SignOutButton } from "@/components/sign-out-button";
+import { VerificationBanner } from "@/components/verification-banner";
 
-type Profile = { id: string; email: string; createdAt: string };
+type Profile = {
+  id: string;
+  email: string;
+  createdAt: string;
+  emailVerifiedAt: string | null;
+};
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -42,6 +48,8 @@ export default async function DashboardPage() {
           </span>
           .
         </p>
+
+        {profile && !profile.emailVerifiedAt ? <VerificationBanner /> : null}
 
         <div className="rounded-lg border border-black/[.06] bg-zinc-50 p-4 text-sm dark:border-white/[.08] dark:bg-black">
           <h2 className="mb-3 font-medium">Profile from the API</h2>

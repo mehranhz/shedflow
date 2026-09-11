@@ -1,6 +1,6 @@
 # MVP 02 — Data model, indexes, migrations
 
-**Owner of this document:** `packages/db` (after T-001). Until then the schema lives in `apps/api/prisma/schema.prisma`.
+**Owner of this document:** `packages/db`.
 
 **Conventions (non-negotiable)**
 

@@ -4,10 +4,13 @@
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "globalSetup": "<rootDir>/setup-e2e.ts",
+  "maxWorkers": 1,
+  "testTimeout": 30000,
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
+    "^@shedflow/shared$": "<rootDir>/../../../packages/shared/src/index.ts",
     "^(\\.{1,2}/.*)\\.js$": "$1"
   }
 }

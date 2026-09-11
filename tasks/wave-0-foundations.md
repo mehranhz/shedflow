@@ -6,7 +6,7 @@
 
 ## T-001 — Move Prisma to `packages/db` and fix local URLs
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** nothing  
 **Apps:** `packages/db` (new), `apps/api`, root compose / env
 
@@ -17,32 +17,36 @@ One Prisma schema + migrations consumed by api (later billing and worker). Fix P
 ### Implementation
 
 1. Create `packages/db` (`@shedflow/db`):
-   - Move `apps/api/prisma/**`, `prisma.config.ts` here.
-   - Generator output: `packages/db/src/generated/prisma` (gitignored).
-   - Export `PrismaClient` factory + re-export types from `packages/db/src/index.ts`.
+  - Move `apps/api/prisma/**`, `prisma.config.ts` here.
+  - Generator output: `packages/db/src/generated/prisma` (gitignored).
+  - Export `PrismaClient` factory + re-export types from `packages/db/src/index.ts`.
 2. `apps/api` depends on `workspace:*`. `PrismaService` imports from `@shedflow/db`.
 3. Root scripts `db:*` target `@shedflow/db`.
 4. `.env.example`:
-   ```
+  ```
    DATABASE_URL=postgresql://shedflow:shedflow@localhost:5434/shedflow?schema=public
    TEST_DATABASE_URL=postgresql://shedflow:shedflow@localhost:5434/shedflow_test?schema=public
    DIRECT_DATABASE_URL=<same as DATABASE_URL locally>
-   ```
+  ```
 5. Split compose profiles: `core` = postgres; `observability` = prometheus/grafana/… so `docker compose up -d postgres` is enough for app work. Default `docker compose up -d` may still start both, but document profiles.
 6. `packages/db/README.md`: how to migrate, how to add raw SQL migrations that Prisma must not reverse (exclusion constraint later).
 
+
+
 ### Acceptance
 
-- [ ] `pnpm db:migrate` from repo root works against port 5434.
-- [ ] `pnpm --filter @shedflow/api test` and existing e2e still pass.
-- [ ] `apps/api/prisma` is gone (or re-exports only).
-- [ ] No Prisma generate output committed.
+- [x] `pnpm db:migrate` from repo root works against port 5434.
+- [x] `pnpm --filter @shedflow/api test` and existing e2e still pass.
+- [x] `apps/api/prisma` is gone (or re-exports only).
+- [x] No Prisma generate output committed.
 
 ---
 
+
+
 ## T-002 — `@shedflow/shared` contracts
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-001 (can start in parallel, merge after)  
 **Apps:** `packages/shared`
 
@@ -68,14 +72,16 @@ Export from `src/index.ts`. Ensure `pnpm --filter @shedflow/shared build` emits 
 
 ### Acceptance
 
-- [ ] `pnpm --filter @shedflow/shared build` succeeds.
-- [ ] Error codes used in T-003 filter import from here.
+- [x] `pnpm --filter @shedflow/shared build` succeeds.
+- [x] Error codes used in T-003 filter import from here.
 
 ---
 
+
+
 ## T-003 — API baseline: `/v1`, errors, CORS, helmet, rate limit, request id
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-002  
 **Apps:** `apps/api`  
 **Design:** `mvp/03-api-and-auth.md`, `mvp/10-security-and-privacy.md`
@@ -92,18 +98,22 @@ Export from `src/index.ts`. Ensure `pnpm --filter @shedflow/shared build` emits 
 - Zod env validation on boot (`JWT_SECRET`, `DATABASE_URL`, `APP_URL`, `PORT`).
 - Update `apps/client/lib/api.ts` so authenticated product calls use `/v1/...` later; auth paths unchanged.
 
+
+
 ### Acceptance
 
-- [ ] Existing login/register/dashboard still work.
-- [ ] Unauthenticated `GET /v1/does-not-exist` → 401 envelope (global JWT guard).
-- [ ] `GET /health` is public 200.
-- [ ] Validation errors return `VALIDATION_ERROR` + field details.
+- [x] Existing login/register/dashboard still work.
+- [x] Unauthenticated `GET /v1/does-not-exist` → 401 envelope (global JWT guard).
+- [x] `GET /health` is public 200.
+- [x] Validation errors return `VALIDATION_ERROR` + field details.
 
 ---
 
+
+
 ## T-004 — Refresh tokens and 15-minute access JWT
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-001, T-003  
 **Design:** `mvp/02-data-model.md` RefreshToken, `mvp/03` §5.1
 
@@ -118,17 +128,21 @@ Export from `src/index.ts`. Ensure `pnpm --filter @shedflow/shared build` emits 
 - Extend `types/next-auth.d.ts`.
 - Unit tests: rotation, reuse detection. E2e: login → refresh → me.
 
+
+
 ### Acceptance
 
-- [ ] Access token expires in 15m (decode `exp`).
-- [ ] Reusing an old refresh token fails and invalidates the family.
-- [ ] Client session still authenticates `/auth/me` after simulated refresh (unit or e2e).
+- [x] Access token expires in 15m (decode `exp`).
+- [x] Reusing an old refresh token fails and invalidates the family.
+- [x] Client session still authenticates `/auth/me` after simulated refresh (unit or e2e).
 
 ---
 
+
+
 ## T-005 — Email verification and password reset (tokens; send in T-025)
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-001, T-003  
 **Design:** `mvp/02` UserToken, `mvp/03` §5.2
 
@@ -144,9 +158,11 @@ Export from `src/index.ts`. Ensure `pnpm --filter @shedflow/shared build` emits 
 - Client pages: `reset-password`, `verify-email` using shadcn `Button`, `Input`, `Alert`, `AuthShell`.
 - Unverified users **are allowed** to use the app.
 
+
+
 ### Acceptance
 
-- [ ] Forgot-password does not reveal whether email exists.
-- [ ] Reset with valid token changes password; old password fails login.
-- [ ] Verify sets `emailVerifiedAt`.
-- [ ] Token reuse → 400.
+- [x] Forgot-password does not reveal whether email exists.
+- [x] Reset with valid token changes password; old password fails login.
+- [x] Verify sets `emailVerifiedAt`.
+- [x] Token reuse → 400.

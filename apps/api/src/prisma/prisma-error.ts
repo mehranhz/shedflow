@@ -3,7 +3,7 @@ import {
   ForeignKeyConstraintError,
   UniqueConstraintError,
 } from '../common/persistence';
-import { Prisma } from '../generated/prisma/client';
+import { Prisma } from '@shedflow/db';
 
 const UNIQUE_CONSTRAINT = 'P2002';
 const FOREIGN_KEY_CONSTRAINT = 'P2003';
