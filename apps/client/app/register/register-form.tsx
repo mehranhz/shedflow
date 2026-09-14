@@ -1,14 +1,24 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { Alert, AlertDescription, AlertTitle } from "@shedflow/ui/components";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Input,
+  Label,
+} from "@shedflow/ui/components";
+
+import { guessTimeZone } from "@/lib/timezones";
 
 export function RegisterForm() {
   const router = useRouter();
-
+  const [name, setName] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +32,13 @@ export function RegisterForm() {
       const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          organizationName,
+          timezone: guessTimeZone(),
+        }),
       });
 
       if (!response.ok) {
@@ -33,7 +49,6 @@ export function RegisterForm() {
         return;
       }
 
-      // Account created — establish a session with the same credentials.
       const result = await signIn("credentials", {
         email,
         password,
@@ -41,12 +56,11 @@ export function RegisterForm() {
       });
 
       if (!result || result.error) {
-        // Registration worked but auto-login didn't; send them to sign in.
         router.push("/login");
         return;
       }
 
-      router.push("/dashboard");
+      router.push("/dashboard/onboarding");
       router.refresh();
     });
   };
@@ -60,27 +74,44 @@ export function RegisterForm() {
         </Alert>
       ) : null}
 
-      <div className="flex flex-col gap-2">
-        <label htmlFor="email" className="text-sm font-medium">
-          Email
-        </label>
-        <input
+      <div className="grid gap-2">
+        <Label htmlFor="name">Name</Label>
+        <Input
+          id="name"
+          name="name"
+          autoComplete="name"
+          value={name}
+          onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setName(event.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="organizationName">Workspace name</Label>
+        <Input
+          id="organizationName"
+          name="organizationName"
+          value={organizationName}
+          placeholder="Acme Coaching"
+          onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setOrganizationName(event.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
           required
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="h-11 rounded-md border border-black/[.12] bg-transparent px-3 text-sm outline-none focus:border-foreground dark:border-white/[.16]"
+          onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEmail(event.target.value)}
         />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label htmlFor="password" className="text-sm font-medium">
-          Password
-        </label>
-        <input
+      <div className="grid gap-2">
+        <Label htmlFor="password">Password</Label>
+        <Input
           id="password"
           name="password"
           type="password"
@@ -88,24 +119,19 @@ export function RegisterForm() {
           required
           minLength={8}
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="h-11 rounded-md border border-black/[.12] bg-transparent px-3 text-sm outline-none focus:border-foreground dark:border-white/[.16]"
+          onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPassword(event.target.value)}
         />
-        <p className="text-xs text-zinc-500">At least 8 characters.</p>
+        <p className="text-xs text-muted-foreground">At least 8 characters.</p>
       </div>
 
-      <button
-        type="submit"
-        disabled={isPending}
-        className="mt-2 inline-flex h-11 items-center justify-center rounded-full bg-foreground px-5 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-60 dark:hover:bg-[#ccc]"
-      >
-        {isPending ? "Creating account…" : "Create account"}
-      </button>
+      <Button type="submit" disabled={isPending}>
+        {isPending ? "Creating account…" : "Sign up with email"}
+      </Button>
 
-      <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link href="/login" className="font-medium text-foreground underline">
-          Sign in
+          Log in
         </Link>
       </p>
     </form>

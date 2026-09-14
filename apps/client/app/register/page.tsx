@@ -13,7 +13,7 @@ export default async function RegisterPage() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Start using Shedflow in seconds."
+      subtitle="Create your free workspace and booking page."
     >
       <RegisterForm />
     </AuthShell>

@@ -1,6 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
+import type { JWT } from "next-auth/jwt";
+
 import { API_URL } from "@/lib/config";
 import { refreshSessionTokens } from "@/lib/refresh-session";
 
@@ -66,7 +68,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt: async ({ token, user }) => {
+    jwt: async ({ token, user, trigger, session }) => {
+      if (trigger === "update" && session && typeof session === "object") {
+        const next = session as { accessToken?: string };
+        if (typeof next.accessToken === "string") {
+          applyAccessToken(token, next.accessToken, token.refreshToken);
+          await persistOrgCookie(token.orgId);
+        }
+        return token;
+      }
+
       if (user) {
         token.id = user.id;
         applyAccessToken(token, user.accessToken, user.refreshToken);
@@ -130,13 +141,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 });
 
 function applyAccessToken(
-  token: {
-    accessToken?: string;
-    refreshToken?: string;
-    accessTokenExpires?: number;
-    orgId?: string;
-    role?: "OWNER" | "ADMIN" | "MEMBER";
-  },
+  token: JWT,
   accessToken?: string,
   refreshToken?: string,
 ): void {

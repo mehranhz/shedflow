@@ -1,58 +1,86 @@
 import Link from "next/link";
 
 import { auth } from "@/auth";
-import { SignOutButton } from "@/components/sign-out-button";
+import { Logo } from "@/components/logo";
+import { Button } from "@shedflow/ui/components";
 
 export default async function Home() {
   const session = await auth();
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-3xl flex-col items-center gap-8 px-8 py-24 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight text-black dark:text-zinc-50">
-          Shedflow
-        </h1>
-
-        {session ? (
-          <>
-            <p className="text-lg text-zinc-600 dark:text-zinc-400">
-              Signed in as{" "}
-              <span className="font-medium text-foreground">
-                {session.user?.email}
-              </span>
-              .
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/dashboard"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-foreground px-6 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
-              >
-                Go to dashboard
+    <div className="min-h-svh bg-background">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+        <Logo />
+        <div className="flex items-center gap-3">
+          {session ? (
+            <Button asChild>
+              <Link href="/dashboard">Go to dashboard</Link>
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" asChild>
+                <Link href="/login">Log in</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/register">Get started</Link>
+              </Button>
+            </>
+          )}
+        </div>
+      </header>
+      <main className="mx-auto grid max-w-6xl gap-12 px-6 py-16 lg:grid-cols-2 lg:items-center">
+        <div>
+          <p className="text-sm font-medium text-primary">Scheduling for people who get paid</p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
+            Easy scheduling ahead, with payments built in.
+          </h1>
+          <p className="mt-5 max-w-md text-lg text-muted-foreground">
+            Publish event types, share a booking page, and take free or paid sessions — without the back-and-forth emails.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button size="lg" asChild>
+              <Link href={session ? "/dashboard" : "/register"}>
+                {session ? "Open dashboard" : "Sign up for free"}
               </Link>
-              <SignOutButton />
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/login">Log in</Link>
+            </Button>
+          </div>
+        </div>
+        <div className="rounded-2xl border bg-[#f4f5f7] p-4 shadow-sm">
+          <div className="overflow-hidden rounded-xl border bg-background shadow-lg">
+            <div className="grid md:grid-cols-[200px_1fr]">
+              <div className="border-b p-5 md:border-r md:border-b-0">
+                <p className="text-xs text-muted-foreground">Alex Rivera</p>
+                <p className="mt-2 text-lg font-semibold">30 Minute Meeting</p>
+                <p className="mt-4 text-sm text-muted-foreground">30 min · Google Meet</p>
+              </div>
+              <div className="p-5">
+                <p className="mb-3 text-sm font-semibold">Select a Date & Time</p>
+                <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+                  {"SMTWTFS".split("").map((day, index) => (
+                    <span key={`${day}-${index}`}>{day}</span>
+                  ))}
+                  {Array.from({ length: 28 }).map((_, index) => (
+                    <span
+                      key={index}
+                      className={`flex aspect-square items-center justify-center rounded-full ${
+                        index === 16
+                          ? "bg-primary text-primary-foreground"
+                          : index > 10 && index < 22
+                            ? "hover:bg-primary/10"
+                            : "opacity-40"
+                      }`}
+                    >
+                      {index + 1}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
-          </>
-        ) : (
-          <>
-            <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-              Sign in or create an account to get started.
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/login"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-foreground px-6 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/register"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-black/[.08] px-6 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-              >
-                Create account
-              </Link>
-            </div>
-          </>
-        )}
+          </div>
+        </div>
       </main>
     </div>
   );

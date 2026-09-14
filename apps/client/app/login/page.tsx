@@ -12,7 +12,7 @@ export default async function LoginPage() {
   }
 
   return (
-    <AuthShell title="Welcome back" subtitle="Sign in to your Shedflow account.">
+    <AuthShell title="Welcome back" subtitle="Log in to your SchedFlow account.">
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>

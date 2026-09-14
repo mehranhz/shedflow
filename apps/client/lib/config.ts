@@ -6,3 +6,4 @@ import "server-only";
  * `NEXT_PUBLIC_` prefix and the browser never talks to the API directly.
  */
 export const API_URL = process.env.API_URL ?? "http://localhost:3001";
+export const BILLING_URL = process.env.BILLING_URL ?? "http://localhost:3002";

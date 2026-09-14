@@ -59,7 +59,7 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 
 ## T-029 — Dashboard shell, onboarding, BFF, restyle auth
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-006, T-007  
 **Apps:** `apps/client`, `packages/ui`  
 **Design:** `08` §2–§3, §6

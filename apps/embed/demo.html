@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SchedFlow embed demo</title>
+  </head>
+  <body style="font-family: system-ui, sans-serif; padding: 32px">
+    <h1>Embed demo</h1>
+    <p>Inline widget (points at local client):</p>
+    <div class="schedflow-inline" data-org="acme" data-event="intro"></div>
+    <p>
+      <button data-schedflow-popup data-org="acme" data-event="intro">
+        Book a meeting
+      </button>
+    </p>
+    <script src="./src/embed.ts"></script>
+  </body>
+</html>

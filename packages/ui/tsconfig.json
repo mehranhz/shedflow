@@ -4,9 +4,8 @@
       "lib":["DOM"],
         "baseUrl": ".",
         "paths": {
-      "@shedflow/ui/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"],
+      "@shedflow/ui/*": ["./src/*"]
     },
         "ignoreDeprecations": "6.0"
     },
