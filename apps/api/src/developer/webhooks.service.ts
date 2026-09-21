@@ -5,8 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { assertSafeWebhookUrl } from '@shedflow/shared/ssrf';
 import { PlatformPlan, Role, WebhookDeliveryStatus } from '@shedflow/db';
-import { assertSafeWebhookUrl } from '@shedflow/shared';
+
 import type { RequestContextValue } from '../common/tenancy/request-context';
 import { OrganizationRepository } from '../organizations/organization.repository';
 import {

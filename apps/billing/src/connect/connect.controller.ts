@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { AuthenticatedUser } from '../auth/types/authenticated-user';
+import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { ConnectService, ConnectStatusResponse } from './connect.service';
 import { OnboardConnectDto } from './dto/onboard-connect.dto';
 

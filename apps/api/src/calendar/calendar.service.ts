@@ -11,10 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import {
   CalendarProvider as CalendarProviderEnum,
 } from '@shedflow/db';
-import {
-  DOMAIN_EVENTS,
-  isOutlookCalendarEnabled,
-} from '@shedflow/shared';
+import { DOMAIN_EVENTS, isOutlookCalendarEnabled } from '@shedflow/shared';
 import { randomBytes } from 'node:crypto';
 import {
   DEV_ENCRYPTION_KEY_BASE64,

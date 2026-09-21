@@ -57,7 +57,7 @@ export function BookingDetailSheet({
     }
   }, [booking]);
 
-  const invalidate = async (next?: Booking) => {
+  const invalidate = async (next?: Booking | null) => {
     await queryClient.invalidateQueries({ queryKey: ["bookings", organization.id] });
     await queryClient.invalidateQueries({ queryKey: ["customers", organization.id] });
     onUpdated(next ?? null);

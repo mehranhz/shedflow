@@ -15,12 +15,7 @@ import {
   PlatformPlan,
   Role,
 } from '@shedflow/db';
-import {
-  BookingAnswersSchema,
-  DOMAIN_EVENTS,
-  isValidTimeZone,
-  type BookingAnswers,
-} from '@shedflow/shared';
+import { BookingAnswersSchema, DOMAIN_EVENTS, isValidTimeZone, type BookingAnswers } from '@shedflow/shared';
 import { Clock } from '../common/clock/clock';
 import {
   Page,

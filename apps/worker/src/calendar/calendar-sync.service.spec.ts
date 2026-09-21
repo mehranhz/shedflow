@@ -1,8 +1,6 @@
 import { ConfigService } from '@nestjs/config';
-import {
-  DEV_ENCRYPTION_KEY_BASE64,
-  EnvelopeCrypto,
-} from '@shedflow/shared';
+import { DEV_ENCRYPTION_KEY_BASE64, EnvelopeCrypto } from '@shedflow/shared/envelope';
+
 import { CalendarSyncService } from './calendar-sync.service';
 import { CalendarTokenService } from './calendar-token.service';
 import { FakeCalendarProvider } from './fake-calendar.provider';

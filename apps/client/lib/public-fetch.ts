@@ -1,4 +1,3 @@
-import { PUBLIC_API_URL } from "@/lib/public-config";
 import { ClientApiError, isMissingRoute } from "@/lib/http";
 
 export type PublicFetchKind = "ok" | "not_found" | "unavailable";
@@ -6,6 +5,11 @@ export type PublicFetchKind = "ok" | "not_found" | "unavailable";
 export type PublicFetchResult<T> =
   | { kind: "ok"; data: T }
   | { kind: "not_found" | "unavailable"; data: null };
+
+/** Server-side Nest base URL (never needs NEXT_PUBLIC_; browser uses BFF). */
+function serverApiBase(): string {
+  return process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+}
 
 function messageFromBody(body: unknown): string {
   if (!body || typeof body !== "object") {
@@ -47,7 +51,7 @@ export function isPublicApiUnavailable(error: unknown): boolean {
 export async function fetchPublicJson<T>(path: string): Promise<PublicFetchResult<T>> {
   try {
     const normalized = path.startsWith("/") ? path : `/${path}`;
-    const response = await fetch(`${PUBLIC_API_URL}${normalized}`, {
+    const response = await fetch(`${serverApiBase()}${normalized}`, {
       cache: "no-store",
     });
     if (response.ok) {

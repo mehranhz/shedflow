@@ -6,10 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { LocationType, PlatformPlan, Role } from '@shedflow/db';
-import {
-  EventTypeQuestionsSchema,
-  type EventTypeQuestions,
-} from '@shedflow/shared';
+import { EventTypeQuestionsSchema, type EventTypeQuestions } from '@shedflow/shared';
 import { UniqueConstraintError } from '../common/persistence';
 import { MembershipRepository } from '../memberships/membership.repository';
 import { OrganizationRepository } from '../organizations/organization.repository';

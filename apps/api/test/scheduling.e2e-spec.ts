@@ -1,16 +1,11 @@
 import { config } from 'dotenv';
+import { INTERNAL_SIGNATURE_HEADER, INTERNAL_TIMESTAMP_HEADER, signInternalRequest, internalTimestamp } from '@shedflow/shared/internalAuth';
 import { resolve } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { randomUUID } from 'node:crypto';
-import {
-  INTERNAL_SIGNATURE_HEADER,
-  INTERNAL_TIMESTAMP_HEADER,
-  internalTimestamp,
-  signInternalRequest,
-} from '@shedflow/shared';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/app.setup';
 import { PrismaService } from './../src/prisma/prisma.service';

@@ -32,6 +32,7 @@ import { postEmbedBooked } from "@/lib/embed-messages";
 import { ClientApiError } from "@/lib/http";
 import { publicScheduling } from "@/lib/scheduling";
 import type { PublicEventType, PublicOrg, Question, Slot } from "@/lib/types";
+import { randomUUID } from "@/lib/uuid";
 
 function locationIcon(type: PublicEventType["locationType"]) {
   if (type === "GOOGLE_MEET" || type === "LINK") {
@@ -138,7 +139,7 @@ export function SlotPicker({
           metadata: { privacyAcceptedAt: new Date().toISOString() },
           source: embed ? "EMBED" : "HOSTED",
         },
-        crypto.randomUUID(),
+        randomUUID(),
       );
       saveBookingSession(result.data.uid, {
         orgSlug,

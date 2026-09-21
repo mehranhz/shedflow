@@ -8,12 +8,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { INTERNAL_SIGNATURE_HEADER, INTERNAL_TIMESTAMP_HEADER, verifyInternalRequest } from '@shedflow/shared/internalAuth';
 import { PlatformPlan } from '@shedflow/db';
-import {
-  INTERNAL_SIGNATURE_HEADER,
-  INTERNAL_TIMESTAMP_HEADER,
-  verifyInternalRequest,
-} from '@shedflow/shared';
+
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 import type { Request } from 'express';
 import { Public } from '../auth/decorators/public.decorator';

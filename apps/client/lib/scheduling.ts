@@ -10,6 +10,7 @@ import { previewStore, slugify, defaultQuestions } from "@/lib/preview-store";
 import { publicApi } from "@/lib/public-api";
 import { isPublicApiUnavailable } from "@/lib/public-fetch";
 import { generateSlots } from "@/lib/slots";
+import { randomUUID } from "@/lib/uuid";
 import type {
   AvailabilityRule,
   Booking,
@@ -95,7 +96,7 @@ export const orgsApi = {
         throw error;
       }
       const invitation: Invitation = {
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         organizationId: orgId,
         email: body.email,
         role: body.role,
@@ -229,9 +230,9 @@ export const schedulingApi = {
     const previewScheduleId =
       ("scheduleId" in payload && payload.scheduleId) ||
       previewStore.listSchedules(org.id)[0]?.id ||
-      crypto.randomUUID();
+      randomUUID();
     const eventType: EventType = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       organizationId: org.id,
       hostUserId,
       priceId: null,
@@ -454,7 +455,7 @@ export const schedulingApi = {
       apiBff<Booking>(`organizations/${org.id}/bookings`, {
         method: "POST",
         body: JSON.stringify(input),
-        idempotencyKey: crypto.randomUUID(),
+        idempotencyKey: randomUUID(),
       }),
     );
     if (api) {
@@ -468,7 +469,7 @@ export const schedulingApi = {
     }
     const now = new Date().toISOString();
     const customer = previewStore.upsertCustomer(org.id, {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       organizationId: org.id,
       email: input.invitee.email,
       name: input.invitee.name,
@@ -480,7 +481,7 @@ export const schedulingApi = {
     });
     const start = new Date(input.startAt);
     const booking: Booking = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       uid: previewStore.newUid(),
       organizationId: org.id,
       eventTypeId: eventType.id,
@@ -784,7 +785,7 @@ export const publicScheduling = {
     }
     const now = new Date().toISOString();
     const customer = previewStore.upsertCustomer(bundle.org.id, {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       organizationId: bundle.org.id,
       email: body.invitee.email,
       name: body.invitee.name,
@@ -802,7 +803,7 @@ export const publicScheduling = {
         ? "PENDING_CONFIRMATION"
         : "CONFIRMED";
     const booking: PublicBookingResult = {
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       uid: previewStore.newUid(),
       organizationId: bundle.org.id,
       eventTypeId: eventType.id,

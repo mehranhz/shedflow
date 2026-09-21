@@ -1,11 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { assertSafeWebhookUrlResolved } from '@shedflow/shared/ssrf';
+import { signWebhookPayload, webhookRetryDelayMs } from '@shedflow/shared/webhooks';
 import { ConfigService } from '@nestjs/config';
 import { WebhookDeliveryStatus } from '@shedflow/db';
-import {
-  assertSafeWebhookUrlResolved,
-  signWebhookPayload,
-  webhookRetryDelayMs,
-} from '@shedflow/shared';
+
 import { createDecipheriv, createHash } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { DomainEventJob, PgBossService } from '../queue/pg-boss.service';

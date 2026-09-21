@@ -1,10 +1,6 @@
-import {
-  assertSafeWebhookUrl,
-  isPrivateIp,
-  signWebhookPayload,
-  verifyWebhookSignature,
-  webhookRetryDelayMs,
-} from '@shedflow/shared';
+import { assertSafeWebhookUrl, isPrivateIp } from '@shedflow/shared/ssrf';
+import { signWebhookPayload, verifyWebhookSignature, webhookRetryDelayMs } from '@shedflow/shared/webhooks';
+
 
 describe('shared ssrf + webhooks', () => {
   it('rejects non-HTTPS and private webhook URLs', () => {

@@ -7,11 +7,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  INTERNAL_SIGNATURE_HEADER,
-  INTERNAL_TIMESTAMP_HEADER,
-  verifyInternalRequest,
-} from '@shedflow/shared';
+import { INTERNAL_SIGNATURE_HEADER, INTERNAL_TIMESTAMP_HEADER, verifyInternalRequest } from '@shedflow/shared/internalAuth';
+
 import type { Request } from 'express';
 import { Public } from '../auth/decorators/public.decorator';
 import { Clock } from '../common/clock/clock';

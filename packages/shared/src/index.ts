@@ -10,7 +10,9 @@ export * from './org-settings.js';
 export * from './questions.js';
 export * from './idempotency.js';
 export * from './auth.js';
-export * from './internalAuth.js';
-export * from './envelope.js';
-export * from './ssrf.js';
-export * from './webhooks.js';
+export * from './api-keys.js';
+
+// Node-only modules (dns/net/crypto) are NOT re-exported here — importing
+// `@shedflow/shared` from the Next.js client would pull them into the browser
+// bundle and crash. Use subpaths: `@shedflow/shared/ssrf`, `/webhooks`,
+// `/envelope`, `/internalAuth`.

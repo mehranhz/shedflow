@@ -20,6 +20,7 @@ import { TimezoneCombobox } from "@/components/timezone-combobox";
 import { apiBff } from "@/lib/bff";
 import { guessTimeZone } from "@/lib/timezones";
 import type { Organization } from "@/lib/types";
+import { randomUUID } from "@/lib/uuid";
 
 export function CreateWorkspaceForm({ email }: { email: string }) {
   const router = useRouter();
@@ -47,7 +48,7 @@ export function CreateWorkspaceForm({ email }: { email: string }) {
               const org = await apiBff<Organization>("organizations", {
                 method: "POST",
                 body: JSON.stringify({ name, timezone }),
-                idempotencyKey: crypto.randomUUID(),
+                idempotencyKey: randomUUID(),
               });
               const switched = await apiBff<{ accessToken: string }>(
                 `organizations/${org.id}/switch`,

@@ -272,15 +272,14 @@ export class MembershipsService {
   }
 
   private invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
-    const raw =
-      typeof invoice.subscription === 'string'
-        ? invoice.subscription
-        : invoice.subscription &&
-            typeof invoice.subscription === 'object' &&
-            'id' in invoice.subscription
-          ? (invoice.subscription as { id: string }).id
-          : null;
-    return raw;
+    const raw = invoice.parent?.subscription_details?.subscription;
+    if (typeof raw === 'string') {
+      return raw;
+    }
+    if (raw && typeof raw === 'object' && 'id' in raw) {
+      return raw.id;
+    }
+    return null;
   }
 
   private async resolveOrgFromCustomer(

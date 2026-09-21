@@ -1,7 +1,5 @@
-import {
-  DEV_ENCRYPTION_KEY_BASE64,
-  EnvelopeCrypto,
-} from '@shedflow/shared';
+import { DEV_ENCRYPTION_KEY_BASE64, EnvelopeCrypto } from '@shedflow/shared/envelope';
+
 
 describe('EnvelopeCrypto', () => {
   it('round-trips plaintext', () => {

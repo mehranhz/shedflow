@@ -1,10 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { INTERNAL_SIGNATURE_HEADER, INTERNAL_TIMESTAMP_HEADER, verifyInternalRequest } from '@shedflow/shared/internalAuth';
 import { ConfigService } from '@nestjs/config';
-import {
-  INTERNAL_SIGNATURE_HEADER,
-  INTERNAL_TIMESTAMP_HEADER,
-  verifyInternalRequest,
-} from '@shedflow/shared';
+
 import type { Request } from 'express';
 
 @Injectable()

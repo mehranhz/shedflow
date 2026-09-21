@@ -1,12 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  FEATURE_FLAG_VALUES,
-  FEATURE_FLAGS,
-  isEnabled,
-  isOutlookCalendarEnabled,
-  type FeatureFlag,
-} from '@shedflow/shared';
+import { FEATURE_FLAG_VALUES, FEATURE_FLAGS, isEnabled, isOutlookCalendarEnabled, type FeatureFlag } from '@shedflow/shared';
 import { OrganizationRepository } from '../organizations/organization.repository';
 
 @Injectable()

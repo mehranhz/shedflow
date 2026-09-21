@@ -295,7 +295,7 @@ describe('Paid bookings checkout (T-021)', () => {
       internalTimestamp,
       INTERNAL_SIGNATURE_HEADER,
       INTERNAL_TIMESTAMP_HEADER,
-    } = require('@shedflow/shared') as typeof import('@shedflow/shared');
+    } = require('@shedflow/shared/internalAuth') as typeof import('@shedflow/shared/internalAuth');
     const path = '/internal/checkout-sessions';
     const timestamp = internalTimestamp();
     const signature = signInternalRequest({

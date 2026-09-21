@@ -1,7 +1,5 @@
-import {
-  signInternalRequest,
-  verifyInternalRequest,
-} from '@shedflow/shared';
+import { signInternalRequest, verifyInternalRequest } from '@shedflow/shared/internalAuth';
+
 
 describe('internalAuth', () => {
   const secret = 'test-internal-secret';

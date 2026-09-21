@@ -1,12 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { INTERNAL_SIGNATURE_HEADER, INTERNAL_TIMESTAMP_HEADER, signInternalRequest, internalTimestamp } from '@shedflow/shared/internalAuth';
 import { ConfigService } from '@nestjs/config';
-import {
-  INTERNAL_SIGNATURE_HEADER,
-  INTERNAL_TIMESTAMP_HEADER,
-  internalTimestamp,
-  signInternalRequest,
-} from '@shedflow/shared';
-
 export type ConsumeCreditsRequest = {
   organizationId: string;
   customerId: string;

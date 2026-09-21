@@ -15,6 +15,9 @@ export class InvoicesService {
   ) {}
 
   async upsertFromStripe(invoice: Stripe.Invoice): Promise<void> {
+    if (!invoice.id) {
+      return;
+    }
     const organizationId = await this.resolveOrganizationId(invoice);
     if (!organizationId) {
       return;
@@ -38,6 +41,9 @@ export class InvoicesService {
 
   async applyPaymentFailed(invoice: Stripe.Invoice): Promise<void> {
     await this.upsertFromStripe(invoice);
+    if (!invoice.id) {
+      return;
+    }
     const organizationId = await this.resolveOrganizationId(invoice);
     if (!organizationId) {
       return;
@@ -103,12 +109,12 @@ export class InvoicesService {
   }
 
   private subscriptionId(invoice: Stripe.Invoice): string | null {
-    const raw = invoice.subscription;
+    const raw = invoice.parent?.subscription_details?.subscription;
     if (typeof raw === 'string') {
       return raw;
     }
     if (raw && typeof raw === 'object' && 'id' in raw) {
-      return (raw as { id: string }).id;
+      return raw.id;
     }
     return null;
   }

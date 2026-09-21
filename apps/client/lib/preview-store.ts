@@ -11,6 +11,7 @@ import type {
   Schedule,
 } from "@/lib/types";
 import { defaultWeeklyRules } from "@/lib/slots";
+import { randomUUID } from "@/lib/uuid";
 
 const STORAGE_KEY = "sf-preview-v1";
 
@@ -78,7 +79,7 @@ function ensureBundle(org: Organization, hostUserId: string): OrgBundle {
   }
   const now = new Date().toISOString();
   const schedule: Schedule = {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     organizationId: org.id,
     hostUserId,
     name: "Working hours",

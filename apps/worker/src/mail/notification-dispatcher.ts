@@ -6,11 +6,7 @@ import {
   NotificationStatus,
   Prisma,
 } from '@shedflow/db';
-import {
-  DOMAIN_EVENTS,
-  EMAIL_TEMPLATES,
-  type EmailTemplateName,
-} from '@shedflow/shared';
+import { DOMAIN_EVENTS, EMAIL_TEMPLATES, type EmailTemplateName } from '@shedflow/shared';
 import {
   renderBookingCancelledHost,
   renderBookingCancelledInvitee,

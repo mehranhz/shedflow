@@ -209,7 +209,7 @@ export class RefundsService {
     const membership = await this.prisma.membership.findFirst({
       where: {
         organizationId: orgId,
-        userId: user.userId,
+        userId: user.id,
         status: MembershipStatus.ACTIVE,
       },
     });

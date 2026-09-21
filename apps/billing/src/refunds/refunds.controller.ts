@@ -1,7 +1,7 @@
 import { Body, Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { IsInt, IsOptional, IsPositive, IsString, MaxLength } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { AuthenticatedUser } from '../auth/types/authenticated-user';
+import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { RefundsService } from './refunds.service';
 
 class CreateRefundDto {

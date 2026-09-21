@@ -1,7 +1,7 @@
 import { Body, Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { IsIn } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { AuthenticatedUser } from '../auth/types/authenticated-user';
+import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { PlatformBillingService } from './platform-billing.service';
 
 class PlatformCheckoutDto {

@@ -1,10 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { DEV_ENCRYPTION_KEY_BASE64, EnvelopeCrypto } from '@shedflow/shared/envelope';
 import { ConfigService } from '@nestjs/config';
 import { CalendarProvider as CalendarProviderEnum } from '@shedflow/db';
-import {
-  DEV_ENCRYPTION_KEY_BASE64,
-  EnvelopeCrypto,
-} from '@shedflow/shared';
+
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CALENDAR_PROVIDER,

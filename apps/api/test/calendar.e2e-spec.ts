@@ -1,14 +1,12 @@
 import { config } from 'dotenv';
+import { DEV_ENCRYPTION_KEY_BASE64, EnvelopeCrypto } from '@shedflow/shared/envelope';
 import { resolve } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { CalendarProvider } from '@shedflow/db';
-import {
-  DEV_ENCRYPTION_KEY_BASE64,
-  EnvelopeCrypto,
-} from '@shedflow/shared';
+
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/app.setup';
 import { PrismaService } from './../src/prisma/prisma.service';

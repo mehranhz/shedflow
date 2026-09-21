@@ -10,6 +10,30 @@
       "require": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./ssrf": {
+      "types": "./dist/ssrf.d.ts",
+      "import": "./dist/ssrf.js",
+      "require": "./dist/ssrf.js",
+      "default": "./dist/ssrf.js"
+    },
+    "./webhooks": {
+      "types": "./dist/webhooks.d.ts",
+      "import": "./dist/webhooks.js",
+      "require": "./dist/webhooks.js",
+      "default": "./dist/webhooks.js"
+    },
+    "./envelope": {
+      "types": "./dist/envelope.d.ts",
+      "import": "./dist/envelope.js",
+      "require": "./dist/envelope.js",
+      "default": "./dist/envelope.js"
+    },
+    "./internalAuth": {
+      "types": "./dist/internalAuth.d.ts",
+      "import": "./dist/internalAuth.js",
+      "require": "./dist/internalAuth.js",
+      "default": "./dist/internalAuth.js"
+    },
     "./openapi/v1.yaml": "./openapi/v1.yaml"
   },
   "main": "./dist/index.js",

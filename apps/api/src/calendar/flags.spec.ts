@@ -1,8 +1,4 @@
-import {
-  FEATURE_FLAGS,
-  isEnabled,
-  isOutlookCalendarEnabled,
-} from '@shedflow/shared';
+import { FEATURE_FLAGS, isEnabled, isOutlookCalendarEnabled } from '@shedflow/shared';
 
 describe('feature flags (T-017 / T-038 lite)', () => {
   it('reads FLAGS env', () => {
