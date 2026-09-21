@@ -38,6 +38,26 @@ Deps stage uses `pnpm install --ignore-scripts` so Prisma generate runs after th
 
 Optional VPS stack: `docker compose -f docker-compose.prod.yml up -d --build` (run `migrate` service once first).
 
+## Observability (T-035)
+
+| Surface | Port / path |
+| --- | --- |
+| Next.js client | `:3000` |
+| Grafana | `:3300` → container 3000 |
+| Prometheus | `:9350` |
+| Alertmanager | `:9351` |
+| API /metrics | `:3001/metrics` (private network only) |
+| Billing /metrics | `:3002/metrics` |
+| Worker /metrics | `:3003/metrics` |
+
+```bash
+docker compose --profile observability up -d
+# Login Grafana admin/admin at http://localhost:3300
+# Dashboard: SchedFlow overview (provisioned)
+```
+
+OTel export when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; Sentry when `SENTRY_DSN` is set.
+
 ## CI
 
 GitHub Actions workflow: `.github/workflows/ci.yml` (lint, unit, format check, API e2e with Postgres service, build).

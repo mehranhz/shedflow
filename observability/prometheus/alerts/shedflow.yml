@@ -1,0 +1,74 @@
+groups:
+  - name: shedflow
+    rules:
+      - alert: ApiDown
+        expr: up{job="shedflow-api"} == 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: SchedFlow API is down
+          runbook: docs/runbooks/service-down.md
+
+      - alert: BillingDown
+        expr: up{job="shedflow-billing"} == 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: SchedFlow billing is down
+          runbook: docs/runbooks/service-down.md
+
+      - alert: WorkerDown
+        expr: up{job="shedflow-worker"} == 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: SchedFlow worker is down
+          runbook: docs/runbooks/service-down.md
+
+      - alert: High5xx
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_requests_total[5m])), 1e-9)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: HTTP 5xx rate above 5%
+          runbook: docs/runbooks/service-down.md
+
+      - alert: SlotLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(slot_query_duration_seconds_bucket[10m])) by (le)
+          ) > 1
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: Slot query p95 above 1s
+          runbook: docs/runbooks/booking-create-failing.md
+
+      - alert: OutboxLag
+        expr: outbox_pending > 100
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: Domain outbox backlog over 100
+          runbook: docs/runbooks/outbox-lag.md
+
+      - alert: FailedJobs
+        expr: increase(pgboss_failed_jobs[15m]) > 5
+        for: 15m
+        labels:
+          severity: ticket
+        annotations:
+          summary: pg-boss failed jobs increasing
+          runbook: docs/runbooks/outbox-lag.md

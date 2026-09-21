@@ -43,6 +43,8 @@ export class PrismaOrganizationRepository
       logoUrl: record.logoUrl,
       brandColor: record.brandColor,
       platformPlan: record.platformPlan,
+      platformStripeCustomerId: record.platformStripeCustomerId,
+      platformStripeSubscriptionId: record.platformStripeSubscriptionId,
       settings: asSettings(record.settings),
       deletedAt: record.deletedAt,
       createdAt: record.createdAt,

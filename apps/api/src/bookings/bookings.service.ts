@@ -12,6 +12,7 @@ import { addMinutes } from 'date-fns';
 import {
   BookingSource,
   BookingStatus,
+  PlatformPlan,
   Role,
 } from '@shedflow/db';
 import {
@@ -396,6 +397,15 @@ export class BookingsService {
 
         const endAt = addMinutes(input.startAt, eventType.durationMinutes);
         const paid = Boolean(eventType.priceId);
+        if (paid) {
+          const org = await this.organizations.findActiveById(organizationId);
+          if (!org || org.platformPlan !== PlatformPlan.PRO) {
+            throw new ForbiddenException({
+              code: 'FEATURE_GATED',
+              message: 'Paid bookings require a Pro plan',
+            });
+          }
+        }
         creditCost = !paid && eventType.creditCost > 0 ? eventType.creditCost : 0;
         creditCustomerId = creditCost > 0 ? customer.id : null;
         const status = paid

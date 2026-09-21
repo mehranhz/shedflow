@@ -22,6 +22,10 @@ export const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_WEBHOOK_URL: z.string().url().optional(),
+  MICROSOFT_CLIENT_ID: z.string().optional(),
+  MICROSOFT_CLIENT_SECRET: z.string().optional(),
+  MICROSOFT_TENANT: z.string().optional(),
+  MICROSOFT_WEBHOOK_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -45,6 +49,10 @@ export function validateEnv(
     GOOGLE_CLIENT_ID: config.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: config.GOOGLE_CLIENT_SECRET,
     GOOGLE_WEBHOOK_URL: config.GOOGLE_WEBHOOK_URL,
+    MICROSOFT_CLIENT_ID: config.MICROSOFT_CLIENT_ID,
+    MICROSOFT_CLIENT_SECRET: config.MICROSOFT_CLIENT_SECRET,
+    MICROSOFT_TENANT: config.MICROSOFT_TENANT,
+    MICROSOFT_WEBHOOK_URL: config.MICROSOFT_WEBHOOK_URL,
   });
 
   return { ...config, ...parsed };

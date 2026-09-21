@@ -96,6 +96,8 @@ class InMemoryOrganizationRepository
       logoUrl: data.logoUrl ?? null,
       brandColor: data.brandColor ?? null,
       platformPlan: 'FREE',
+      platformStripeCustomerId: null,
+      platformStripeSubscriptionId: null,
       settings: data.settings ?? {},
       deletedAt: null,
       createdAt: now,

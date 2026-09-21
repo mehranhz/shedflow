@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { CalendarProvider as CalendarProviderEnum } from '@shedflow/db';
 import {
   DEV_ENCRYPTION_KEY_BASE64,
   EnvelopeCrypto,
@@ -9,6 +10,7 @@ import {
   CALENDAR_PROVIDER,
   CalendarProvider,
   CalendarTokens,
+  MICROSOFT_CALENDAR_PROVIDER,
 } from './calendar-provider';
 
 @Injectable()
@@ -19,11 +21,29 @@ export class CalendarTokenService {
   constructor(
     private readonly prisma: PrismaService,
     config: ConfigService,
-    @Inject(CALENDAR_PROVIDER) private readonly provider: CalendarProvider,
+    @Inject(CALENDAR_PROVIDER) private readonly google: CalendarProvider,
+    @Inject(MICROSOFT_CALENDAR_PROVIDER)
+    private readonly microsoft: CalendarProvider,
   ) {
     const key =
       config.get<string>('ENCRYPTION_KEY')?.trim() || DEV_ENCRYPTION_KEY_BASE64;
     this.crypto = new EnvelopeCrypto(key);
+  }
+
+  providerFor(
+    provider: CalendarProviderEnum | 'GOOGLE' | 'MICROSOFT',
+  ): CalendarProvider {
+    if (provider === CalendarProviderEnum.MICROSOFT) {
+      return this.microsoft;
+    }
+    return this.google;
+  }
+
+  private enc(plaintext: string): Uint8Array<ArrayBuffer> {
+    const encrypted = this.crypto.encrypt(plaintext);
+    const bytes = new Uint8Array(encrypted.byteLength);
+    bytes.set(encrypted);
+    return bytes;
   }
 
   decryptTokens(connection: {
@@ -32,14 +52,15 @@ export class CalendarTokenService {
     tokenExpiresAt: Date;
   }): CalendarTokens {
     return {
-      accessToken: this.crypto.decrypt(Buffer.from(connection.accessTokenEnc)),
-      refreshToken: this.crypto.decrypt(Buffer.from(connection.refreshTokenEnc)),
+      accessToken: this.crypto.decrypt(connection.accessTokenEnc),
+      refreshToken: this.crypto.decrypt(connection.refreshTokenEnc),
       expiresAt: connection.tokenExpiresAt,
     };
   }
 
   async ensureFreshTokens(connection: {
     id: string;
+    provider: CalendarProviderEnum;
     accessTokenEnc: Buffer | Uint8Array;
     refreshTokenEnc: Buffer | Uint8Array;
     tokenExpiresAt: Date;
@@ -48,13 +69,14 @@ export class CalendarTokenService {
     if (tokens.expiresAt.getTime() > Date.now() + 60_000) {
       return tokens;
     }
+    const provider = this.providerFor(connection.provider);
     try {
-      const refreshed = await this.provider.refresh(tokens);
+      const refreshed = await provider.refresh(tokens);
       await this.prisma.calendarConnection.update({
         where: { id: connection.id },
         data: {
-          accessTokenEnc: this.crypto.encrypt(refreshed.accessToken),
-          refreshTokenEnc: this.crypto.encrypt(refreshed.refreshToken),
+          accessTokenEnc: this.enc(refreshed.accessToken),
+          refreshTokenEnc: this.enc(refreshed.refreshToken),
           tokenExpiresAt: refreshed.expiresAt,
           needsReauth: false,
         },
@@ -80,7 +102,6 @@ export class CalendarTokenService {
         return parsed as Record<string, string>;
       }
     } catch {
-      // legacy single token — treat as primary
       return { primary: raw };
     }
     return {};

@@ -1,11 +1,7 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { LocationType, Prisma } from '@shedflow/db';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  CALENDAR_PROVIDER,
-  CalendarEventInput,
-  CalendarProvider,
-} from './calendar-provider';
+import type { CalendarEventInput } from './calendar-provider';
 import type { CalendarWriteJobPayload } from './calendar.constants';
 import { CalendarTokenService } from './calendar-token.service';
 
@@ -21,7 +17,6 @@ export class CalendarWriteService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokens: CalendarTokenService,
-    @Inject(CALENDAR_PROVIDER) private readonly provider: CalendarProvider,
   ) {}
 
   async handle(payload: CalendarWriteJobPayload): Promise<void> {
@@ -56,6 +51,7 @@ export class CalendarWriteService {
     }
 
     const writeCal = connection.calendars[0]!;
+    const provider = this.tokens.providerFor(connection.provider);
     let auth;
     try {
       auth = await this.tokens.ensureFreshTokens(connection);
@@ -70,7 +66,7 @@ export class CalendarWriteService {
         return;
       }
       try {
-        await this.provider.deleteEvent(
+        await provider.deleteEvent(
           auth,
           meta.googleCalendarId ?? writeCal.externalId,
           meta.googleEventId,
@@ -102,7 +98,7 @@ export class CalendarWriteService {
 
     const input = this.buildEventInput(booking);
     if (meta.googleEventId) {
-      await this.provider.updateEvent(
+      await provider.updateEvent(
         auth,
         meta.googleCalendarId ?? writeCal.externalId,
         meta.googleEventId,
@@ -131,7 +127,7 @@ export class CalendarWriteService {
       return;
     }
 
-    const created = await this.provider.createEvent(
+    const created = await provider.createEvent(
       auth,
       writeCal.externalId,
       input,

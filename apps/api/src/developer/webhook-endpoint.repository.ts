@@ -6,12 +6,19 @@ export type WebhookEndpointRecord = {
   id: string;
   organizationId: string;
   url: string;
-  secretEnc: Buffer;
+  secretEnc: Uint8Array;
   events: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
+
+/** Prisma `Bytes` expects ArrayBuffer-backed Uint8Array under strict DOM libs. */
+function toPrismaBytes(value: Buffer | Uint8Array): Uint8Array<ArrayBuffer> {
+  const bytes = new Uint8Array(value.byteLength);
+  bytes.set(value);
+  return bytes;
+}
 
 export type WebhookDeliveryRecord = {
   id: string;
@@ -33,14 +40,14 @@ export class WebhookEndpointRepository {
   async create(data: {
     organizationId: string;
     url: string;
-    secretEnc: Buffer;
+    secretEnc: Buffer | Uint8Array;
     events: string[];
   }): Promise<WebhookEndpointRecord> {
     return this.prisma.webhookEndpoint.create({
       data: {
         organizationId: data.organizationId,
         url: data.url,
-        secretEnc: data.secretEnc,
+        secretEnc: toPrismaBytes(data.secretEnc),
         events: data.events,
       },
     });

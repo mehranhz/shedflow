@@ -300,8 +300,8 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
             </div>
           </div>
           <div className="grid gap-2">
-            <Label>{tf("duration")}</Label>
-            <div className="flex flex-wrap gap-2">
+            <Label id="et-duration-label">{tf("duration")}</Label>
+            <div className="flex flex-wrap gap-2" role="group" aria-labelledby="et-duration-label">
               {DURATIONS.map((item) => (
                 <Button
                   key={item}
@@ -316,8 +316,10 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
                 </Button>
               ))}
               <Input
+                id="et-custom-duration"
                 className="w-28"
                 inputMode="numeric"
+                aria-label={tf("customDuration")}
                 placeholder={tf("customDuration")}
                 value={customDuration}
                 onChange={(event: ChangeEvent<HTMLInputElement>) =>
@@ -327,12 +329,12 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
             </div>
           </div>
           <div className="grid gap-2">
-            <Label>{tf("location")}</Label>
+            <Label htmlFor="et-location">{tf("location")}</Label>
             <Select
               value={locationType}
               onValueChange={(value: string) => setLocationType(value as LocationType)}
             >
-              <SelectTrigger>
+              <SelectTrigger id="et-location">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -378,8 +380,9 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-2">
-            <Label>{tf("minNotice")}</Label>
+            <Label htmlFor="et-min-notice">{tf("minNotice")}</Label>
             <Input
+              id="et-min-notice"
               type="number"
               min={0}
               value={minNotice}
@@ -389,8 +392,9 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
             />
           </div>
           <div className="grid gap-2">
-            <Label>{tf("dateRange")}</Label>
+            <Label htmlFor="et-date-range">{tf("dateRange")}</Label>
             <Input
+              id="et-date-range"
               type="number"
               min={1}
               value={maxDays}
@@ -400,8 +404,9 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
             />
           </div>
           <div className="grid gap-2">
-            <Label>{tf("bufferBefore")}</Label>
+            <Label htmlFor="et-buffer-before">{tf("bufferBefore")}</Label>
             <Input
+              id="et-buffer-before"
               type="number"
               min={0}
               value={bufferBefore}
@@ -411,8 +416,9 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
             />
           </div>
           <div className="grid gap-2">
-            <Label>{tf("bufferAfter")}</Label>
+            <Label htmlFor="et-buffer-after">{tf("bufferAfter")}</Label>
             <Input
+              id="et-buffer-after"
               type="number"
               min={0}
               value={bufferAfter}
@@ -422,8 +428,9 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
             />
           </div>
           <div className="grid gap-2">
-            <Label>{tf("slotInterval")}</Label>
+            <Label htmlFor="et-slot-interval">{tf("slotInterval")}</Label>
             <Input
+              id="et-slot-interval"
               type="number"
               min={0}
               value={slotInterval}
@@ -433,8 +440,9 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
             />
           </div>
           <div className="grid gap-2">
-            <Label>{tf("dailyCap")}</Label>
+            <Label htmlFor="et-daily-cap">{tf("dailyCap")}</Label>
             <Input
+              id="et-daily-cap"
               type="number"
               min={1}
               value={dailyCap}
@@ -445,8 +453,9 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
             />
           </div>
           <div className="grid gap-2">
-            <Label>{tf("cancelNotice")}</Label>
+            <Label htmlFor="et-cancel-notice">{tf("cancelNotice")}</Label>
             <Input
+              id="et-cancel-notice"
               type="number"
               min={0}
               value={cancellationNotice}
@@ -456,8 +465,9 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
             />
           </div>
           <div className="grid gap-2">
-            <Label>{tf("rescheduleNotice")}</Label>
+            <Label htmlFor="et-reschedule-notice">{tf("rescheduleNotice")}</Label>
             <Input
+              id="et-reschedule-notice"
               type="number"
               min={0}
               value={rescheduleNotice}
@@ -507,8 +517,9 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
               <p className="text-sm text-muted-foreground">{tf("paymentsHint")}</p>
             </div>
             <div className="grid gap-2">
-              <Label>{tf("creditCost")}</Label>
+              <Label htmlFor="et-credit-cost">{tf("creditCost")}</Label>
               <Input
+                id="et-credit-cost"
                 type="number"
                 min={0}
                 value={creditCost}
@@ -518,8 +529,9 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
               />
             </div>
             <div className="grid gap-2">
-              <Label>{tf("priceId")}</Label>
+              <Label htmlFor="et-price-id">{tf("priceId")}</Label>
               <Input
+                id="et-price-id"
                 value={seed?.priceId ?? ""}
                 disabled
                 placeholder={tf("pricePlaceholder")}

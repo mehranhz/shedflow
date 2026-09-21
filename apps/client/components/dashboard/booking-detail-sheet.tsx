@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/status-badge";
 import { canManageWorkspace, useOrg } from "@/components/org-provider";
-import { schedulingApi } from "@/lib/scheduling";
+import { billingApi, schedulingApi } from "@/lib/scheduling";
 import type { Booking } from "@/lib/types";
 
 function toLocalInput(iso: string): string {
@@ -46,11 +46,13 @@ export function BookingDetailSheet({
   const [rescheduleLocal, setRescheduleLocal] = useState("");
   const [reason, setReason] = useState("");
   const [showReschedule, setShowReschedule] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
 
   useEffect(() => {
     if (booking) {
       setRescheduleLocal(toLocalInput(booking.startAt));
       setReason("");
+      setRefundReason("");
       setShowReschedule(false);
     }
   }, [booking]);
@@ -125,11 +127,36 @@ export function BookingDetailSheet({
     },
   });
 
+  const refund = useMutation({
+    mutationFn: () => {
+      const paymentId = booking?.paymentId;
+      if (!paymentId) {
+        throw new Error(t("refundUnavailable"));
+      }
+      return billingApi.refundPayment(organization.id, paymentId, {
+        reason: refundReason.trim() || undefined,
+      });
+    },
+    onSuccess: async () => {
+      toast.success(t("refunded"));
+      setRefundReason("");
+      await invalidate(booking);
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : t("refundFailed"));
+    },
+  });
+
   const actionable =
     booking &&
     (booking.status === "CONFIRMED" ||
       booking.status === "PENDING_CONFIRMATION" ||
       booking.status === "PENDING_PAYMENT");
+
+  const showRefund =
+    canRefund &&
+    Boolean(booking?.paymentId) &&
+    (booking?.status === "CONFIRMED" || booking?.status === "NO_SHOW");
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -289,13 +316,29 @@ export function BookingDetailSheet({
                 </div>
               ) : null}
 
-              {canRefund ? (
+              {showRefund ? (
                 <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
                   <p className="font-medium text-foreground">{t("refundTitle")}</p>
                   <p className="mt-1">{t("refundBody")}</p>
-                  <Button className="mt-3" size="sm" variant="secondary" disabled>
-                    {t("refundCta")}
-                  </Button>
+                  <div className="mt-3 grid gap-2">
+                    <Label htmlFor="refund-reason">{t("refundReasonLabel")}</Label>
+                    <Input
+                      id="refund-reason"
+                      value={refundReason}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                        setRefundReason(event.target.value)
+                      }
+                      placeholder={t("refundReasonPlaceholder")}
+                    />
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => refund.mutate()}
+                      disabled={refund.isPending}
+                    >
+                      {refund.isPending ? t("refunding") : t("refundCta")}
+                    </Button>
+                  </div>
                 </div>
               ) : null}
             </div>

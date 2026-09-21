@@ -362,7 +362,9 @@ export default function BillingPage() {
             <div className="grid gap-4 border-t pt-4">
               <div className="grid gap-2 sm:grid-cols-[1fr_140px_auto]">
                 <Input
+                  id="billing-product-name"
                   placeholder={t("productNamePlaceholder")}
+                  aria-label={t("productNamePlaceholder")}
                   value={productName}
                   onChange={(event: ChangeEvent<HTMLInputElement>) =>
                     setProductName(event.target.value)

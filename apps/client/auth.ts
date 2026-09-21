@@ -17,6 +17,7 @@ type AccessTokenClaims = {
   exp?: number;
   orgId?: string;
   role?: "OWNER" | "ADMIN" | "MEMBER";
+  impersonatingOrgId?: string;
 };
 
 const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
@@ -100,6 +101,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           accessToken: undefined,
           orgId: undefined,
           role: undefined,
+          impersonatingOrgId: undefined,
           error: "RefreshTokenError",
         };
       }
@@ -122,6 +124,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           accessTokenExpires: undefined,
           orgId: undefined,
           role: undefined,
+          impersonatingOrgId: undefined,
           error: "RefreshTokenError",
         };
       }
@@ -135,6 +138,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       session.orgId = token.orgId;
       session.role = token.role;
+      session.impersonatingOrgId = token.impersonatingOrgId;
       return session;
     },
   },
@@ -153,6 +157,7 @@ function applyAccessToken(
     token.accessTokenExpires = undefined;
     token.orgId = undefined;
     token.role = undefined;
+    token.impersonatingOrgId = undefined;
     return;
   }
 
@@ -161,12 +166,14 @@ function applyAccessToken(
   token.accessTokenExpires = claims.expires;
   token.orgId = claims.orgId;
   token.role = claims.role;
+  token.impersonatingOrgId = claims.impersonatingOrgId;
 }
 
 function readAccessTokenClaims(accessToken: string): {
   expires?: number;
   orgId?: string;
   role?: "OWNER" | "ADMIN" | "MEMBER";
+  impersonatingOrgId?: string;
 } {
   try {
     const payloadPart = accessToken.split(".")[1];
@@ -184,6 +191,10 @@ function readAccessTokenClaims(accessToken: string): {
         payload.role === "ADMIN" ||
         payload.role === "MEMBER"
           ? payload.role
+          : undefined,
+      impersonatingOrgId:
+        typeof payload.impersonatingOrgId === "string"
+          ? payload.impersonatingOrgId
           : undefined,
     };
   } catch {

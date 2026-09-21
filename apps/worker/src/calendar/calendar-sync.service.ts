@@ -1,5 +1,6 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { CalendarProvider as CalendarProviderEnum } from '@shedflow/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { PgBossService } from '../queue/pg-boss.service';
 import {
@@ -7,7 +8,6 @@ import {
   calendarConnSingletonKey,
   type CalendarSyncJobPayload,
 } from './calendar.constants';
-import { CALENDAR_PROVIDER, CalendarProvider } from './calendar-provider';
 import { CalendarTokenService } from './calendar-token.service';
 
 const FULL_SYNC_PAST_MS = 30 * 24 * 60 * 60 * 1000;
@@ -17,17 +17,20 @@ const FULL_SYNC_FUTURE_MS = 90 * 24 * 60 * 60 * 1000;
 export class CalendarSyncService {
   private readonly logger = new Logger(CalendarSyncService.name);
   private readonly webhookUrl: string;
+  private readonly microsoftWebhookUrl: string;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokens: CalendarTokenService,
     private readonly boss: PgBossService,
     config: ConfigService,
-    @Inject(CALENDAR_PROVIDER) private readonly provider: CalendarProvider,
   ) {
     this.webhookUrl =
       config.get<string>('GOOGLE_WEBHOOK_URL')?.trim() ||
       `${(config.get<string>('API_URL') ?? 'http://localhost:3001').replace(/\/$/, '')}/webhooks/google-calendar`;
+    this.microsoftWebhookUrl =
+      config.get<string>('MICROSOFT_WEBHOOK_URL')?.trim() ||
+      `${(config.get<string>('API_URL') ?? 'http://localhost:3001').replace(/\/$/, '')}/webhooks/microsoft-calendar`;
   }
 
   async fullSync(payload: CalendarSyncJobPayload): Promise<void> {
@@ -35,6 +38,7 @@ export class CalendarSyncService {
     if (!connection || connection.needsReauth) {
       return;
     }
+    const provider = this.tokens.providerFor(connection.provider);
     const auth = await this.tokens.ensureFreshTokens(connection);
     const conflict = connection.calendars.filter((c) => c.conflictCheck);
     const syncMap = this.tokens.readSyncTokenMap(connection.syncToken);
@@ -42,7 +46,7 @@ export class CalendarSyncService {
     const to = new Date(Date.now() + FULL_SYNC_FUTURE_MS);
 
     for (const calendar of conflict) {
-      const result = await this.provider.fullSync(
+      const result = await provider.fullSync(
         auth,
         calendar.externalId,
         from,
@@ -75,6 +79,7 @@ export class CalendarSyncService {
     if (!connection || connection.needsReauth) {
       return;
     }
+    const provider = this.tokens.providerFor(connection.provider);
     const auth = await this.tokens.ensureFreshTokens(connection);
     const conflict = connection.calendars.filter((c) => c.conflictCheck);
     const syncMap = this.tokens.readSyncTokenMap(connection.syncToken);
@@ -86,7 +91,7 @@ export class CalendarSyncService {
         return;
       }
       try {
-        const result = await this.provider.incrementalSync(
+        const result = await provider.incrementalSync(
           auth,
           calendar.externalId,
           existing,
@@ -187,11 +192,16 @@ export class CalendarSyncService {
     ) {
       return;
     }
+    const provider = this.tokens.providerFor(connection.provider);
+    const hook =
+      connection.provider === CalendarProviderEnum.MICROSOFT
+        ? this.microsoftWebhookUrl
+        : this.webhookUrl;
     try {
       const auth = await this.tokens.ensureFreshTokens(connection);
       if (connection.channelId && connection.resourceId) {
         try {
-          await this.provider.stopWatch(
+          await provider.stopWatch(
             auth,
             connection.channelId,
             connection.resourceId,
@@ -200,11 +210,7 @@ export class CalendarSyncService {
           // ignore stop failures
         }
       }
-      const watch = await this.provider.watch(
-        auth,
-        target.externalId,
-        this.webhookUrl,
-      );
+      const watch = await provider.watch(auth, target.externalId, hook);
       await this.prisma.calendarConnection.update({
         where: { id: connection.id },
         data: {

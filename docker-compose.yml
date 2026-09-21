@@ -21,6 +21,12 @@ services:
         read_only: true
         bind:
           create_host_path: false
+      - type: bind
+        source: ./observability/prometheus/alerts
+        target: /etc/prometheus/alerts
+        read_only: true
+        bind:
+          create_host_path: false
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -49,7 +55,8 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SERVER_HTTP_ADDR=0.0.0.0
       - GF_SERVER_HTTP_PORT=3000
-      - GF_SERVER_ROOT_URL=http://localhost:3000
+      # Host port 3300 so Next.js can own :3000 (T-035 / mvp/12).
+      - GF_SERVER_ROOT_URL=http://localhost:3300
       - GF_SERVER_PROTOCOL=http
       - GF_LOG_LEVEL=info
       # Option 2: Use the new preinstall method (replaces deprecated GF_INSTALL_PLUGINS)
@@ -65,7 +72,7 @@ services:
         bind:
           create_host_path: false
     ports:
-      - "3002:3000"
+      - "3300:3000"
     networks:
       - monitoring
     depends_on:

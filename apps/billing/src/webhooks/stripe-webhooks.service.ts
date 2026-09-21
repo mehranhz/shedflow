@@ -4,6 +4,7 @@ import { ConnectService } from '../connect/connect.service';
 import { CheckoutService } from '../checkout/checkout.service';
 import { InvoicesService } from '../invoices/invoices.service';
 import { MembershipsService } from '../memberships/memberships.service';
+import { PlatformBillingService } from '../platform/platform-billing.service';
 import { RefundsService } from '../refunds/refunds.service';
 import { StripeEventRepository } from '../stripe-events/stripe-event.repository';
 
@@ -16,6 +17,7 @@ export class StripeWebhooksService {
     private readonly memberships: MembershipsService,
     private readonly invoices: InvoicesService,
     private readonly refunds: RefundsService,
+    private readonly platform: PlatformBillingService,
   ) {}
 
   async handleEvent(event: Stripe.Event): Promise<{ received: true }> {
@@ -28,11 +30,15 @@ export class StripeWebhooksService {
       case 'account.updated':
         await this.connect.applyAccountUpdated(event);
         break;
-      case 'checkout.session.completed':
-        await this.checkout.applyCheckoutCompleted(
-          event.data.object as Stripe.Checkout.Session,
-        );
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.kind === 'platform') {
+          await this.platform.applyCheckoutCompleted(session);
+        } else {
+          await this.checkout.applyCheckoutCompleted(session);
+        }
         break;
+      }
       case 'checkout.session.expired':
         await this.checkout.applyCheckoutExpired(
           event.data.object as Stripe.Checkout.Session,
@@ -45,11 +51,15 @@ export class StripeWebhooksService {
         break;
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
-        await this.memberships.applySubscriptionEvent(
-          event.data.object as Stripe.Subscription,
-        );
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        if (subscription.metadata?.kind === 'platform') {
+          await this.platform.applySubscriptionEvent(subscription);
+        } else {
+          await this.memberships.applySubscriptionEvent(subscription);
+        }
         break;
+      }
       case 'invoice.paid':
         await this.invoices.upsertFromStripe(
           event.data.object as Stripe.Invoice,

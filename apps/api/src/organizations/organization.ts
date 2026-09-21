@@ -10,6 +10,8 @@ export type Organization = {
   logoUrl: string | null;
   brandColor: string | null;
   platformPlan: PlatformPlan;
+  platformStripeCustomerId: string | null;
+  platformStripeSubscriptionId: string | null;
   settings: Record<string, unknown>;
   deletedAt: Date | null;
   createdAt: Date;
@@ -35,6 +37,9 @@ export type UpdateOrganizationData = Partial<{
   currency: string;
   logoUrl: string | null;
   brandColor: string | null;
+  platformPlan: PlatformPlan;
+  platformStripeCustomerId: string | null;
+  platformStripeSubscriptionId: string | null;
   settings: Record<string, unknown>;
   deletedAt: Date | null;
 }>;

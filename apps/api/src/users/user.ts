@@ -28,6 +28,8 @@ export type AuthenticatedUser = PublicUser & {
   /** Present when authenticated via organization API key (T-033). */
   actorType?: 'user' | 'api_key';
   scopes?: string[];
+  /** Set when JWT carries platform impersonation (T-038). */
+  impersonatingOrgId?: string;
 };
 
 export type CreateUserData = {

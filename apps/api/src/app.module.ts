@@ -18,10 +18,12 @@ import { DomainEventsModule } from './domain-events/domain-events.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { EventTypesModule } from './event-types/event-types.module';
 import { FallbackModule } from './fallback/fallback.module';
+import { FlagsModule } from './flags/flags.module';
 import { HealthController } from './health/health.controller';
 import { MeModule } from './me/me.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { PlatformModule } from './platform/platform.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { UsersModule } from './users/users.module';
@@ -52,6 +54,8 @@ import { UsersModule } from './users/users.module';
     CustomersModule,
     BookingsModule,
     DeveloperModule,
+    FlagsModule,
+    PlatformModule,
     CalendarModule,
     MeModule,
     FallbackModule,

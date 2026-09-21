@@ -60,9 +60,11 @@ export default function CustomersPage() {
       <PageHeader title={t("title")} description={t("description")} />
 
       <Input
+        id="customers-search"
         value={search}
         onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)}
         placeholder={t("search")}
+        aria-label={t("search")}
         className="max-w-md"
       />
 

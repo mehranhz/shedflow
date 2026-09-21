@@ -153,7 +153,7 @@ export class WebhooksService {
     };
   }
 
-  decryptEndpointSecret(secretEnc: Buffer): string {
+  decryptEndpointSecret(secretEnc: Buffer | Uint8Array): string {
     return decryptSecret(
       secretEnc,
       this.config.get<string>('TOKEN_ENCRYPTION_KEY'),

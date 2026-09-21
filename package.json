@@ -24,7 +24,8 @@
     "db:migrate:deploy": "pnpm --filter @shedflow/db db:migrate:deploy",
     "db:reset": "pnpm --filter @shedflow/db db:reset",
     "db:studio": "pnpm --filter @shedflow/db db:studio",
-    "db:seed": "pnpm --filter @shedflow/db seed"
+    "db:seed": "pnpm --filter @shedflow/db seed",
+    "test:e2e:playwright": "pnpm --filter client test:playwright"
   },
   "devDependencies": {
     "prettier": "^3.4.2",

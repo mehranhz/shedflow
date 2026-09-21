@@ -26,13 +26,14 @@ export class EnvelopeCrypto {
     return Buffer.concat([iv, tag, encrypted]);
   }
 
-  decrypt(payload: Buffer): string {
-    if (payload.length < IV_LENGTH + TAG_LENGTH + 1) {
+  decrypt(payload: Buffer | Uint8Array): string {
+    const buf = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+    if (buf.length < IV_LENGTH + TAG_LENGTH + 1) {
       throw new Error('ciphertext too short');
     }
-    const iv = payload.subarray(0, IV_LENGTH);
-    const tag = payload.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
-    const data = payload.subarray(IV_LENGTH + TAG_LENGTH);
+    const iv = buf.subarray(0, IV_LENGTH);
+    const tag = buf.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
+    const data = buf.subarray(IV_LENGTH + TAG_LENGTH);
     const decipher = createDecipheriv(ALGO, this.key, iv);
     decipher.setAuthTag(tag);
     return Buffer.concat([decipher.update(data), decipher.final()]).toString(

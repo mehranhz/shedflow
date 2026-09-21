@@ -187,6 +187,17 @@ export class StripePaymentGateway extends PaymentGateway {
     return { id: price.id };
   }
 
+  async createBillingPortalSession(params: {
+    stripeCustomerId: string;
+    returnUrl: string;
+  }): Promise<{ url: string }> {
+    const session = await this.stripe.billingPortal.sessions.create({
+      customer: params.stripeCustomerId,
+      return_url: params.returnUrl,
+    });
+    return { url: session.url };
+  }
+
   constructWebhookEvent(
     rawBody: Buffer,
     signature: string,

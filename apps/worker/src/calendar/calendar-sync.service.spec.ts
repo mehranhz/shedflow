@@ -44,6 +44,7 @@ describe('CalendarSyncService (fake provider)', () => {
         findUnique: jest.fn().mockResolvedValue({
           id: connectionId,
           userId,
+          provider: 'GOOGLE',
           needsReauth: false,
           syncToken: null,
           channelId: null,
@@ -85,13 +86,13 @@ describe('CalendarSyncService (fake provider)', () => {
       prisma as never,
       config as unknown as ConfigService,
       fake,
+      fake,
     );
     const sync = new CalendarSyncService(
       prisma as never,
       tokens,
       { enqueueJob: jest.fn() } as never,
       config as unknown as ConfigService,
-      fake,
     );
 
     await sync.fullSync({ connectionId });

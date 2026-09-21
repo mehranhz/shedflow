@@ -997,6 +997,19 @@ export const billingApi = {
       throw error;
     }
   },
+  async refundPayment(
+    orgId: string,
+    paymentId: string,
+    input?: { amountMinor?: number; reason?: string },
+  ): Promise<{
+    refund: { id: string; amountMinor: number };
+    payment: { id: string; status: string };
+  }> {
+    return billingBff(`organizations/${orgId}/payments/${paymentId}/refunds`, {
+      method: "POST",
+      body: JSON.stringify(input ?? {}),
+    });
+  },
   async listProducts(orgId: string): Promise<
     Array<{
       id: string;

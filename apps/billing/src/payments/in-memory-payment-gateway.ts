@@ -128,6 +128,16 @@ export class InMemoryPaymentGateway extends PaymentGateway {
     return { id: this.nextId('price') };
   }
 
+  async createBillingPortalSession(params: {
+    stripeCustomerId: string;
+    returnUrl: string;
+  }): Promise<{ url: string }> {
+    this.record('createBillingPortalSession', [params]);
+    return {
+      url: `https://billing.stripe.test/p/session/${params.stripeCustomerId}`,
+    };
+  }
+
   constructWebhookEvent(
     rawBody: Buffer,
     signature: string,

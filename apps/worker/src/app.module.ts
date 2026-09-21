@@ -4,7 +4,7 @@ import { CalendarModule } from './calendar/calendar.module';
 import { validateEnv } from './config/env';
 import { HealthController } from './health/health.controller';
 import { JobsModule } from './jobs/jobs.module';
-import { MetricsController } from './metrics/metrics.controller';
+import { ObservabilityModule } from './observability/observability.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QueueModule } from './queue/queue.module';
@@ -17,6 +17,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
       envFilePath: ['../../.env', '.env'],
       validate: validateEnv,
     }),
+    ObservabilityModule,
     PrismaModule,
     QueueModule,
     CalendarModule,
@@ -24,6 +25,6 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     WebhooksModule,
     OutboxModule,
   ],
-  controllers: [HealthController, MetricsController],
+  controllers: [HealthController],
 })
 export class AppModule {}

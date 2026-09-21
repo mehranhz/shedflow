@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import type { Params } from 'nestjs-pino';
-import { REQUEST_ID_HEADER } from '../common/http/request-id.middleware';
+
+const REQUEST_ID_HEADER = 'x-request-id';
 
 export function buildPinoParams(service: string): Params {
   const level = process.env.LOG_LEVEL ?? 'info';
@@ -30,7 +31,6 @@ export function buildPinoParams(service: string): Params {
         }) => ({
           method: req.method,
           url: req.url,
-          // Never log Authorization / cookies / Stripe signatures.
           headers: {
             host: req.headers?.host,
             'user-agent': req.headers?.['user-agent'],

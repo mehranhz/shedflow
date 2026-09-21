@@ -52,6 +52,19 @@ export class OrgGuard implements CanActivate {
         organizationId: orgId,
         role: (user.role as Role) ?? Role.ADMIN,
         actorType: 'api_key',
+        impersonating: false,
+      });
+      return true;
+    }
+
+    if (user.impersonatingOrgId && user.impersonatingOrgId === orgId) {
+      attachRequestContext(request, {
+        requestId: readRequestId(request),
+        userId: user.id,
+        organizationId: orgId,
+        role: (user.role as Role) ?? Role.ADMIN,
+        actorType: 'user',
+        impersonating: true,
       });
       return true;
     }
@@ -70,6 +83,7 @@ export class OrgGuard implements CanActivate {
       organizationId: orgId,
       role: membership.role,
       actorType: 'user',
+      impersonating: false,
     });
     return true;
   }

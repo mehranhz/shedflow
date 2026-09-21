@@ -28,11 +28,15 @@ export function encryptSecret(plaintext: string, encryptionKey?: string): Buffer
   return Buffer.concat([iv, tag, encrypted]);
 }
 
-export function decryptSecret(payload: Buffer, encryptionKey?: string): string {
+export function decryptSecret(
+  payload: Buffer | Uint8Array,
+  encryptionKey?: string,
+): string {
   const key = resolveKey(encryptionKey ?? process.env.TOKEN_ENCRYPTION_KEY);
-  const iv = payload.subarray(0, 12);
-  const tag = payload.subarray(12, 28);
-  const encrypted = payload.subarray(28);
+  const buf = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
+  const iv = buf.subarray(0, 12);
+  const tag = buf.subarray(12, 28);
+  const encrypted = buf.subarray(28);
   const decipher = createDecipheriv(ALGO, key, iv);
   decipher.setAuthTag(tag);
   return Buffer.concat([

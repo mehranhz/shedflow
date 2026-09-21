@@ -10,8 +10,9 @@ import { HealthController } from './health/health.controller';
 import { InternalModule } from './internal/internal.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { MembershipsModule } from './memberships/memberships.module';
-import { MetricsController } from './metrics/metrics.controller';
+import { ObservabilityModule } from './observability/observability.module';
 import { PaymentsModule } from './payments/payments.module';
+import { PlatformBillingModule } from './platform/platform-billing.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RefundsModule } from './refunds/refunds.module';
 import { StripeEventsModule } from './stripe-events/stripe-events.module';
@@ -24,6 +25,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
       envFilePath: ['../../.env', '.env'],
       validate: validateEnv,
     }),
+    ObservabilityModule,
     PrismaModule,
     AuthModule,
     PaymentsModule,
@@ -35,9 +37,10 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     MembershipsModule,
     RefundsModule,
     InvoicesModule,
+    PlatformBillingModule,
     WebhooksModule,
     InternalModule,
   ],
-  controllers: [HealthController, MetricsController],
+  controllers: [HealthController],
 })
 export class AppModule {}

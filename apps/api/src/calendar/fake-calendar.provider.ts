@@ -33,6 +33,7 @@ export class FakeCalendarProvider extends CalendarProvider {
 
   async exchangeCode(
     code: string,
+    _opts?: { codeVerifier?: string },
   ): Promise<CalendarTokens & { accountEmail: string; scopes: string[] }> {
     return {
       accessToken: `access-${code}`,

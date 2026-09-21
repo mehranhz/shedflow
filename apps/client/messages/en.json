@@ -629,7 +629,8 @@
         "bookingLink": "Booking link",
         "inlineSnippet": "Inline snippet",
         "popupSnippet": "Popup snippet"
-      }
+      },
+      "toggleActive": "Toggle {title}"
     },
     "availability": {
       "title": "Availability",
@@ -672,7 +673,11 @@
       "saveOverride": "Save override",
       "existingOverrides": "Existing overrides",
       "removeOverride": "Remove",
-      "weeklyTitle": "Weekly hours"
+      "weeklyTitle": "Weekly hours",
+      "windowStart": "Start time for {day}",
+      "windowEnd": "End time for {day}",
+      "overrideStart": "Override start time",
+      "overrideEnd": "Override end time"
     },
     "bookings": {
       "title": "Meetings",
@@ -746,8 +751,14 @@
         "rescheduleFailed": "Could not reschedule",
         "refundSoon": "Refunds land with T-023",
         "refundTitle": "Refund",
-        "refundBody": "Payment refunds ship with billing T-023. The button stays disabled until the billing refund route is available.",
-        "refundCta": "Refund payment"
+        "refundBody": "Issues a full Stripe refund for this booking’s payment. Does not cancel the meeting — cancel separately if needed.",
+        "refundCta": "Refund payment",
+        "refundReasonLabel": "Refund reason (optional)",
+        "refundReasonPlaceholder": "requested_by_customer",
+        "refunding": "Refunding…",
+        "refunded": "Payment refunded",
+        "refundFailed": "Could not refund payment",
+        "refundUnavailable": "This booking has no payment to refund"
       }
     },
     "customers": {

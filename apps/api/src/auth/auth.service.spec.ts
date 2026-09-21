@@ -246,6 +246,8 @@ class FakeOrganizationsService {
       logoUrl: null,
       brandColor: null,
       platformPlan: PlatformPlan.FREE,
+      platformStripeCustomerId: null,
+      platformStripeSubscriptionId: null,
       settings: {},
       createdAt: now,
       updatedAt: now,

@@ -1,5 +1,3 @@
-import { PlatformPlan } from '@shedflow/db';
-
 export const FEATURE_FLAGS = {
   outlookCalendar: 'outlook_calendar',
   sms: 'sms',
@@ -16,7 +14,7 @@ export const FEATURE_FLAG_VALUES: FeatureFlag[] = Object.values(FEATURE_FLAGS);
  */
 export function isEnabled(
   flag: FeatureFlag | string,
-  org?: { settings?: unknown; platformPlan?: PlatformPlan | string } | null,
+  org?: { settings?: unknown } | null,
   envFlags: string | undefined = process.env.FLAGS,
 ): boolean {
   const fromEnv = parseFlags(envFlags);
@@ -35,7 +33,10 @@ export function isEnabled(
 
 /** Outlook calendar requires both the feature flag and a PRO platform plan. */
 export function isOutlookCalendarEnabled(
-  org: { settings?: unknown; platformPlan?: PlatformPlan | string } | null | undefined,
+  org:
+    | { settings?: unknown; platformPlan?: string }
+    | null
+    | undefined,
   envFlags: string | undefined = process.env.FLAGS,
 ): boolean {
   if (!org) {
@@ -44,7 +45,7 @@ export function isOutlookCalendarEnabled(
   if (!isEnabled(FEATURE_FLAGS.outlookCalendar, org, envFlags)) {
     return false;
   }
-  return org.platformPlan === PlatformPlan.PRO || org.platformPlan === 'PRO';
+  return org.platformPlan === 'PRO';
 }
 
 function parseFlags(raw: string | undefined): Set<string> {

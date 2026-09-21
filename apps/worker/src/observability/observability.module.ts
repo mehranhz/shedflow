@@ -8,14 +8,13 @@ import { MetricsService } from './metrics.service';
 import type { ShedflowServiceName } from './metrics.registry';
 
 @Module({
-  imports: [
-    LoggerModule.forRoot(buildPinoParams('api')),
-  ],
+  imports: [LoggerModule.forRoot(buildPinoParams('worker'))],
   controllers: [MetricsController],
   providers: [
     {
       provide: MetricsService,
-      useFactory: () => new MetricsService('api' satisfies ShedflowServiceName),
+      useFactory: () =>
+        new MetricsService('worker' satisfies ShedflowServiceName),
     },
     {
       provide: APP_INTERCEPTOR,

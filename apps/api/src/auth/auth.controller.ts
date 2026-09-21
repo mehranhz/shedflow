@@ -105,7 +105,7 @@ export class AuthController {
 
   @Get('me')
   me(@CurrentUser() user: AuthenticatedUser) {
-    return this.authService.getProfile(user.id, user.orgId);
+    return this.authService.getProfile(user.id, user.orgId, user.impersonatingOrgId);
   }
 
   private clientMeta(req: Request): RefreshTokenClientMeta {

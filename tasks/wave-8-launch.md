@@ -26,7 +26,7 @@
 
 ## T-035 — Observability: pino, Prometheus, OTel, Sentry, alerts, Grafana port
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-003, T-009, T-018  
 **Design:** `mvp/11-observability-and-operations.md`, `mvp/12` Grafana port conflict
 
@@ -44,9 +44,9 @@
 
 ### Acceptance
 
-- [ ] `curl localhost:3001/metrics` includes `http_request_duration_seconds`.
-- [ ] Login request logs JSON with `requestId`.
-- [ ] Grafana on 3300; Next on 3000 without conflict.
+- [x] `curl localhost:3001/metrics` includes `http_request_duration_seconds`.
+- [x] Login request logs JSON with `requestId`.
+- [x] Grafana on 3300; Next on 3000 without conflict.
 
 ---
 
@@ -78,7 +78,7 @@
 
 ## T-037 — Playwright smoke + k6 script + a11y
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-027, T-029, T-014  
 **Design:** `mvp/13-testing-strategy.md`, `mvp/15` §3
 
@@ -91,14 +91,17 @@
 
 ### Acceptance
 
-- [ ] `pnpm exec playwright test` smoke passes locally against `pnpm dev` + migrated DB (document in `apps/client/README` or `tasks`).
-- [ ] Axe no critical.
+- [x] `pnpm exec playwright test` smoke passes locally against `pnpm dev` + migrated DB (document in `apps/client/README` or `tasks`).
+  - Documented in `apps/client/README.md`. Run: `pnpm --filter client test:playwright` (or `PLAYWRIGHT_CHANNEL=msedge` if Chromium CDN blocked).
+  - CI job `playwright` in `.github/workflows/ci.yml` migrates, seeds, starts api+client, runs the suite.
+- [x] Axe no critical.
+  - `apps/client/e2e/a11y.spec.ts` fails on critical/serious for `/login` and `/acme/intro`.
 
 ---
 
 ## T-038 — Feature flags + platform impersonation
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-006, T-003  
 **Design:** `mvp/11` §9–§10
 
@@ -111,14 +114,14 @@
 
 ### Acceptance
 
-- [ ] Empty allowlist → no impersonation.
-- [ ] Allowlisted user impersonates, sees org B data, audit row written.
+- [x] Empty allowlist → no impersonation.
+- [x] Allowlisted user impersonates, sees org B data, audit row written.
 
 ---
 
 ## T-039 — Accessibility/i18n baseline polish
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-027, T-029  
 **Design:** `mvp/15-i18n-a11y-compliance.md`
 
@@ -132,6 +135,6 @@
 
 ### Acceptance
 
-- [ ] Slot button accessible name includes date and time.
-- [ ] Low-luminance brand uses white foreground.
-- [ ] No extra i18n framework required.
+- [x] Slot button accessible name includes date and time.
+- [x] Low-luminance brand uses white foreground.
+- [x] No extra i18n framework required.

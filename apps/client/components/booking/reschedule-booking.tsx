@@ -132,6 +132,11 @@ export function RescheduleBooking({ uid }: { uid: string }) {
             {emptyMonth ? (
               <p className="text-sm text-muted-foreground">{t("emptyMonth")}</p>
             ) : null}
+            <div
+              className="space-y-2"
+              role="listbox"
+              aria-label={t("title")}
+            >
             {daySlots.map((slot) => (
               <Button
                 key={slot.startAt}
@@ -166,6 +171,7 @@ export function RescheduleBooking({ uid }: { uid: string }) {
                 {formatBookingWhen(slot.startAt, timeZone, locale, "time")}
               </Button>
             ))}
+            </div>
           </div>
         </div>
       )}

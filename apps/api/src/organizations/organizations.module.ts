@@ -7,6 +7,7 @@ import { MembershipsModule } from '../memberships/memberships.module';
 import { SchedulesModule } from '../schedules/schedules.module';
 import { UsersModule } from '../users/users.module';
 import { OrganizationRepository } from './organization.repository';
+import { InternalOrganizationsController } from './internal-organizations.controller';
 import { OrganizationsController } from './organizations.controller';
 import { OrganizationsService } from './organizations.service';
 import { PrismaOrganizationRepository } from './prisma-organization.repository';
@@ -19,7 +20,11 @@ import { PrismaOrganizationRepository } from './prisma-organization.repository';
     forwardRef(() => AuthModule),
     forwardRef(() => SchedulesModule),
   ],
-  controllers: [OrganizationsController, InvitationsController],
+  controllers: [
+    OrganizationsController,
+    InvitationsController,
+    InternalOrganizationsController,
+  ],
   providers: [
     OrganizationsService,
     OrgGuard,

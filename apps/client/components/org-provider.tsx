@@ -29,7 +29,9 @@ export function OrgProvider({
   const membership = profile.memberships.find(
     (item) => item.organizationId === organization.id,
   );
-  const role = membership?.role ?? "MEMBER";
+  const role =
+    membership?.role ??
+    (profile.impersonatingOrgId === organization.id ? "ADMIN" : "MEMBER");
 
   return (
     <OrgContext.Provider

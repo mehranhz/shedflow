@@ -12,7 +12,9 @@ import { apiFetch } from "@/lib/api";
 import type { AuthProfile, Organization } from "@/lib/types";
 import { AppSidebar } from "@/components/app-sidebar";
 import { OrgProvider } from "@/components/org-provider";
+import { SkipLink } from "@/components/skip-link";
 import { VerificationBanner } from "@/components/verification-banner";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { CreateWorkspaceForm } from "@/components/create-workspace-form";
 
 export default async function DashboardLayout({
@@ -51,8 +53,17 @@ export default async function DashboardLayout({
     organizations = [profile.activeOrganization];
   }
 
+  if (
+    profile.impersonatingOrgId &&
+    profile.activeOrganization &&
+    !organizations.some((org) => org.id === profile.activeOrganization!.id)
+  ) {
+    organizations = [profile.activeOrganization, ...organizations];
+  }
+
   return (
     <OrgProvider profile={profile} organizations={organizations}>
+      <SkipLink href="#main" />
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset className="bg-[#f6f7f9]">
@@ -61,9 +72,11 @@ export default async function DashboardLayout({
             <Separator orientation="vertical" className="mr-2 h-4" />
             <span className="text-sm text-muted-foreground">
               {profile.activeOrganization.name}
+              {profile.impersonatingOrgId ? " · impersonating" : ""}
             </span>
           </header>
-          <div className="flex-1 px-6 py-6 lg:px-8">
+          <div id="main" className="flex-1 px-6 py-6 lg:px-8" tabIndex={-1}>
+            <ImpersonationBanner />
             {!profile.emailVerifiedAt ? (
               <div className="mb-6">
                 <VerificationBanner />

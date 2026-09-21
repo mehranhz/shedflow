@@ -141,7 +141,7 @@ Do not put Stripe logic in `apps/api` except HTTP calls to billing `/internal/*`
 
 ## T-024 — Platform Free/Pro Checkout
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-018, T-006  
 **Design:** `mvp/14-platform-billing-and-lifecycle.md`
 
@@ -155,6 +155,6 @@ Do not put Stripe logic in `apps/api` except HTTP calls to billing `/internal/*`
 
 ### Acceptance
 
-- [ ] Fake checkout URL; simulated subscription.created → `platform_plan=PRO`.
-- [ ] Event type #4 allowed after PRO.
-- [ ] Paid booking on FREE still `FEATURE_GATED`.
+- [x] Fake checkout URL; simulated subscription.created → `platform_plan=PRO`.
+- [x] Event type #4 allowed after PRO.
+- [x] Paid booking on FREE still `FEATURE_GATED`.

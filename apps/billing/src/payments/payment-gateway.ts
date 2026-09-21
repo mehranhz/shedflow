@@ -94,6 +94,11 @@ export abstract class PaymentGateway {
 
   abstract createPrice(params: CreatePriceParams): Promise<{ id: string }>;
 
+  abstract createBillingPortalSession(params: {
+    stripeCustomerId: string;
+    returnUrl: string;
+  }): Promise<{ url: string }>;
+
   abstract constructWebhookEvent(
     rawBody: Buffer,
     signature: string,

@@ -62,6 +62,8 @@ export type AuthMembershipView = {
 export type AuthProfile = PublicUser & {
   memberships: AuthMembershipView[];
   activeOrganization: PublicOrganization | null;
+  /** Present when the access token is a platform impersonation session. */
+  impersonatingOrgId?: string | null;
 };
 
 export type SwitchedAccess = {
@@ -361,6 +363,7 @@ export class AuthService {
   async getProfile(
     userId: string,
     activeOrgId?: string,
+    impersonatingOrgId?: string,
   ): Promise<AuthProfile> {
     const user = await this.usersService.findById(userId);
     if (!user) {
@@ -368,6 +371,22 @@ export class AuthService {
     }
 
     const memberships = await this.memberships.listByUserId(userId);
+
+    if (impersonatingOrgId) {
+      const activeOrganization =
+        await this.organizations.findPublicById(impersonatingOrgId);
+      return {
+        ...this.usersService.toPublic(user),
+        memberships: memberships.map((membership) => ({
+          organizationId: membership.organizationId,
+          role: membership.role,
+          status: membership.status,
+        })),
+        activeOrganization,
+        impersonatingOrgId,
+      };
+    }
+
     const active = await this.pickActiveMembership(userId, activeOrgId);
     const activeOrganization = active
       ? await this.organizations.findPublicById(active.organizationId)
@@ -381,6 +400,7 @@ export class AuthService {
         status: membership.status,
       })),
       activeOrganization,
+      impersonatingOrgId: null,
     };
   }
 
@@ -396,6 +416,23 @@ export class AuthService {
         role,
       }),
     );
+  }
+
+  issueImpersonationAccess(
+    user: PublicUser,
+    organizationId: string,
+  ): Promise<string> {
+    return this.signAccessToken(
+      user.id,
+      user.email,
+      organizationId,
+      Role.ADMIN,
+      organizationId,
+    );
+  }
+
+  issueAccessWithoutOrg(user: PublicUser): Promise<string> {
+    return this.signAccessToken(user.id, user.email);
   }
 
   private async issueSession(
@@ -483,12 +520,14 @@ export class AuthService {
     email: string,
     orgId?: string,
     role?: Role,
+    impersonatingOrgId?: string,
   ): Promise<string> {
     const payload: JwtPayload = {
       sub: userId,
       email,
       typ: ACCESS_TOKEN_TYPE,
       ...(orgId && role ? { orgId, role } : {}),
+      ...(impersonatingOrgId ? { impersonatingOrgId } : {}),
     };
     return this.jwtService.signAsync(payload, {
       expiresIn: ACCESS_TOKEN_TTL,

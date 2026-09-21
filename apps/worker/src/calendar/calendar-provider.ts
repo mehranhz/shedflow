@@ -34,9 +34,10 @@ export abstract class CalendarProvider {
 
   abstract getAuthUrl(state: string): string;
 
-  abstract exchangeCode(code: string): Promise<
-    CalendarTokens & { accountEmail: string; scopes: string[] }
-  >;
+  abstract exchangeCode(
+    code: string,
+    opts?: { codeVerifier?: string },
+  ): Promise<CalendarTokens & { accountEmail: string; scopes: string[] }>;
 
   abstract refresh(tokens: CalendarTokens): Promise<CalendarTokens>;
 
@@ -99,3 +100,4 @@ export abstract class CalendarProvider {
 }
 
 export const CALENDAR_PROVIDER = Symbol('CALENDAR_PROVIDER');
+export const MICROSOFT_CALENDAR_PROVIDER = Symbol('MICROSOFT_CALENDAR_PROVIDER');

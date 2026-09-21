@@ -52,6 +52,7 @@ export class GoogleCalendarProvider extends CalendarProvider {
 
   async exchangeCode(
     code: string,
+    _opts?: { codeVerifier?: string },
   ): Promise<CalendarTokens & { accountEmail: string; scopes: string[] }> {
     const token = await this.tokenRequest({
       code,

@@ -2,34 +2,40 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    monitor: 'docker-monitor'
+    monitor: 'shedflow'
 
-# Alertmanager configuration
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
           - alertmanager:9093
 
-# Rule files for alerts
 rule_files:
   - "alerts/*.yml"
 
-# Scrape configurations
 scrape_configs:
-  # Prometheus self-metrics
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
-  # Docker host metrics via node-exporter
   - job_name: 'node-exporter'
     static_configs:
       - targets:
         - node-exporter:9100
 
-  # Example: Your application (uncomment and modify as needed)
-  # - job_name: 'your-app'
-  #   metrics_path: '/actuator/prometheus'
-  #   static_configs:
-  #     - targets: ['your-app-host:8080']
+  # Apps run on the Docker host (pnpm dev). On Linux, ensure host.docker.internal
+  # resolves (Compose adds it on Desktop; Linux may need extra_hosts).
+  - job_name: shedflow-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3001']
+
+  - job_name: shedflow-billing
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3002']
+
+  - job_name: shedflow-worker
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3003']

@@ -15,8 +15,14 @@ export const envSchema = z.object({
     .min(1)
     .default('whsec_placeholder'),
   STRIPE_PLATFORM_FEE_BPS: z.coerce.number().int().nonnegative().default(200),
-  STRIPE_PRICE_PRO_MONTHLY: z.string().min(1).optional(),
-  STRIPE_PRICE_PRO_YEARLY: z.string().min(1).optional(),
+  STRIPE_PRICE_PRO_MONTHLY: z
+    .string()
+    .min(1)
+    .default('price_pro_monthly_placeholder'),
+  STRIPE_PRICE_PRO_YEARLY: z
+    .string()
+    .min(1)
+    .default('price_pro_yearly_placeholder'),
 });
 
 export type Env = z.infer<typeof envSchema>;

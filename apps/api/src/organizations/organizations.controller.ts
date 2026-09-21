@@ -23,7 +23,7 @@ import { OrgGuard } from '../common/tenancy/org.guard';
 import { Roles } from '../common/tenancy/roles.decorator';
 import { RolesGuard } from '../common/tenancy/roles.guard';
 import type { RequestContextValue } from '../common/tenancy/request-context';
-import type { PublicUser } from '../users/user';
+import type { AuthenticatedUser, PublicUser } from '../users/user';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
@@ -59,8 +59,11 @@ export class OrganizationsController {
 
   @Get(':orgId')
   @UseGuards(OrgGuard)
-  get(@Param('orgId', ParseUUIDPipe) orgId: string, @CurrentUser() user: PublicUser) {
-    return this.organizations.getForMember(orgId, user.id);
+  get(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.organizations.getForViewer(orgId, user);
   }
 
   @Patch(':orgId')

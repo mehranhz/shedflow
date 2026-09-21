@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { MembershipStatus, Role } from '@shedflow/db';
+import { MembershipStatus, PlatformPlan, Role } from '@shedflow/db';
 import { isValidTimeZone, OrgSettingsSchema, DOMAIN_EVENTS } from '@shedflow/shared';
 import { randomBytes } from 'node:crypto';
 import { TransactionManager, UniqueConstraintError } from '../common/persistence';
@@ -172,6 +172,45 @@ export class OrganizationsService {
       throw new NotFoundException('Not found');
     }
     return this.toPublic(organization);
+  }
+
+  async getForViewer(
+    organizationId: string,
+    user: { id: string; impersonatingOrgId?: string },
+  ): Promise<PublicOrganization> {
+    if (user.impersonatingOrgId === organizationId) {
+      const organization =
+        await this.organizations.findActiveById(organizationId);
+      if (!organization) {
+        throw new NotFoundException('Not found');
+      }
+      return this.toPublic(organization);
+    }
+    return this.getForMember(organizationId, user.id);
+  }
+
+  async updatePlatformPlan(
+    organizationId: string,
+    input: {
+      platformPlan: PlatformPlan;
+      platformStripeCustomerId?: string | null;
+      platformStripeSubscriptionId?: string | null;
+    },
+  ): Promise<PublicOrganization> {
+    const organization = await this.organizations.findActiveById(organizationId);
+    if (!organization) {
+      throw new NotFoundException('Not found');
+    }
+    const updated = await this.organizations.update(organizationId, {
+      platformPlan: input.platformPlan,
+      ...(input.platformStripeCustomerId !== undefined
+        ? { platformStripeCustomerId: input.platformStripeCustomerId }
+        : {}),
+      ...(input.platformStripeSubscriptionId !== undefined
+        ? { platformStripeSubscriptionId: input.platformStripeSubscriptionId }
+        : {}),
+    });
+    return this.toPublic(updated);
   }
 
   async update(

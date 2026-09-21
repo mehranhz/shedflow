@@ -39,6 +39,7 @@ export type AuthProfile = {
   emailVerifiedAt: string | null;
   memberships: AuthMembership[];
   activeOrganization: Organization | null;
+  impersonatingOrgId?: string | null;
 };
 
 export type Member = {
@@ -173,6 +174,7 @@ export type Booking = {
   answers: Record<string, string | boolean>;
   cancellationReason: string | null;
   rescheduledFromId: string | null;
+  paymentId?: string | null;
   metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;

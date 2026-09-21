@@ -38,8 +38,22 @@ CI must not call real Google. Use fixtures.
 
 ## T-017 — Microsoft 365 calendar (launch-optional)
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-016  
 **Feature flag:** `outlook_calendar` + Pro plan
 
 Same port, `MicrosoftCalendarProvider`, Graph APIs per `06` §6. Skip if flag off. Acceptance: analogous unit tests + OAuth start URL generated. Do not block MVP launch.
+
+### Flag behaviour (T-038 lite)
+
+`isEnabled` / `isOutlookCalendarEnabled` in `@shedflow/shared` (`packages/shared/src/flags.ts`):
+
+- Flag on if `FLAGS` env contains `outlook_calendar` **or** `organization.settings.flags` includes it.
+- Outlook OAuth also requires `platform_plan === PRO`.
+- Otherwise `GET .../calendar/microsoft/start` → `403 FEATURE_GATED`.
+
+### Acceptance
+
+- [x] Unit tests map Graph events → busy (ignore free/cancelled; tentative = busy; all-day busy).
+- [x] OAuth start URL generated (authorize + PKCE S256) when flag + PRO.
+- [x] Flag off / FREE plan gated.

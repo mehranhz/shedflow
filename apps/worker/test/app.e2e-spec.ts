@@ -129,7 +129,10 @@ describe('Worker (e2e)', () => {
   });
 
   it('GET /metrics is 200', async () => {
-    await request(app.getHttpServer()).get('/metrics').expect(200);
+    const response = await request(app.getHttpServer()).get('/metrics').expect(200);
+    expect(String(response.text ?? response.body)).toContain(
+      'http_request_duration_seconds',
+    );
   });
 
   it('relays a domain_events row to PROCESSED', async () => {

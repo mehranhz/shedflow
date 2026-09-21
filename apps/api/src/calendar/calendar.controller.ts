@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -19,7 +20,6 @@ import { RolesGuard } from '../common/tenancy/roles.guard';
 import type { RequestContextValue } from '../common/tenancy/request-context';
 import { CalendarService } from './calendar.service';
 import { PatchConnectedCalendarDto } from './dto/patch-connected-calendar.dto';
-import { Query } from '@nestjs/common';
 
 @Controller()
 export class CalendarController {
@@ -28,7 +28,7 @@ export class CalendarController {
   @Get('organizations/:orgId/calendar/google/start')
   @UseGuards(OrgGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
-  start(
+  startGoogle(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @CurrentOrgContext() ctx: RequestContextValue,
     @Res() res: Response,
@@ -39,12 +39,36 @@ export class CalendarController {
 
   @Public()
   @Get('calendar/google/callback')
-  async callback(
+  async googleCallback(
     @Query('code') code: string,
     @Query('state') state: string,
     @Res() res: Response,
   ) {
     const redirect = await this.calendars.handleGoogleCallback(code, state);
+    return res.redirect(redirect);
+  }
+
+  /** Launch-optional Outlook (T-017). Gated by outlook_calendar flag + PRO. */
+  @Get('organizations/:orgId/calendar/microsoft/start')
+  @UseGuards(OrgGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN)
+  async startMicrosoft(
+    @Param('orgId', ParseUUIDPipe) orgId: string,
+    @CurrentOrgContext() ctx: RequestContextValue,
+    @Res() res: Response,
+  ) {
+    const { url } = await this.calendars.startMicrosoftOAuth(orgId, ctx);
+    return res.redirect(url);
+  }
+
+  @Public()
+  @Get('calendar/microsoft/callback')
+  async microsoftCallback(
+    @Query('code') code: string,
+    @Query('state') state: string,
+    @Res() res: Response,
+  ) {
+    const redirect = await this.calendars.handleMicrosoftCallback(code, state);
     return res.redirect(redirect);
   }
 
@@ -55,7 +79,9 @@ export class CalendarController {
     return this.calendars.listConnections(orgId);
   }
 
-  @Patch('organizations/:orgId/calendar/connections/:connectionId/calendars/:calendarId')
+  @Patch(
+    'organizations/:orgId/calendar/connections/:connectionId/calendars/:calendarId',
+  )
   @UseGuards(OrgGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   patch(

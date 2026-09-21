@@ -120,3 +120,92 @@ jobs:
           DATABASE_URL: postgresql://shedflow:shedflow@localhost:5432/shedflow?schema=public
           JWT_SECRET: ci-test-secret-not-for-production
           AUTH_SECRET: ci-auth-secret
+
+  playwright:
+    name: Playwright smoke + a11y
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [unit]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: shedflow
+          POSTGRES_PASSWORD: shedflow
+          POSTGRES_DB: shedflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shedflow -d shedflow"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://shedflow:shedflow@localhost:5432/shedflow?schema=public
+      DIRECT_DATABASE_URL: postgresql://shedflow:shedflow@localhost:5432/shedflow?schema=public
+      PRISMA_MIGRATE_URL: postgresql://shedflow:shedflow@localhost:5432/shedflow?schema=public
+      E2E_REQUIRE_STACK: "1"
+      PLAYWRIGHT_BASE_URL: http://localhost:3000
+      E2E_API_URL: http://localhost:3001
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Migrate + seed
+        run: pnpm db:migrate:deploy && pnpm db:seed
+
+      - name: Install Playwright Chromium
+        run: ./apps/client/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Start API
+        run: |
+          pnpm --filter @shedflow/api build
+          pnpm --filter @shedflow/api start:prod &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3001/health && break
+            sleep 2
+          done
+          curl -sf http://localhost:3001/health
+        env:
+          PORT: "3001"
+          APP_URL: http://localhost:3000
+          JWT_SECRET: ci-test-secret-not-for-production
+          INTERNAL_API_SECRET: ci-internal-secret
+
+      - name: Start client
+        run: |
+          pnpm --filter client build
+          pnpm --filter client start &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3000/login && break
+            sleep 2
+          done
+          curl -sf http://localhost:3000/login >/dev/null
+        env:
+          API_URL: http://localhost:3001
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          AUTH_SECRET: ci-auth-secret
+          AUTH_URL: http://localhost:3000
+          APP_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Playwright tests
+        run: pnpm --filter client test:playwright
+        env:
+          # Ensure Next can talk to API
+          API_URL: http://localhost:3001
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          AUTH_SECRET: ci-auth-secret
+          AUTH_URL: http://localhost:3000
+          JWT_SECRET: ci-test-secret-not-for-production

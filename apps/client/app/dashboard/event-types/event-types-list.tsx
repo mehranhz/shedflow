@@ -180,7 +180,7 @@ export function EventTypesList() {
                       checked={eventType.isActive}
                       disabled={toggleActive.isPending}
                       onCheckedChange={() => toggleActive.mutate(eventType)}
-                      aria-label={`Toggle ${eventType.title}`}
+                      aria-label={t("toggleActive", { title: eventType.title })}
                     />
                   </TableCell>
                   <TableCell>

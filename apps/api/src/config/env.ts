@@ -9,9 +9,15 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3001),
   INTERNAL_API_SECRET: z.string().min(1).default('change-me-in-development'),
   ENCRYPTION_KEY: z.string().optional(),
+  FLAGS: z.string().optional(),
+  PLATFORM_ADMINS: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_WEBHOOK_URL: z.string().url().optional(),
+  MICROSOFT_CLIENT_ID: z.string().optional(),
+  MICROSOFT_CLIENT_SECRET: z.string().optional(),
+  MICROSOFT_TENANT: z.string().optional(),
+  MICROSOFT_WEBHOOK_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -28,9 +34,15 @@ export function validateEnv(
     PORT: config.PORT,
     INTERNAL_API_SECRET: config.INTERNAL_API_SECRET,
     ENCRYPTION_KEY: config.ENCRYPTION_KEY,
+    FLAGS: config.FLAGS,
+    PLATFORM_ADMINS: config.PLATFORM_ADMINS,
     GOOGLE_CLIENT_ID: config.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: config.GOOGLE_CLIENT_SECRET,
     GOOGLE_WEBHOOK_URL: config.GOOGLE_WEBHOOK_URL,
+    MICROSOFT_CLIENT_ID: config.MICROSOFT_CLIENT_ID,
+    MICROSOFT_CLIENT_SECRET: config.MICROSOFT_CLIENT_SECRET,
+    MICROSOFT_TENANT: config.MICROSOFT_TENANT,
+    MICROSOFT_WEBHOOK_URL: config.MICROSOFT_WEBHOOK_URL,
   });
 
   return { ...config, ...parsed };

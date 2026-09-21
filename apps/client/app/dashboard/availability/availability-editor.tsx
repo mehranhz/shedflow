@@ -233,6 +233,9 @@ export function AvailabilityEditor() {
                             <Input
                               className="w-28"
                               type="time"
+                              aria-label={t("windowStart", {
+                                day: t(`days.${dayKey}`),
+                              })}
                               value={minuteToInput(window.startMinute)}
                               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                                 const minute = parseTimeToMinute(event.target.value);
@@ -253,6 +256,9 @@ export function AvailabilityEditor() {
                             <Input
                               className="w-28"
                               type="time"
+                              aria-label={t("windowEnd", {
+                                day: t(`days.${dayKey}`),
+                              })}
                               value={minuteToInput(window.endMinute)}
                               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                                 const minute = parseTimeToMinute(event.target.value);
@@ -359,6 +365,7 @@ export function AvailabilityEditor() {
                 <div className="flex items-center gap-2">
                   <Input
                     type="time"
+                    aria-label={t("overrideStart")}
                     value={overrideStart}
                     onChange={(event: ChangeEvent<HTMLInputElement>) =>
                       setOverrideStart(event.target.value)
@@ -367,6 +374,7 @@ export function AvailabilityEditor() {
                   <span className="text-muted-foreground">–</span>
                   <Input
                     type="time"
+                    aria-label={t("overrideEnd")}
                     value={overrideEnd}
                     onChange={(event: ChangeEvent<HTMLInputElement>) =>
                       setOverrideEnd(event.target.value)

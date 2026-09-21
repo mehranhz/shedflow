@@ -629,7 +629,8 @@
         "bookingLink": "لینک رزرو",
         "inlineSnippet": "اسنیپت توکار",
         "popupSnippet": "اسنیپت پاپ‌آپ"
-      }
+      },
+      "toggleActive": "تغییر وضعیت {title}"
     },
     "availability": {
       "title": "ساعات کاری",
@@ -672,7 +673,11 @@
       "saveOverride": "ذخیره استثنا",
       "existingOverrides": "استثناهای موجود",
       "removeOverride": "حذف",
-      "weeklyTitle": "ساعات هفتگی"
+      "weeklyTitle": "ساعات هفتگی",
+      "windowStart": "ساعت شروع {day}",
+      "windowEnd": "ساعت پایان {day}",
+      "overrideStart": "ساعت شروع استثنا",
+      "overrideEnd": "ساعت پایان استثنا"
     },
     "bookings": {
       "title": "جلسات",
@@ -746,8 +751,14 @@
         "rescheduleFailed": "جابه‌جایی ممکن نشد",
         "refundSoon": "بازپرداخت با T-023 می‌آید",
         "refundTitle": "بازپرداخت",
-        "refundBody": "بازپرداخت پرداخت با T-023 صورتحساب می‌آید. تا آماده شدن مسیر بازپرداخت دکمه غیرفعال می‌ماند.",
-        "refundCta": "بازپرداخت مبلغ"
+        "refundBody": "بازپرداخت کامل Stripe برای پرداخت این رزرو. جلسه را لغو نمی‌کند — در صورت نیاز جداگانه لغو کنید.",
+        "refundCta": "بازپرداخت مبلغ",
+        "refundReasonLabel": "دلیل بازپرداخت (اختیاری)",
+        "refundReasonPlaceholder": "requested_by_customer",
+        "refunding": "در حال بازپرداخت…",
+        "refunded": "پرداخت بازپرداخت شد",
+        "refundFailed": "بازپرداخت ناموفق بود",
+        "refundUnavailable": "این رزرو پرداخت قابل بازپرداخت ندارد"
       }
     },
     "customers": {
