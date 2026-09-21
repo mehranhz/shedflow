@@ -25,6 +25,8 @@ import type {
 } from "@/lib/types";
 
 const ACTIVE_BOOKING = new Set(["PENDING_PAYMENT", "PENDING_CONFIRMATION", "CONFIRMED"]);
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export type Result<T> = { data: T; source: DataSource };
 
@@ -153,15 +155,20 @@ export const schedulingApi = {
     input: Partial<EventType> & { title: string; durationMinutes: number },
   ): Promise<Result<EventType>> {
     previewStore.ensure(org, hostUserId);
-    const existing = previewStore.listEventTypes(org.id);
-    if (org.platformPlan === "FREE" && existing.filter((item) => item.isActive).length >= 3) {
+    const existing = await this.listEventTypes(org, hostUserId);
+    if (org.platformPlan === "FREE" && existing.data.filter((item) => item.isActive).length >= 3) {
       throw new ClientApiError(
         "Free workspaces can publish 3 event types. Upgrade to Pro for more.",
         403,
         "FEATURE_GATED",
       );
     }
-    const schedules = previewStore.listSchedules(org.id);
+    const schedules = await this.listSchedules(org, hostUserId);
+    // Only forward a real API schedule UUID. Never send preview/local ids,
+    // null, or "" — the API treats scheduleId as optional and will attach
+    // (or create) the host's default schedule.
+    const scheduleId = [input.scheduleId, schedules.source === "api" ? schedules.data[0]?.id : undefined]
+      .find((value): value is string => typeof value === "string" && UUID_RE.test(value));
     const payload = {
       title: input.title,
       slug: input.slug || slugify(input.title),
@@ -181,7 +188,7 @@ export const schedulingApi = {
       questions: input.questions ?? defaultQuestions(),
       isActive: input.isActive ?? true,
       isHidden: input.isHidden ?? false,
-      scheduleId: input.scheduleId ?? schedules[0]?.id,
+      ...(scheduleId ? { scheduleId } : {}),
     };
     const api = await tryApi(() =>
       apiBff<EventType>(`organizations/${org.id}/event-types`, {
@@ -193,6 +200,10 @@ export const schedulingApi = {
       return api;
     }
     const now = new Date().toISOString();
+    const previewScheduleId =
+      ("scheduleId" in payload && payload.scheduleId) ||
+      previewStore.listSchedules(org.id)[0]?.id ||
+      crypto.randomUUID();
     const eventType: EventType = {
       id: crypto.randomUUID(),
       organizationId: org.id,
@@ -203,7 +214,7 @@ export const schedulingApi = {
       createdAt: now,
       updatedAt: now,
       ...payload,
-      scheduleId: payload.scheduleId ?? schedules[0]?.id ?? crypto.randomUUID(),
+      scheduleId: previewScheduleId,
     };
     return { data: previewStore.saveEventType(org.id, eventType), source: "preview" };
   },
@@ -528,6 +539,7 @@ export const publicScheduling = {
       publicApi<Booking>("/v1/public/bookings", {
         method: "POST",
         body: JSON.stringify({
+          orgSlug: body.orgSlug,
           eventTypeSlug: body.eventTypeSlug,
           startAt: body.startAt,
           timezone: body.timezone,

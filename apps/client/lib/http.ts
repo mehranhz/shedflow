@@ -51,6 +51,11 @@ export async function readError(response: Response): Promise<ClientApiError> {
   );
 }
 
+/** True only for Nest "route not registered" 404s — not domain NOT_FOUND. */
 export function isMissingRoute(error: unknown): boolean {
-  return error instanceof ClientApiError && error.status === 404;
+  return (
+    error instanceof ClientApiError &&
+    error.status === 404 &&
+    /^Cannot (GET|POST|PUT|PATCH|DELETE)\b/i.test(error.message)
+  );
 }

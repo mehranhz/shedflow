@@ -55,4 +55,13 @@ Example (booking overlap, added in T-014):
 -- Do not recreate this from `prisma db pull`; it is not representable in schema.prisma.
 ```
 
+Applied migrations for Wave 2:
+
+| Migration | Purpose |
+| --- | --- |
+| `20260918220000_t010_t015_scheduling` | Schedules, rules, overrides, event types, customers, bookings, signed action tokens |
+| `20260918220100_booking_exclusion` | `btree_gist`, `bookings.occupied` (trigger-maintained), `bookings_host_occupied_excl`, minute/duration check constraints |
+
+`occupied` is maintained by trigger `bookings_set_occupied_trg` because PostgreSQL rejects the design-doc `GENERATED ALWAYS` expression (`make_interval` / `tstzrange` are not `IMMUTABLE`).
+
 Never run `prisma migrate reset` in production.

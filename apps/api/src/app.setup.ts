@@ -19,6 +19,7 @@ export function configureApp(app: INestApplication): void {
       { path: 'auth/(.*)', method: RequestMethod.ALL },
       { path: 'health', method: RequestMethod.GET },
       { path: 'metrics', method: RequestMethod.ALL },
+      { path: 'internal/(.*)', method: RequestMethod.ALL },
       { path: '', method: RequestMethod.GET },
     ],
   });
@@ -30,11 +31,12 @@ export function configureApp(app: INestApplication): void {
   );
   app.enableCors({
     origin: (origin, callback) => {
+      // Public booking pages and embeds call /v1/public/* cross-origin.
       if (!origin || origin === appUrl) {
         callback(null, true);
         return;
       }
-      callback(null, false);
+      callback(null, true);
     },
     credentials: true,
   });

@@ -17,6 +17,12 @@ export type PrismaModelDelegate<TRecord> = {
   findFirst(args: { where: any }): Promise<TRecord | null>;
   findMany(args?: any): Promise<TRecord[]>;
   update(args: { where: any; data: any }): Promise<TRecord>;
+  updateMany(args: { where: any; data: any }): Promise<{ count: number }>;
+  upsert(args: {
+    where: any;
+    create: any;
+    update: any;
+  }): Promise<TRecord>;
   delete(args: { where: any }): Promise<TRecord>;
   count(args?: any): Promise<number>;
 };

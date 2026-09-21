@@ -7,7 +7,7 @@
 
 ## T-010 — Schedules, weekly rules, date overrides
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-006, T-001  
 **Apps:** `apps/api`
 
@@ -21,15 +21,15 @@
 
 ### Acceptance
 
-- [ ] Default Mon–Fri 540–1020 exists after org create (if T-007 wired).
-- [ ] Overlapping rules → 400.
-- [ ] Override unavailable hides that date (assert in T-012 tests if slots exist; here unit-test persistence).
+- [x] Default Mon–Fri 540–1020 exists after org create (if T-007 wired).
+- [x] Overlapping rules → 400.
+- [x] Override unavailable hides that date (assert in T-012 tests if slots exist; here unit-test persistence).
 
 ---
 
 ## T-011 — Event types
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-010  
 **Design:** `02` EventType, `03` feature gate (limit 3 on FREE)
 
@@ -43,15 +43,15 @@
 
 ### Acceptance
 
-- [ ] CRUD works scoped to org.
-- [ ] Fourth active event type on FREE → 403 `FEATURE_GATED`.
-- [ ] Public GET does not list hidden/inactive.
+- [x] CRUD works scoped to org.
+- [x] Fourth active event type on FREE → 403 `FEATURE_GATED`.
+- [x] Public GET does not list hidden/inactive.
 
 ---
 
 ## T-012 — Slot generation
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-011  
 **Design:** `04` §2 and §10 (every edge case)
 
@@ -66,15 +66,15 @@
 
 ### Acceptance
 
-- [ ] All cases in `04` §10 that do not require bookings: DST, TZ, minNotice, 24h window, overlapping rules already rejected.
-- [ ] Truncation at 500 slots sets `truncated: true`.
-- [ ] Public, rate-limited.
+- [x] All cases in `04` §10 that do not require bookings: DST, TZ, minNotice, 24h window, overlapping rules already rejected.
+- [x] Truncation at 500 slots sets `truncated: true`.
+- [x] Public, rate-limited.
 
 ---
 
 ## T-013 — Customers
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-006  
 **Apps:** `apps/api`
 
@@ -86,14 +86,14 @@
 
 ### Acceptance
 
-- [ ] Booking path (T-014) can upsert. List is tenant-scoped.
-- [ ] Duplicate email same org returns same id.
+- [x] Booking path (T-014) can upsert. List is tenant-scoped.
+- [x] Duplicate email same org returns same id.
 
 ---
 
 ## T-014 — Bookings create + exclusion constraint
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-012, T-013, T-008  
 **Design:** `04` §3, `02` §3 SQL exclusion
 
@@ -111,16 +111,16 @@
 
 ### Acceptance
 
-- [ ] One 201 and one 409 under concurrency.
-- [ ] Slot disappears from T-012 results while CONFIRMED/PENDING_*.
-- [ ] IDOR 404 across orgs.
-- [ ] Exclusion constraint present in DB (`\d bookings` / e2e query `pg_constraint`).
+- [x] One 201 and one 409 under concurrency.
+- [x] Slot disappears from T-012 results while CONFIRMED/PENDING_*.
+- [x] IDOR 404 across orgs.
+- [x] Exclusion constraint present in DB (`\d bookings` / e2e query `pg_constraint`).
 
 ---
 
 ## T-015 — Cancel, reschedule, confirm, signed links
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-014  
 **Design:** `04` §4–§7
 
@@ -134,8 +134,8 @@
 
 ### Acceptance
 
-- [ ] Invitee cancel inside policy works; outside → `OUTSIDE_POLICY`.
-- [ ] Host can always cancel.
-- [ ] Reschedule conflict leaves original CONFIRMED.
-- [ ] Invalid token → 401.
-- [ ] Expire internal only with valid HMAC.
+- [x] Invitee cancel inside policy works; outside → `OUTSIDE_POLICY`.
+- [x] Host can always cancel.
+- [x] Reschedule conflict leaves original CONFIRMED.
+- [x] Invalid token → 401.
+- [x] Expire internal only with valid HMAC.

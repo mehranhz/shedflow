@@ -4,6 +4,7 @@ import { OrgGuard } from '../common/tenancy/org.guard';
 import { InvitationsController } from '../invitations/invitations.controller';
 import { InvitationsModule } from '../invitations/invitations.module';
 import { MembershipsModule } from '../memberships/memberships.module';
+import { SchedulesModule } from '../schedules/schedules.module';
 import { UsersModule } from '../users/users.module';
 import { OrganizationRepository } from './organization.repository';
 import { OrganizationsController } from './organizations.controller';
@@ -16,6 +17,7 @@ import { PrismaOrganizationRepository } from './prisma-organization.repository';
     InvitationsModule,
     UsersModule,
     forwardRef(() => AuthModule),
+    forwardRef(() => SchedulesModule),
   ],
   controllers: [OrganizationsController, InvitationsController],
   providers: [

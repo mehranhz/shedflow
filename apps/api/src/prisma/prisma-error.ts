@@ -28,6 +28,10 @@ function conflictingFields(
  * `common/persistence`. Anything unrecognised is passed through untouched.
  */
 export function toRepositoryError(error: unknown, entityName: string): Error {
+  if (isExclusionViolation(error)) {
+    return error instanceof Error ? error : new Error(String(error));
+  }
+
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     switch (error.code) {
       case UNIQUE_CONSTRAINT:
@@ -46,4 +50,30 @@ export function toRepositoryError(error: unknown, entityName: string): Error {
   }
 
   return error instanceof Error ? error : new Error(String(error));
+}
+
+function isExclusionViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const message =
+    'message' in error && typeof error.message === 'string'
+      ? error.message
+      : '';
+  const code =
+    'code' in error && typeof error.code === 'string' ? error.code : '';
+  const metaCode =
+    'meta' in error &&
+    error.meta &&
+    typeof error.meta === 'object' &&
+    'code' in error.meta &&
+    typeof (error.meta as { code?: unknown }).code === 'string'
+      ? (error.meta as { code: string }).code
+      : '';
+  return (
+    code === '23P01' ||
+    metaCode === '23P01' ||
+    message.includes('bookings_host_occupied_excl') ||
+    message.includes('exclusion constraint')
+  );
 }

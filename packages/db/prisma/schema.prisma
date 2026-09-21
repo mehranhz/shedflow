@@ -41,10 +41,13 @@ model User {
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  refreshTokens RefreshToken[]
-  tokens        UserToken[]
-  memberships   Membership[]
-  auditLogs     AuditLog[]
+  refreshTokens    RefreshToken[]
+  tokens           UserToken[]
+  memberships      Membership[]
+  hostedSchedules  Schedule[]      @relation("ScheduleHost")
+  hostedEventTypes EventType[]     @relation("EventTypeHost")
+  hostedBookings   Booking[]       @relation("BookingHost")
+  auditLogs        AuditLog[]
 
   @@map("users")
 }
@@ -102,6 +105,10 @@ model Organization {
 
   memberships Membership[]
   invitations Invitation[]
+  schedules   Schedule[]
+  eventTypes  EventType[]
+  customers   Customer[]
+  bookings    Booking[]
   auditLogs   AuditLog[]
 
   @@map("organizations")
@@ -139,6 +146,192 @@ model Invitation {
 
   @@index([organizationId, email])
   @@map("invitations")
+}
+
+// ---------------------------------------------------------------------------
+// Scheduling
+// ---------------------------------------------------------------------------
+
+enum LocationType {
+  GOOGLE_MEET
+  LINK
+  PHONE
+  IN_PERSON
+  CUSTOM
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  PENDING_CONFIRMATION
+  CONFIRMED
+  CANCELLED
+  RESCHEDULED
+  EXPIRED
+  NO_SHOW
+}
+
+enum BookingSource {
+  HOSTED
+  EMBED
+  API
+  DASHBOARD
+}
+
+model Schedule {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  hostUserId     String   @map("host_user_id") @db.Uuid
+  name           String
+  timezone       String
+  isDefault      Boolean  @default(false) @map("is_default")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  host         User               @relation("ScheduleHost", fields: [hostUserId], references: [id])
+  rules        AvailabilityRule[]
+  overrides    DateOverride[]
+  eventTypes   EventType[]
+
+  @@index([organizationId, hostUserId])
+  @@map("schedules")
+}
+
+model AvailabilityRule {
+  id          String @id @default(uuid()) @db.Uuid
+  scheduleId  String @map("schedule_id") @db.Uuid
+  /// 0 = Sunday … 6 = Saturday
+  dayOfWeek   Int    @map("day_of_week")
+  startMinute Int    @map("start_minute")
+  endMinute   Int    @map("end_minute")
+
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId, dayOfWeek])
+  @@map("availability_rules")
+}
+
+model DateOverride {
+  id            String   @id @default(uuid()) @db.Uuid
+  scheduleId    String   @map("schedule_id") @db.Uuid
+  date          DateTime @db.Date
+  isUnavailable Boolean  @default(false) @map("is_unavailable")
+  startMinute   Int?     @map("start_minute")
+  endMinute     Int?     @map("end_minute")
+
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, date])
+  @@map("date_overrides")
+}
+
+model EventType {
+  id                      String       @id @default(uuid()) @db.Uuid
+  organizationId          String       @map("organization_id") @db.Uuid
+  hostUserId              String       @map("host_user_id") @db.Uuid
+  scheduleId              String       @map("schedule_id") @db.Uuid
+  slug                    String
+  title                   String
+  description             String       @default("")
+  durationMinutes         Int          @map("duration_minutes")
+  locationType            LocationType @map("location_type")
+  locationValue           String?      @map("location_value")
+  bufferBeforeMinutes     Int          @default(0) @map("buffer_before_minutes")
+  bufferAfterMinutes      Int          @default(0) @map("buffer_after_minutes")
+  minNoticeMinutes        Int          @default(60) @map("min_notice_minutes")
+  maxDaysAhead            Int          @default(60) @map("max_days_ahead")
+  slotIntervalMinutes     Int          @default(0) @map("slot_interval_minutes")
+  dailyCap                Int?         @map("daily_cap")
+  requiresConfirmation    Boolean      @default(false) @map("requires_confirmation")
+  cancellationNoticeHours Int          @default(24) @map("cancellation_notice_hours")
+  rescheduleNoticeHours   Int          @default(24) @map("reschedule_notice_hours")
+  priceId                 String?      @map("price_id") @db.Uuid
+  subscriptionProductId   String?      @map("subscription_product_id") @db.Uuid
+  creditCost              Int          @default(0) @map("credit_cost")
+  questions               Json         @default("[]")
+  isActive                Boolean      @default(true) @map("is_active")
+  isHidden                Boolean      @default(false) @map("is_hidden")
+  createdAt               DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  host         User         @relation("EventTypeHost", fields: [hostUserId], references: [id])
+  schedule     Schedule     @relation(fields: [scheduleId], references: [id])
+  bookings     Booking[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId, hostUserId])
+  @@map("event_types")
+}
+
+model Customer {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  email          String
+  name           String
+  phone          String?
+  timezone       String?
+  notes          String   @default("")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bookings     Booking[]
+
+  @@unique([organizationId, email])
+  @@map("customers")
+}
+
+model Booking {
+  id                  String        @id @default(uuid()) @db.Uuid
+  uid                 String        @unique
+  organizationId      String        @map("organization_id") @db.Uuid
+  eventTypeId         String        @map("event_type_id") @db.Uuid
+  hostUserId          String        @map("host_user_id") @db.Uuid
+  customerId          String        @map("customer_id") @db.Uuid
+  startAt             DateTime      @map("start_at") @db.Timestamptz(3)
+  endAt               DateTime      @map("end_at") @db.Timestamptz(3)
+  bufferBeforeMinutes Int           @map("buffer_before_minutes")
+  bufferAfterMinutes  Int           @map("buffer_after_minutes")
+  timezone            String
+  status              BookingStatus
+  source              BookingSource
+  locationType        LocationType  @map("location_type")
+  locationValue       String?       @map("location_value")
+  answers             Json          @default("{}")
+  cancellationReason  String?       @map("cancellation_reason")
+  rescheduledFromId   String?       @map("rescheduled_from_id") @db.Uuid
+  paymentId           String?       @map("payment_id") @db.Uuid
+  subscriptionId      String?       @map("subscription_id") @db.Uuid
+  holdExpiresAt       DateTime?     @map("hold_expires_at") @db.Timestamptz(3)
+  metadata            Json          @default("{}")
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  eventType    EventType    @relation(fields: [eventTypeId], references: [id])
+  host         User         @relation("BookingHost", fields: [hostUserId], references: [id])
+  customer     Customer     @relation(fields: [customerId], references: [id])
+
+  @@index([organizationId, startAt])
+  @@index([hostUserId, startAt])
+  @@index([eventTypeId, startAt])
+  @@index([customerId])
+  @@index([status, holdExpiresAt])
+  @@map("bookings")
+}
+
+model SignedActionToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  bookingId String    @map("booking_id") @db.Uuid
+  purpose   String
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([bookingId])
+  @@map("signed_action_tokens")
 }
 
 enum DomainEventStatus {

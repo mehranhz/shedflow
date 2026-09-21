@@ -6,15 +6,20 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
+import { AvailabilityModule } from './availability/availability.module';
+import { BookingsModule } from './bookings/bookings.module';
 import { ClockModule } from './common/clock/clock.module';
 import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { RequestContextModule } from './common/tenancy/request-context.module';
 import { validateEnv } from './config/env';
+import { CustomersModule } from './customers/customers.module';
 import { DomainEventsModule } from './domain-events/domain-events.module';
+import { EventTypesModule } from './event-types/event-types.module';
 import { FallbackModule } from './fallback/fallback.module';
 import { HealthController } from './health/health.controller';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SchedulesModule } from './schedules/schedules.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -36,6 +41,11 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     AuthModule,
     OrganizationsModule,
+    SchedulesModule,
+    EventTypesModule,
+    AvailabilityModule,
+    CustomersModule,
+    BookingsModule,
     FallbackModule,
   ],
   controllers: [AppController, HealthController],

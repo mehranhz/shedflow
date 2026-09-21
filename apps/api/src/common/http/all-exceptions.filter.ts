@@ -138,11 +138,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     if (exception instanceof ForbiddenException) {
+      const payload = this.httpPayload(exception);
       return {
         status: HttpStatus.FORBIDDEN,
-        code: 'FORBIDDEN',
+        code:
+          payload.code === 'FEATURE_GATED' ? 'FEATURE_GATED' : 'FORBIDDEN',
         message: this.httpMessage(exception, 'Forbidden'),
-        details: this.detailsFromPayload(this.httpPayload(exception)),
+        details: this.detailsFromPayload(payload),
       };
     }
 
@@ -162,6 +164,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return {
           status: HttpStatus.CONFLICT,
           code: 'IDEMPOTENCY_MISMATCH',
+          message,
+          details: this.detailsFromPayload(payload),
+        };
+      }
+      if (payload.code === 'SLOT_UNAVAILABLE') {
+        return {
+          status: HttpStatus.CONFLICT,
+          code: 'SLOT_UNAVAILABLE',
           message,
           details: this.detailsFromPayload(payload),
         };

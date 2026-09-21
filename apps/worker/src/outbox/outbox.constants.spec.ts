@@ -1,4 +1,19 @@
-import { nextOutboxAttempt, outboxBackoffMs } from './outbox.constants';
+import {
+  eventQueueName,
+  nextOutboxAttempt,
+  outboxBackoffMs,
+} from './outbox.constants';
+
+describe('eventQueueName', () => {
+  it('uses a pg-boss-safe prefix (no colon)', () => {
+    expect(eventQueueName('auth.email_verified')).toBe(
+      'event/auth.email_verified',
+    );
+    expect(eventQueueName('test.poison')).toMatch(
+      /^[A-Za-z0-9_./-]+$/,
+    );
+  });
+});
 
 describe('outbox backoff', () => {
   it('marks FAILED at max attempts', () => {

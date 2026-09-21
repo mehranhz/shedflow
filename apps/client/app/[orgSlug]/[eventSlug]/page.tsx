@@ -22,7 +22,7 @@ const RESERVED = new Set([
 
 async function fetchPublicJson<T>(path: string): Promise<T | null> {
   try {
-    const response = await fetch(`${PUBLIC_API_URL}${path}`, { cache: "no-store" });
+    const response = await fetch(`${PUBLIC_API_URL}${path}`, { cache: "no-store",credentials: "include" });
     if (!response.ok) {
       return null;
     }
@@ -63,7 +63,10 @@ export default async function PublicEventPage({
   const apiEvent = await fetchPublicJson<PublicEventType & { organization?: PublicOrg }>(
     `/v1/public/orgs/${orgSlug}/event-types/${eventSlug}`,
   );
-  const organization: PublicOrg = apiEvent?.organization ?? {
+  if (!apiEvent) {
+    notFound();
+  }
+  const organization: PublicOrg = apiEvent.organization ?? {
     name: orgSlug,
     slug: orgSlug,
     logoUrl: null,
@@ -71,17 +74,7 @@ export default async function PublicEventPage({
     locale: "en",
     timezone: "UTC",
   };
-  const eventType: PublicEventType = apiEvent ?? {
-    slug: eventSlug,
-    title: eventSlug.replace(/-/g, " "),
-    description: "",
-    durationMinutes: 30,
-    locationType: "GOOGLE_MEET",
-    locationValue: null,
-    questions: [],
-    requiresConfirmation: false,
-    price: null,
-  };
+  const eventType: PublicEventType = apiEvent;
 
   const brand = organization.brandColor ?? "#0069ff";
   const hideChrome = embed === "1";

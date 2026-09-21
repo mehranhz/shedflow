@@ -4,8 +4,9 @@ export const OUTBOX_BATCH_SIZE = 50;
 export const OUTBOX_LEASE_MS = 30_000;
 export const POISON_EVENT_TYPE = 'test.poison';
 
+/** pg-boss queue names: alphanumeric, `_`, `-`, `.`, `/` only (no `:`). */
 export function eventQueueName(type: string): string {
-  return `event:${type}`;
+  return `event/${type}`;
 }
 
 export function outboxBackoffMs(attempts: number, baseMs: number): number {
@@ -22,7 +23,6 @@ export type ClaimedOutboxRow = {
 };
 
 export type OutboxAttemptResult =
-  | { status: 'PROCESSED'; processedAt: Date; lastError: null }
   | {
       status: 'PENDING';
       attempts: number;

@@ -30,6 +30,7 @@ import {
   INVITATION_TTL_MS,
   SLUG_PATTERN,
 } from './organization.constants';
+import { SchedulesService } from '../schedules/schedules.service';
 import {
   Organization,
   PublicOrganization,
@@ -82,6 +83,7 @@ export class OrganizationsService {
     private readonly config: ConfigService,
     private readonly outbox: Outbox,
     private readonly audit: AuditService,
+    private readonly schedules: SchedulesService,
   ) {}
 
   async listForUser(userId: string): Promise<PublicOrganization[]> {
@@ -476,16 +478,16 @@ export class OrganizationsService {
     return rest;
   }
 
-  /**
-   * T-010 replaces this no-op with `createDefaultSchedule(orgId, hostUserId, timezone)`
-   * (Mon–Fri 09:00–17:00). Schedule tables do not exist yet.
-   */
   private async createDefaultScheduleIfAvailable(
-    _organizationId: string,
-    _hostUserId: string,
-    _timezone: string,
+    organizationId: string,
+    hostUserId: string,
+    timezone: string,
   ): Promise<void> {
-    return;
+    await this.schedules.createDefaultSchedule(
+      organizationId,
+      hostUserId,
+      timezone,
+    );
   }
 
   private async allocateSlug(base: string): Promise<string> {

@@ -23,7 +23,9 @@ export class OutboxWorker implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     const polling = 1;
-    await this.boss.workRelay(() => this.relay.relay(), polling);
+    await this.boss.workRelay(async () => {
+      await this.relay.relay();
+    }, polling);
 
     const types = new Set<string>([...DOMAIN_EVENT_NAMES, POISON_EVENT_TYPE]);
     for (const type of types) {

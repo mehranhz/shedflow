@@ -2,6 +2,11 @@ packages:
   - apps/*
   - packages/*
 
+# Skip pnpm 11 lockfile tarball-URL revalidation on every command. The lockfile
+# is private/trusted; re-fetching metadata for 1k+ packages is slow and breaks
+# when a mirror URL was rewritten to registry.npmjs.org.
+trustLockfile: true
+
 allowBuilds:
   '@prisma/engines': true
   bcrypt: true

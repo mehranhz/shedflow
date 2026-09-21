@@ -32,6 +32,7 @@ import {
 } from './organization';
 import { OrganizationRepository } from './organization.repository';
 import { OrganizationsService } from './organizations.service';
+import { SchedulesService } from '../schedules/schedules.service';
 
 class InMemoryUserRepository
   extends InMemoryRepository<User, CreateUserData, UpdateUserData>
@@ -307,6 +308,12 @@ describe('OrganizationsService', () => {
         {
           provide: AuditService,
           useValue: { record: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: SchedulesService,
+          useValue: {
+            createDefaultSchedule: jest.fn().mockResolvedValue(undefined),
+          },
         },
       ],
     }).compile();
