@@ -3,6 +3,8 @@ import { CustomersModule } from '../customers/customers.module';
 import { EventTypesModule } from '../event-types/event-types.module';
 import { MembershipsModule } from '../memberships/memberships.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
+import { BillingCheckoutClient } from './billing-checkout.client';
+import { BillingCreditsClient } from './billing-credits.client';
 import { BookingRepository } from './booking.repository';
 import { BookingsController } from './bookings.controller';
 import { BookingsService } from './bookings.service';
@@ -25,6 +27,8 @@ import { SignedActionTokenRepository } from './signed-action-token.repository';
   ],
   providers: [
     BookingsService,
+    BillingCheckoutClient,
+    BillingCreditsClient,
     SignedActionTokenRepository,
     { provide: BookingRepository, useClass: PrismaBookingRepository },
   ],

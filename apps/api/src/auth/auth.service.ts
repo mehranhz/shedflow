@@ -137,6 +137,8 @@ export class AuthService {
       );
       await this.outbox.emit(DOMAIN_EVENTS.EmailVerificationRequested, {
         userId: user.id,
+        token: verify.raw,
+        email: user.email,
       });
       await this.audit.record({
         actorUserId: user.id,
@@ -249,16 +251,23 @@ export class AuthService {
       return;
     }
 
-    const issued = await this.issueUserToken(
-      user.id,
-      UserTokenType.PASSWORD_RESET,
-      PASSWORD_RESET_TTL_MS,
-    );
-    this.logAuthLink(
-      DOMAIN_EVENTS.PasswordResetRequested,
-      'reset-password',
-      issued.raw,
-    );
+    await this.transactions.runInTransaction(async () => {
+      const issued = await this.issueUserToken(
+        user.id,
+        UserTokenType.PASSWORD_RESET,
+        PASSWORD_RESET_TTL_MS,
+      );
+      this.logAuthLink(
+        DOMAIN_EVENTS.PasswordResetRequested,
+        'reset-password',
+        issued.raw,
+      );
+      await this.outbox.emit(DOMAIN_EVENTS.PasswordResetRequested, {
+        userId: user.id,
+        token: issued.raw,
+        email: user.email,
+      });
+    });
   }
 
   async resetPassword(rawToken: string, password: string): Promise<void> {
@@ -299,16 +308,23 @@ export class AuthService {
       return;
     }
 
-    const issued = await this.issueUserToken(
-      user.id,
-      UserTokenType.EMAIL_VERIFY,
-      EMAIL_VERIFY_TTL_MS,
-    );
-    this.logAuthLink(
-      DOMAIN_EVENTS.EmailVerificationRequested,
-      'verify-email',
-      issued.raw,
-    );
+    await this.transactions.runInTransaction(async () => {
+      const issued = await this.issueUserToken(
+        user.id,
+        UserTokenType.EMAIL_VERIFY,
+        EMAIL_VERIFY_TTL_MS,
+      );
+      this.logAuthLink(
+        DOMAIN_EVENTS.EmailVerificationRequested,
+        'verify-email',
+        issued.raw,
+      );
+      await this.outbox.emit(DOMAIN_EVENTS.EmailVerificationRequested, {
+        userId: user.id,
+        token: issued.raw,
+        email: user.email,
+      });
+    });
   }
 
   async validateUser(

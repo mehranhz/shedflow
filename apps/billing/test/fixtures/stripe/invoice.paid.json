@@ -1,0 +1,17 @@
+{
+  "id": "evt_test_invoice_paid",
+  "object": "event",
+  "type": "invoice.paid",
+  "data": {
+    "object": {
+      "id": "in_test_1",
+      "object": "invoice",
+      "subscription": "sub_test_1",
+      "period_start": 1704067200,
+      "period_end": 1706745600,
+      "metadata": {
+        "kind": "membership"
+      }
+    }
+  }
+}

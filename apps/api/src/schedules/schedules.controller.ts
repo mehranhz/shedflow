@@ -14,6 +14,8 @@ import {
 import { CurrentOrgContext } from '../common/tenancy/current-org.decorator';
 import { OrgGuard } from '../common/tenancy/org.guard';
 import type { RequestContextValue } from '../common/tenancy/request-context';
+import { RequireScopes } from '../developer/scopes.decorator';
+import { ScopesGuard } from '../developer/scopes.guard';
 import {
   CreateScheduleDto,
   ReplaceRulesDto,
@@ -23,11 +25,12 @@ import {
 import { SchedulesService } from './schedules.service';
 
 @Controller('organizations/:orgId/schedules')
-@UseGuards(OrgGuard)
+@UseGuards(OrgGuard, ScopesGuard)
 export class SchedulesController {
   constructor(private readonly schedules: SchedulesService) {}
 
   @Get()
+  @RequireScopes('availability:read')
   list(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @CurrentOrgContext() ctx: RequestContextValue,
@@ -45,6 +48,7 @@ export class SchedulesController {
   }
 
   @Get(':id')
+  @RequireScopes('availability:read')
   get(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('id', ParseUUIDPipe) id: string,

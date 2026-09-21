@@ -13,10 +13,14 @@ import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { RequestContextModule } from './common/tenancy/request-context.module';
 import { validateEnv } from './config/env';
 import { CustomersModule } from './customers/customers.module';
+import { DeveloperModule } from './developer/developer.module';
 import { DomainEventsModule } from './domain-events/domain-events.module';
+import { CalendarModule } from './calendar/calendar.module';
 import { EventTypesModule } from './event-types/event-types.module';
 import { FallbackModule } from './fallback/fallback.module';
 import { HealthController } from './health/health.controller';
+import { MeModule } from './me/me.module';
+import { ObservabilityModule } from './observability/observability.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SchedulesModule } from './schedules/schedules.module';
@@ -29,6 +33,7 @@ import { UsersModule } from './users/users.module';
       envFilePath: ['../../.env', '.env'],
       validate: validateEnv,
     }),
+    ObservabilityModule,
     ThrottlerModule.forRoot({
       throttlers: [{ name: 'default', ttl: 60_000, limit: 300 }],
     }),
@@ -46,6 +51,9 @@ import { UsersModule } from './users/users.module';
     AvailabilityModule,
     CustomersModule,
     BookingsModule,
+    DeveloperModule,
+    CalendarModule,
+    MeModule,
     FallbackModule,
   ],
   controllers: [AppController, HealthController],

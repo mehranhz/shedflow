@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MembershipStatus } from '@shedflow/db';
+import { MembershipStatus, Role } from '@shedflow/db';
 import type { Request } from 'express';
 import { AuthenticatedUser } from '../../users/user';
 import { MembershipRepository } from '../../memberships/membership.repository';
@@ -42,6 +42,20 @@ export class OrgGuard implements CanActivate {
       throw new NotFoundException('Not found');
     }
 
+    if (user.actorType === 'api_key') {
+      if (user.orgId !== orgId) {
+        throw new NotFoundException('Not found');
+      }
+      attachRequestContext(request, {
+        requestId: readRequestId(request),
+        userId: user.id,
+        organizationId: orgId,
+        role: (user.role as Role) ?? Role.ADMIN,
+        actorType: 'api_key',
+      });
+      return true;
+    }
+
     const membership = await this.memberships.findByUserInOrganization(
       orgId,
       user.id,
@@ -50,14 +64,13 @@ export class OrgGuard implements CanActivate {
       throw new NotFoundException('Not found');
     }
 
-    const value = {
+    attachRequestContext(request, {
       requestId: readRequestId(request),
       userId: user.id,
       organizationId: orgId,
       role: membership.role,
-      actorType: 'user' as const,
-    };
-    attachRequestContext(request, value);
+      actorType: 'user',
+    });
     return true;
   }
 

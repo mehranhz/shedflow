@@ -25,6 +25,9 @@ export type PublicUser = Pick<
 export type AuthenticatedUser = PublicUser & {
   orgId?: string;
   role?: Role;
+  /** Present when authenticated via organization API key (T-033). */
+  actorType?: 'user' | 'api_key';
+  scopes?: string[];
 };
 
 export type CreateUserData = {

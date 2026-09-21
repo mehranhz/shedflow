@@ -52,4 +52,10 @@ export abstract class BookingRepository extends Repository<
     toStatus: BookingStatus,
     extra?: UpdateBookingData,
   ): Promise<BookingEntity | null>;
+
+  /** GDPR erasure: wipe invitee answers; keep time rows for host calendar. */
+  abstract clearAnswersForCustomer(
+    organizationId: string,
+    customerId: string,
+  ): Promise<number>;
 }

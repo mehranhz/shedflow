@@ -6,7 +6,7 @@
 
 ## T-016 — Google Calendar OAuth, sync, conflict, write
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-009, T-014, T-015  
 **Apps:** `apps/api`, `apps/worker`
 
@@ -24,11 +24,11 @@
 
 ### Acceptance
 
-- [ ] Unit tests map Google events → busy (ignore transparent, cancelled; tentative = busy; all-day busy).
-- [ ] Fake provider e2e: connected calendar busy block removes a slot.
-- [ ] Booking confirmed enqueues write job (outbox → worker log).
-- [ ] Tokens never appear in logs.
-- [ ] Disconnect deletes busy blocks.
+- [x] Unit tests map Google events → busy (ignore transparent, cancelled; tentative = busy; all-day busy).
+- [x] Fake provider e2e: connected calendar busy block removes a slot.
+- [x] Booking confirmed enqueues write job (outbox → worker log).
+- [x] Tokens never appear in logs.
+- [x] Disconnect deletes busy blocks.
 
 ### Note
 

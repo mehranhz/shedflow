@@ -1,183 +1,232 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
+  Badge,
   Button,
-  Card,
-  CardContent,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@shedflow/ui/components";
-import { Copy, ExternalLink, MoreHorizontal, Settings } from "lucide-react";
+import { Code2, Copy, ExternalLink, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { useOrg } from "@/components/org-provider";
-import { CardGridSkeleton, QueryError } from "@/components/query-state";
+import { QueryError, TableSkeleton } from "@/components/query-state";
 import { APP_URL } from "@/lib/public-config";
-import { eventColor } from "@/lib/event-colors";
 import { schedulingApi } from "@/lib/scheduling";
 import type { EventType } from "@/lib/types";
 
-function locationLabel(eventType: EventType): string {
-  switch (eventType.locationType) {
-    case "GOOGLE_MEET":
-      return "Google Meet";
-    case "PHONE":
-      return "Phone call";
-    case "IN_PERSON":
-      return eventType.locationValue || "In-person";
-    case "LINK":
-      return eventType.locationValue || "Link";
-    default:
-      return eventType.locationValue || "Custom";
-  }
-}
+const EMBED_SCRIPT =
+  process.env.NEXT_PUBLIC_EMBED_SCRIPT_URL ??
+  "https://cdn.schedflow.com/embed.js";
 
 export function EventTypesList() {
+  const t = useTranslations("dashboard.eventTypes");
+  const tc = useTranslations("dashboard.common");
   const { organization, profile } = useOrg();
+  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ["event-types", organization.id],
     queryFn: () => schedulingApi.listEventTypes(organization, profile.id),
   });
 
-  const grouped = query.data?.data ?? [];
+  const items = query.data?.data ?? [];
+  const freeNearLimit =
+    organization.platformPlan === "FREE" &&
+    items.filter((item) => item.isActive).length >= 3;
+
+  const locationLabel = (eventType: EventType): string => {
+    switch (eventType.locationType) {
+      case "GOOGLE_MEET":
+        return t("locations.GOOGLE_MEET");
+      case "PHONE":
+        return t("locations.PHONE");
+      case "IN_PERSON":
+        return eventType.locationValue || t("locations.IN_PERSON");
+      case "LINK":
+        return eventType.locationValue || t("locations.LINK");
+      default:
+        return eventType.locationValue || t("locations.CUSTOM");
+    }
+  };
+
+  const toggleActive = useMutation({
+    mutationFn: (eventType: EventType) =>
+      schedulingApi.updateEventType(organization, profile.id, eventType.id, {
+        isActive: !eventType.isActive,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["event-types", organization.id] });
+      toast.success(t("updated"));
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : t("updateFailed"));
+    },
+  });
 
   const copyLink = async (eventType: EventType) => {
     const url = `${APP_URL}/${organization.slug}/${eventType.slug}`;
     await navigator.clipboard.writeText(url);
-    toast.success("Booking link copied");
+    toast.success(t("linkCopied"));
+  };
+
+  const copyEmbed = async (eventType: EventType) => {
+    const snippet = [
+      `<script src="${EMBED_SCRIPT}" async></script>`,
+      `<div class="schedflow-inline" data-org="${organization.slug}" data-event="${eventType.slug}"></div>`,
+    ].join("\n");
+    await navigator.clipboard.writeText(snippet);
+    toast.success(t("embedCopied"));
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Event types"
-        description="Create events to share for people to book on your calendar."
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button asChild>
-            <Link href="/dashboard/event-types/new">+ New event type</Link>
+            <Link href="/dashboard/event-types/new">{t("new")}</Link>
           </Button>
         }
       />
 
-      {query.isLoading ? <CardGridSkeleton /> : null}
+      {freeNearLimit ? (
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm">
+          {t("freeLimit")}{" "}
+          <Link href="/dashboard/billing" className="font-medium underline underline-offset-2">
+            {t("upgrade")}
+          </Link>{" "}
+          {t("upgradeMore")}
+        </p>
+      ) : null}
+
+      {query.isLoading ? <TableSkeleton /> : null}
       {query.error ? (
         <QueryError
-          message={query.error instanceof Error ? query.error.message : "Could not load event types"}
+          message={
+            query.error instanceof Error ? query.error.message : t("loadFailed")
+          }
           onRetry={() => void query.refetch()}
         />
       ) : null}
 
-      {query.data && grouped.length === 0 ? (
+      {query.data && items.length === 0 ? (
         <EmptyState
-          title="Create your first event type"
-          description="Event types are the meeting templates invitees book — like a 30-minute intro call."
+          title={t("emptyTitle")}
+          description={t("emptyBody")}
           actionHref="/dashboard/event-types/new"
-          actionLabel="New event type"
+          actionLabel={t("newShort")}
         />
       ) : null}
 
-      {grouped.length > 0 ? (
-        <div>
-          <div className="mb-3 flex items-center gap-2 text-sm">
-            <span className="font-medium">{organization.name}</span>
-            <span className="text-muted-foreground">/ {organization.slug}</span>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {grouped.map((eventType) => {
-              const color = eventColor(eventType.id, organization.brandColor);
-              return (
-                <Card
-                  key={eventType.id}
-                  className="overflow-hidden border-0 py-0 shadow-sm ring-1 ring-border/80"
-                >
-                  <div className="h-2" style={{ backgroundColor: color }} />
-                  <CardContent className="space-y-4 p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <Link
-                          href={`/dashboard/event-types/${eventType.id}`}
-                          className="font-semibold hover:text-primary"
-                        >
-                          {eventType.title}
-                        </Link>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {eventType.durationMinutes} mins, one-on-one
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {locationLabel(eventType)}
-                        </p>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
-                            <MoreHorizontal className="size-4" />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/event-types/${eventType.id}`}>
-                              Edit
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => void copyLink(eventType)}>
-                            Copy link
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link
-                              href={`/${organization.slug}/${eventType.slug}`}
-                              target="_blank"
-                            >
-                              View booking page
-                            </Link>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+      {items.length > 0 ? (
+        <div className="rounded-xl border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("colEvent")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("colDuration")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t("colLocation")}</TableHead>
+                <TableHead>{t("colActive")}</TableHead>
+                <TableHead className="w-12">
+                  <span className="sr-only">{tc("actions")}</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((eventType) => (
+                <TableRow key={eventType.id}>
+                  <TableCell>
+                    <div className="min-w-0">
+                      <Link
+                        href={`/dashboard/event-types/${eventType.id}`}
+                        className="font-medium hover:text-primary"
+                      >
+                        {eventType.title}
+                      </Link>
+                      <p className="truncate text-xs text-muted-foreground">
+                        /{organization.slug}/{eventType.slug}
+                      </p>
+                      {eventType.isHidden ? (
+                        <Badge variant="secondary" className="mt-1">
+                          {t("hidden")}
+                        </Badge>
+                      ) : null}
                     </div>
-                    <div className="flex items-center justify-between border-t pt-3">
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => void copyLink(eventType)}
-                        >
-                          <Copy className="size-3.5" />
-                          Copy link
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {tc("minutes", { count: eventType.durationMinutes })}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {locationLabel(eventType)}
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={eventType.isActive}
+                      disabled={toggleActive.isPending}
+                      onCheckedChange={() => toggleActive.mutate(eventType)}
+                      aria-label={`Toggle ${eventType.title}`}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-8">
+                          <MoreHorizontal className="size-4" />
+                          <span className="sr-only">{tc("openMenu")}</span>
                         </Button>
-                        <Button variant="ghost" size="sm" asChild>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
                           <Link href={`/dashboard/event-types/${eventType.id}`}>
-                            <Settings className="size-3.5" />
-                            Edit
+                            {t("edit")}
                           </Link>
-                        </Button>
-                      </div>
-                      <Button variant="ghost" size="icon" className="size-8" asChild>
-                        <Link
-                          href={`/${organization.slug}/${eventType.slug}`}
-                          target="_blank"
-                          aria-label="Open public page"
-                        >
-                          <ExternalLink className="size-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => void copyLink(eventType)}>
+                          <Copy className="size-3.5" />
+                          {t("copyLink")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => void copyEmbed(eventType)}>
+                          <Code2 className="size-3.5" />
+                          {t("copyEmbed")}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/${organization.slug}/${eventType.slug}`}
+                            target="_blank"
+                          >
+                            <ExternalLink className="size-3.5" />
+                            {t("viewPage")}
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       ) : null}
+
       {query.data?.source === "preview" ? (
-        <p className="text-xs text-muted-foreground">
-          Scheduling API is not online yet, so event types are saved in this browser for preview.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("previewNote")}</p>
       ) : null}
     </div>
   );

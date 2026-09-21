@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, type Membership as MembershipRecord } from '@shedflow/db';
+import {
+  MembershipStatus,
+  Prisma,
+  type Membership as MembershipRecord,
+} from '@shedflow/db';
 import { EntityNotFoundError } from '../common/persistence';
 import {
   PrismaModelDelegate,
@@ -94,5 +98,15 @@ export class PrismaMembershipRepository
       throw new EntityNotFoundError('Membership', id);
     }
     return this.delete(id);
+  }
+
+  disableAllForUser(userId: string): Promise<number> {
+    return this.run(async () => {
+      const result = await this.model.updateMany({
+        where: { userId, status: { not: MembershipStatus.DISABLED } },
+        data: { status: MembershipStatus.DISABLED },
+      });
+      return result.count;
+    });
   }
 }

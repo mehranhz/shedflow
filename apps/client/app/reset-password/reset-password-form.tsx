@@ -3,6 +3,7 @@
 import { useState, useTransition, type ChangeEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Alert,
   AlertDescription,
@@ -24,6 +25,7 @@ export function ResetPasswordForm() {
 }
 
 function ForgotPasswordForm() {
+  const t = useTranslations("auth.reset");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -44,7 +46,7 @@ function ForgotPasswordForm() {
         const data = (await response.json().catch(() => ({}))) as {
           message?: string;
         };
-        setError(data.message ?? "Could not send a reset email.");
+        setError(data.message ?? t("sendFailedFallback"));
         return;
       }
 
@@ -56,22 +58,20 @@ function ForgotPasswordForm() {
     <form onSubmit={onSubmit} className="flex w-full flex-col gap-5">
       {error ? (
         <Alert variant="destructive">
-          <AlertTitle>Request failed</AlertTitle>
+          <AlertTitle>{t("requestFailed")}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
 
       {sent ? (
         <Alert>
-          <AlertTitle>Check your email</AlertTitle>
-          <AlertDescription>
-            If an account exists for that address, we sent a reset link.
-          </AlertDescription>
+          <AlertTitle>{t("checkEmailTitle")}</AlertTitle>
+          <AlertDescription>{t("checkEmailBody")}</AlertDescription>
         </Alert>
       ) : (
         <>
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("email")}</Label>
             <Input
               id="email"
               name="email"
@@ -84,15 +84,15 @@ function ForgotPasswordForm() {
           </div>
 
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Sending…" : "Send reset link"}
+            {isPending ? t("sending") : t("sendLink")}
           </Button>
         </>
       )}
 
       <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-        Remembered it?{" "}
+        {t("remembered")}{" "}
         <Link href="/login" className="font-medium text-foreground underline">
-          Sign in
+          {t("signIn")}
         </Link>
       </p>
     </form>
@@ -100,6 +100,7 @@ function ForgotPasswordForm() {
 }
 
 function SetNewPasswordForm({ token }: { token: string }) {
+  const t = useTranslations("auth.reset");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -120,7 +121,7 @@ function SetNewPasswordForm({ token }: { token: string }) {
         const data = (await response.json().catch(() => ({}))) as {
           message?: string;
         };
-        setError(data.message ?? "Could not reset your password.");
+        setError(data.message ?? t("resetFailedFallback"));
         return;
       }
 
@@ -132,13 +133,11 @@ function SetNewPasswordForm({ token }: { token: string }) {
     return (
       <div className="flex flex-col gap-5">
         <Alert>
-          <AlertTitle>Password updated</AlertTitle>
-          <AlertDescription>
-            You can now sign in with your new password.
-          </AlertDescription>
+          <AlertTitle>{t("updatedTitle")}</AlertTitle>
+          <AlertDescription>{t("updatedBody")}</AlertDescription>
         </Alert>
         <Link href="/login">
-          <Button className="w-full">Sign in</Button>
+          <Button className="w-full">{t("signIn")}</Button>
         </Link>
       </div>
     );
@@ -148,13 +147,13 @@ function SetNewPasswordForm({ token }: { token: string }) {
     <form onSubmit={onSubmit} className="flex w-full flex-col gap-5">
       {error ? (
         <Alert variant="destructive">
-          <AlertTitle>Reset failed</AlertTitle>
+          <AlertTitle>{t("resetFailed")}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
 
-          <div className="grid gap-2">
-            <Label htmlFor="password">New password</Label>
+      <div className="grid gap-2">
+        <Label htmlFor="password">{t("newPassword")}</Label>
         <Input
           id="password"
           name="password"
@@ -165,11 +164,11 @@ function SetNewPasswordForm({ token }: { token: string }) {
           value={password}
           onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPassword(event.target.value)}
         />
-        <p className="text-xs text-zinc-500">At least 8 characters.</p>
+        <p className="text-xs text-zinc-500">{t("passwordHint")}</p>
       </div>
 
       <Button type="submit" disabled={isPending}>
-        {isPending ? "Updating…" : "Update password"}
+        {isPending ? t("updating") : t("update")}
       </Button>
     </form>
   );

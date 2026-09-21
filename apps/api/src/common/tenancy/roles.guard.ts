@@ -20,6 +20,10 @@ export class RolesGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<object>();
     const current = readRequestContext(request);
+    // API keys are authorized via scopes (ScopesGuard), not membership roles.
+    if (current?.actorType === 'api_key') {
+      return true;
+    }
     if (!current || !allowed.includes(current.role as Role)) {
       throw new ForbiddenException('Insufficient role');
     }

@@ -1,0 +1,1046 @@
+{
+  "common": {
+    "productName": "SchedFlow",
+    "skipToContent": "Skip to content",
+    "loading": "Loading…",
+    "yes": "Yes",
+    "no": "No",
+    "unlimited": "Unlimited",
+    "free": "Free",
+    "pro": "Pro"
+  },
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "howItWorks": "How it works",
+    "payments": "Payments",
+    "logIn": "Log in",
+    "getStarted": "Get started",
+    "goToDashboard": "Go to dashboard",
+    "dashboard": "Dashboard",
+    "openMenu": "Open menu",
+    "marketingAria": "Marketing",
+    "mobileAria": "Mobile",
+    "homeAria": "SchedFlow home"
+  },
+  "marketing": {
+    "site": {
+      "tagline": "Scheduling for people who get paid",
+      "description": "Publish event types, take free or paid bookings, and run memberships from a hosted page or embed. Built for coaches, clinics, consultants, tutors, salons, and trainers."
+    },
+    "cta": {
+      "signUpFree": "Sign up for free",
+      "openDashboard": "Open dashboard",
+      "viewPricing": "View pricing",
+      "seePricing": "See pricing",
+      "fullComparison": "Full comparison",
+      "comparePlans": "Compare Free and Pro",
+      "startFreeUpgradeLater": "Start free, upgrade later",
+      "upgradeInBilling": "Upgrade in billing"
+    },
+    "footer": {
+      "blurb": "Scheduling for people who get paid. Publish the offer, share a page or embed, get booked — and paid — in one flow.",
+      "product": "Product",
+      "account": "Account",
+      "builtFor": "Built for",
+      "copyright": "© {year} SchedFlow",
+      "meta": "Cards stay on Stripe. Time stays in UTC. Money is integer cents.",
+      "audiences": {
+        "coaches": "Coaches",
+        "clinics": "Clinics",
+        "consultants": "Consultants",
+        "tutors": "Tutors",
+        "salons": "Salons",
+        "trainers": "Trainers"
+      }
+    },
+    "home": {
+      "heroTitle": "Book the hour.",
+      "heroAccent": " Get paid for it.",
+      "heroLead": "Publish event types, share a hosted page or embed, and take free sessions, paid bookings, or memberships — without the email tennis.",
+      "heroNote": "Free forever for unpaid bookings. Pro is $29/mo the day you attach a price. Cards stay on Stripe.",
+      "heroVisualSr": "Animated preview of a hosted booking page: a client picks Thursday the 24th at 10:30 am and pays $120 through Stripe Checkout. Card data never touches SchedFlow.",
+      "personasAria": "Who SchedFlow is for",
+      "statsAria": "Product facts",
+      "productKicker": "The product",
+      "productTitle": "A booking page that can settle up, not just find a time.",
+      "productLead": "Calendly-shaped scheduling with Stripe Connect in the same motion — for practices that charge for the hour.",
+      "howKicker": "How it works",
+      "howTitle": "Five moves from empty calendar to paid session.",
+      "paymentsKicker": "Payments + scheduling",
+      "paymentsTitle": "The slot is not yours until Checkout completes.",
+      "paymentsLead": "Connect Express for payouts. A 15-minute hold so two people cannot buy the same hour. A 2% application fee on connected charges — not on your Pro subscription.",
+      "plansKicker": "Plans",
+      "plansTitle": "Free until you charge. Pro the day you do.",
+      "plansLead": "No trial. Stay on Free indefinitely. Upgrade self-serve when a paid event type or membership is the next step.",
+      "faqKicker": "FAQ",
+      "faqTitle": "Straight answers, MVP-honest.",
+      "faqLead": "No trial. No enterprise invoice. Self-serve Free or Pro, and a 2% fee only on money that runs through Connect."
+    },
+    "personas": {
+      "coach": {
+        "role": "Coach",
+        "offer": "60-min session",
+        "price": "$150"
+      },
+      "clinic": {
+        "role": "Clinic",
+        "offer": "New-patient consult",
+        "price": "$85"
+      },
+      "consultant": {
+        "role": "Consultant",
+        "offer": "Discovery call",
+        "price": "Free"
+      },
+      "tutor": {
+        "role": "Tutor",
+        "offer": "Weekly lesson pack",
+        "price": "4 credits"
+      },
+      "salon": {
+        "role": "Salon",
+        "offer": "Color consult",
+        "price": "$40"
+      },
+      "trainer": {
+        "role": "Trainer",
+        "offer": "Session membership",
+        "price": "$120/mo"
+      }
+    },
+    "stats": {
+      "hold": {
+        "value": "15 min",
+        "label": "hold on a paid slot"
+      },
+      "fee": {
+        "value": "2%",
+        "label": "Connect application fee"
+      },
+      "pci": {
+        "value": "SAQ A",
+        "label": "cards never touch us"
+      },
+      "start": {
+        "value": "$0",
+        "label": "to start on Free"
+      }
+    },
+    "bento": {
+      "paid": {
+        "title": "Price the slot. Hold it. Checkout.",
+        "body": "Paid event types lock the interval for 15 minutes while the invitee finishes Stripe Checkout. Abandoned payments expire. The hour goes back on the board."
+      },
+      "credits": {
+        "title": "Memberships, not just one-offs",
+        "body": "Period credits for tutors and trainers. Clients buy a plan, book without paying per visit, and refill when the period rolls."
+      },
+      "hours": {
+        "title": "Hours that respect the real calendar",
+        "body": "Weekly rules, split shifts, date overrides, buffers, min notice, daily caps. Conflict-checked against Google Calendar."
+      },
+      "page": {
+        "title": "A hosted page. Your URL.",
+        "body": "schedflow.com/{org}/{event} — timezone picker, month grid, questions, then confirm or pay. Pro can hide the badge."
+      },
+      "embed": {
+        "title": "Or drop it on the site you already have",
+        "body": "Inline embed or a popup button. Same booking flow, no second design system to maintain."
+      }
+    },
+    "steps": {
+      "1": {
+        "title": "Stand up an event type",
+        "body": "Duration, location, buffers, custom questions. Leave it free, attach a price, or require an active membership."
+      },
+      "2": {
+        "title": "Share the page — or embed it",
+        "body": "Copy your hosted link, or drop the inline snippet on the site you already run. Invitees never create an account."
+      },
+      "3": {
+        "title": "They pick a time in their zone",
+        "body": "Slots are computed in UTC, shown in the invitee’s IANA timezone, DST-safe. Days without openings stay disabled."
+      },
+      "4": {
+        "title": "Collect payment in the same motion",
+        "body": "If the event is priced, we hold the slot and send them to Stripe Checkout on your Connect account. No PAN on our servers."
+      },
+      "5": {
+        "title": "Calendar and email take it from there",
+        "body": "Confirmation, .ics, Google write-back, 24h and 1h reminders. Reschedule and cancel from signed links in the email."
+      }
+    },
+    "paymentRows": {
+      "1": {
+        "title": "Hold the interval",
+        "body": "A paid slot is reserved for 15 minutes so two people cannot checkout for the same hour."
+      },
+      "2": {
+        "title": "Checkout on Stripe",
+        "body": "Invitees pay through Stripe Checkout on your connected Express account. SchedFlow never sees the card number."
+      },
+      "3": {
+        "title": "Confirm — or release",
+        "body": "Payment success confirms the booking. If Checkout is abandoned, the hold expires and the time is bookable again."
+      },
+      "4": {
+        "title": "Payouts on Connect",
+        "body": "Express onboarding. Funds land on your connected account. SchedFlow takes a 2% application fee on those charges, not on your Pro subscription."
+      }
+    },
+    "featuresPage": {
+      "metaTitle": "Features",
+      "metaDescription": "Event types, availability, hosted booking, Stripe payments, memberships, embeds, notifications, and a developer API.",
+      "title": "Everything required to get booked and paid.",
+      "lead": "Not a kitchen sink. The MVP is the loop independents actually run: publish hours, take the booking, collect the fee, send the invite, let people move it."
+    },
+    "featureDeep": {
+      "scheduling": {
+        "kicker": "Scheduling",
+        "title": "Availability that behaves like a practice, not a spreadsheet",
+        "body": "Each host gets weekly rules, split shifts, and date overrides in an IANA timezone. Event types add buffers, minimum notice, max days ahead, and a daily cap. Slots are generated in UTC; the invitee picks in their own zone.",
+        "points": [
+          "Google Calendar conflict check and write-back",
+          "Google Meet links when that’s the location",
+          "Double-booking blocked in the database, not just the UI"
+        ]
+      },
+      "payments": {
+        "kicker": "Payments",
+        "title": "The booking is not done until the money is",
+        "body": "Attach a catalog price to an event type and the public flow changes: hold, Checkout, confirm. Cards stay on Stripe so we remain PCI SAQ A. Refunds and receipts live next to the booking, not in a second tool.",
+        "points": [
+          "Stripe Connect Express payouts",
+          "15-minute hold, then auto-release",
+          "Pay-per-booking or membership credits"
+        ]
+      },
+      "memberships": {
+        "kicker": "Memberships",
+        "title": "Credits that refill when the period does",
+        "body": "Tutors, trainers, and clinics sell a recurring plan. The customer gets N session credits per period, books credit-consuming event types without paying each time, and stops accruing when they cancel.",
+        "points": [
+          "Period entitlement, not a punch card PDF",
+          "Dunning follows Stripe if a renewal fails",
+          "Dashboard balance next to booking history"
+        ]
+      },
+      "presence": {
+        "kicker": "Presence",
+        "title": "Hosted page, embed, same spine",
+        "body": "The public booking UI is server-rendered with the org’s brand color and logo. Embed mode strips the chrome so it sits inside an existing site. Pro can hide “Powered by SchedFlow”.",
+        "points": [
+          "Inline embed or popup button",
+          "Guest checkout — no customer accounts in MVP",
+          "Signed links to manage, reschedule, cancel, pay"
+        ]
+      },
+      "developers": {
+        "kicker": "Developers",
+        "title": "API keys and signed webhooks, when you outgrow the dashboard",
+        "body": "Pro unlocks REST v1. Create bookings from a CRM, listen for booking.created, retry on HMAC-signed deliveries. The dashboard is enough until it isn’t.",
+        "points": [
+          "API keys shown once at creation",
+          "Webhook endpoints with delivery log",
+          "Same tenancy rules as the UI"
+        ]
+      }
+    },
+    "pricingPage": {
+      "metaTitle": "Pricing",
+      "metaDescription": "Free scheduling for a solo practice. Pro is $29/month or $290/year for paid bookings, memberships, branding, and the API.",
+      "title": "Two plans. Upgrade the day you start charging.",
+      "lead": "Free is real scheduling for a solo practice. Pro unlocks Stripe Connect, memberships, branding, and the API. Self-serve only — no sales call, no trial, cancel at period end.",
+      "billingKicker": "Billing, plainly",
+      "billingTitle": "What you pay us vs. what your clients pay you.",
+      "billingLead": "Platform billing is Free or Pro on our Stripe account. Commerce billing is your clients paying you on Connect. Those rails never mix.",
+      "intervalNote": "No trial. Stay on Free until you need payments, then upgrade self-serve. Annual is two months free versus monthly.",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "twoMonthsFree": "2 mo free",
+      "yearlyPerYear": "/ year",
+      "monthlyPerMonth": "/ month",
+      "whenYouCharge": "When you charge",
+      "yearlyEffective": "$24.17 / month billed annually",
+      "orYearly": "or $290 / year",
+      "capability": "Capability",
+      "compareAria": "Plan comparison",
+      "freeDot": "Free · {value}",
+      "proDot": "Pro · {value}"
+    },
+    "plans": {
+      "free": {
+        "name": "Free",
+        "price": "$0",
+        "cadence": "forever",
+        "blurb": "Scheduling for a solo practice. Upgrade the day you start charging.",
+        "features": [
+          "3 event types",
+          "1 member",
+          "Google Calendar conflict check & write-back",
+          "Hosted booking page",
+          "Free bookings, reschedule, and cancel",
+          "Email confirmations, 24h/1h reminders, .ics"
+        ],
+        "limits": [
+          "Paid bookings & Stripe Connect",
+          "Memberships / session credits",
+          "Custom branding / hide badge",
+          "API & webhooks",
+          "Outlook calendar"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "blurb": "Collect payment with the booking. Unlimited workspace.",
+        "yearlyNote": "${yearly} / year — two months free versus monthly",
+        "orYearly": "Or ${yearly}/year",
+        "cadenceYearly": "/mo, billed yearly",
+        "cadenceMonthly": "/month",
+        "fee": "2% application fee on Connect charges (bookings and memberships). Not on your Pro subscription.",
+        "features": [
+          "Unlimited event types and members",
+          "Paid bookings via Stripe Checkout",
+          "Memberships with period credits",
+          "Stripe Connect Express payouts",
+          "Custom branding, hide “Powered by SchedFlow”",
+          "API keys and signed webhooks",
+          "Google Calendar — Outlook behind a flag"
+        ]
+      }
+    },
+    "compare": {
+      "groups": {
+        "workspace": "Workspace",
+        "commerce": "Commerce",
+        "brand": "Brand",
+        "developers": "Developers"
+      },
+      "rows": {
+        "eventTypes": "Event types",
+        "members": "Members",
+        "googleCalendar": "Google Calendar",
+        "outlookCalendar": "Outlook calendar",
+        "freeBookings": "Free bookings",
+        "paidConnect": "Paid bookings & Connect",
+        "memberships": "Memberships & credits",
+        "applicationFee": "Application fee",
+        "hostedEmbed": "Hosted page + embed",
+        "hideBadge": "Hide “Powered by”",
+        "apiWebhooks": "API + webhooks"
+      },
+      "values": {
+        "three": "3",
+        "one": "1",
+        "yes": "Yes",
+        "no": "No",
+        "flag": "Flag",
+        "dash": "—",
+        "fee2": "2% on Connect",
+        "unlimited": "Unlimited"
+      }
+    },
+    "homeFaqs": [
+      {
+        "q": "Can I take paid bookings on the free plan?",
+        "a": "No. Free is for scheduling: three event types, one member, Google Calendar, and unpaid bookings. Pro unlocks Stripe Connect, pay-per-booking, memberships, branding, and the API."
+      },
+      {
+        "q": "Do you ever store card numbers?",
+        "a": "Never. Invitees pay through Stripe Checkout on your connected account. SchedFlow stays in PCI SAQ A — no PAN on our servers."
+      },
+      {
+        "q": "What if someone doesn’t finish paying?",
+        "a": "A paid slot is held for 15 minutes. If Checkout doesn’t complete, the hold expires and the time is bookable again."
+      },
+      {
+        "q": "Do my clients need an account?",
+        "a": "Not in this release. Invitees book as guests, then manage, reschedule, or cancel from signed links in email."
+      },
+      {
+        "q": "Can I embed booking on my own site?",
+        "a": "Yes. Inline embed or a popup button, same booking flow as the hosted page. Pro can hide the SchedFlow badge."
+      },
+      {
+        "q": "Is there a Pro trial?",
+        "a": "Not in the MVP. You can stay on Free indefinitely, upgrade self-serve when you need payments, and cancel in the Stripe customer portal. You remain Pro until the period ends."
+      }
+    ],
+    "pricingFaqs": [
+      {
+        "q": "Why is yearly $290 instead of $348?",
+        "a": "The annual Stripe price is two months free versus paying monthly. Prices live in Stripe — we can change them without a code deploy."
+      },
+      {
+        "q": "What is the 2% application fee?",
+        "a": "On payments your clients make through Stripe Connect (one-off sessions and memberships), SchedFlow takes 200 basis points. Your Pro subscription is billed separately on our platform account and does not take that fee."
+      },
+      {
+        "q": "What happens if I cancel Pro?",
+        "a": "You keep Pro until the period ends, then return to Free. Over-limit event types remain visible but you cannot create new ones. Paid event types stop accepting paid bookings."
+      },
+      {
+        "q": "Can I invoice enterprise or sign an annual contract?",
+        "a": "Not yet. MVP is 100% self-serve: Free or Pro, monthly or yearly, via Stripe Checkout."
+      },
+      {
+        "q": "Which countries can receive payouts?",
+        "a": "Connect onboarding starts with US, CA, GB, AU, IE, DE, FR, NL, ES, and IT. We expand from there."
+      }
+    ],
+    "finalCta": {
+      "kicker": "Open the books",
+      "title": "Publish the offer this afternoon. Take payment on the next one.",
+      "lead": "Free covers scheduling for a solo practice. Pro is waiting when the first paid session is."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Log in to your SchedFlow account.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Log in",
+      "submitting": "Signing in…",
+      "failedTitle": "Sign in failed",
+      "invalidCredentials": "Invalid email or password.",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Create your free workspace and booking page.",
+      "name": "Name",
+      "workspaceName": "Workspace name",
+      "workspacePlaceholder": "Acme Coaching",
+      "email": "Email",
+      "password": "Password",
+      "passwordHint": "At least 8 characters.",
+      "submit": "Sign up with email",
+      "submitting": "Creating account…",
+      "failedTitle": "Registration failed",
+      "failedFallback": "Registration failed.",
+      "hasAccount": "Already have an account?",
+      "logIn": "Log in"
+    },
+    "reset": {
+      "title": "Reset your password",
+      "subtitle": "Enter your email to receive a reset link, or set a new password if you already have a token.",
+      "email": "Email",
+      "sendLink": "Send reset link",
+      "sending": "Sending…",
+      "requestFailed": "Request failed",
+      "sendFailedFallback": "Could not send a reset email.",
+      "checkEmailTitle": "Check your email",
+      "checkEmailBody": "If an account exists for that address, we sent a reset link.",
+      "remembered": "Remembered it?",
+      "signIn": "Sign in",
+      "newPassword": "New password",
+      "passwordHint": "At least 8 characters.",
+      "update": "Update password",
+      "updating": "Updating…",
+      "resetFailed": "Reset failed",
+      "resetFailedFallback": "Could not reset your password.",
+      "updatedTitle": "Password updated",
+      "updatedBody": "You can now sign in with your new password."
+    },
+    "verify": {
+      "title": "Verify your email",
+      "subtitle": "Confirm your address to finish setting up your account.",
+      "pending": "Confirming your email…",
+      "successTitle": "Email verified",
+      "successBody": "Your address is confirmed. You can continue using SchedFlow.",
+      "goDashboard": "Go to dashboard",
+      "failedTitle": "Verification failed",
+      "missingToken": "This verification link is missing a token.",
+      "invalidToken": "This verification link is invalid or expired.",
+      "backToSignIn": "Back to sign in"
+    }
+  },
+  "dashboard": {
+    "nav": {
+      "home": "Home",
+      "eventTypes": "Event types",
+      "meetings": "Meetings",
+      "availability": "Availability",
+      "contacts": "Contacts",
+      "billing": "Billing",
+      "team": "Team",
+      "developer": "Developer",
+      "settings": "Settings"
+    },
+    "workspaces": "Workspaces",
+    "current": "Current",
+    "account": "Account",
+    "signOut": "Sign out",
+    "switched": "Workspace switched",
+    "switchFailed": "Could not switch workspace",
+    "common": {
+      "edit": "Edit",
+      "start": "Start",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "retry": "Retry",
+      "copied": "Copied",
+      "copyLink": "Copy link",
+      "viewAll": "View all",
+      "openMenu": "Open menu",
+      "actions": "Actions",
+      "meeting": "Meeting",
+      "invitee": "Invitee",
+      "minutes": "{count} min",
+      "previewOffline": "Scheduling API is offline — data in this browser is for preview only."
+    },
+    "overview": {
+      "title": "Home",
+      "welcome": "Welcome back. Here's what's happening in {orgName}.",
+      "today": "Today",
+      "next7": "Next 7 days",
+      "eventTypes": "Event types",
+      "setupTitle": "Finish setting up your booking page",
+      "setupBody": "Create an event type, copy the link, and you're ready to take meetings.",
+      "steps": {
+        "orgProfile": "Set workspace name and time zone",
+        "availability": "Set your working hours",
+        "eventType": "Create an event type",
+        "copyLink": "Copy your booking link",
+        "calendar": "Connect Google Calendar",
+        "stripe": "Connect Stripe (Pro)"
+      },
+      "shareTitle": "Share your link",
+      "shareBody": "Send this to invitees or add it to your site.",
+      "upcomingTitle": "Upcoming meetings",
+      "emptyTitle": "No upcoming meetings",
+      "emptyBody": "Share an event type to start filling your calendar.",
+      "goEventTypes": "Go to event types",
+      "withInvitee": "{title} with {name}"
+    },
+    "onboarding": {
+      "title": "Let's get you booked",
+      "description": "A few steps to a public page that looks like Calendly — minus the extra tools.",
+      "progress": "{complete} of {total} complete",
+      "steps": {
+        "workspace": "Workspace created",
+        "availability": "Set availability",
+        "eventType": "Create an event type",
+        "share": "Share your link"
+      }
+    },
+    "eventTypes": {
+      "title": "Event types",
+      "description": "Create events to share for people to book on your calendar.",
+      "new": "+ New event type",
+      "newShort": "New event type",
+      "emptyTitle": "Create your first event type",
+      "emptyBody": "Event types are the meeting templates invitees book — like a 30-minute intro call.",
+      "freeLimit": "Free plan limit reached (3 active event types).",
+      "upgrade": "Upgrade to Pro",
+      "upgradeMore": "to add more.",
+      "loadFailed": "Could not load event types",
+      "colEvent": "Event",
+      "colDuration": "Duration",
+      "colLocation": "Location",
+      "colActive": "Active",
+      "hidden": "Hidden",
+      "edit": "Edit",
+      "copyLink": "Copy link",
+      "copyEmbed": "Copy embed",
+      "updated": "Event type updated",
+      "updateFailed": "Could not update",
+      "linkCopied": "Booking link copied",
+      "embedCopied": "Embed snippet copied",
+      "locations": {
+        "GOOGLE_MEET": "Google Meet",
+        "PHONE": "Phone call",
+        "IN_PERSON": "In-person",
+        "LINK": "Link",
+        "CUSTOM": "Custom"
+      },
+      "viewPage": "View booking page",
+      "previewNote": "Scheduling API is not online yet, so event types are saved in this browser for preview.",
+      "form": {
+        "editTitle": "Edit event type",
+        "newTitle": "New event type",
+        "description": "What event is this?",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Event type saved",
+        "created": "Event type created",
+        "saveFailed": "Could not save event type",
+        "upgradeTitle": "Upgrade to Pro",
+        "freeLimitBody": "Free workspaces can publish 3 event types. Upgrade to Pro for more.",
+        "upgradeCta": "Upgrade",
+        "saveErrorTitle": "Could not save",
+        "detailsTitle": "Event details",
+        "name": "Event name *",
+        "link": "Link",
+        "duration": "Duration *",
+        "customDuration": "Custom",
+        "location": "Location",
+        "addressPlaceholder": "Address or room",
+        "descriptionLabel": "Description/instructions",
+        "descriptionPlaceholder": "What should invitees know before they book?",
+        "limitsTitle": "Booking limits",
+        "minNotice": "Minimum notice (minutes)",
+        "dateRange": "Date range (days ahead)",
+        "bufferBefore": "Buffer before (minutes)",
+        "bufferAfter": "Buffer after (minutes)",
+        "slotInterval": "Slot interval (0 = duration)",
+        "dailyCap": "Daily cap (optional)",
+        "unlimited": "Unlimited",
+        "cancelNotice": "Cancel notice (hours)",
+        "rescheduleNotice": "Reschedule notice (hours)",
+        "requireConfirmation": "Require confirmation",
+        "onOff": "On / Off",
+        "hideFromProfile": "Hide from org profile",
+        "paymentsTitle": "Payments",
+        "creditCost": "Credit cost",
+        "priceId": "Price id",
+        "pricePlaceholder": "Set in Billing",
+        "paidProTitle": "Paid bookings are Pro",
+        "paidProBody": "Connect Stripe and upgrade to attach prices to event types.",
+        "questionsTitle": "Invitee questions",
+        "questionsLabel": "JSON (validated with shared Zod schema)",
+        "durationRange": "Duration must be between 1 and 1440 minutes",
+        "nameRequired": "Event name is required",
+        "questionsInvalid": "Questions must be a valid JSON array of invitee questions",
+        "cancel": "Cancel",
+        "freeLimitAlert": "The Free plan includes 3 event types. Upgrade to publish a fourth (and unlimited) event types, paid bookings, and memberships.",
+        "namePlaceholder": "30 Minute Meeting",
+        "minutesShort": "{count} min",
+        "addWindow": "Add window",
+        "requireConfirmationHint": "Hold the time until you approve the booking.",
+        "onOffHint": "Turn off to hide this event type from your public page.",
+        "hideFromProfileHint": "Keep the direct link working without listing it on /{slug}.",
+        "paymentsHint": "Attach catalog prices in Billing. Credit cost lets membership bookings consume session credits.",
+        "paidProAlert": "Free event types stay unpaid. Upgrade to attach Stripe prices and membership credits.",
+        "viewBilling": "View billing"
+      },
+      "share": {
+        "title": "Share & embed",
+        "copyLink": "Copy link",
+        "open": "Open",
+        "inline": "Inline embed",
+        "popup": "Popup button",
+        "copySnippet": "Copy snippet",
+        "copied": "{label} copied",
+        "bookingLink": "Booking link",
+        "inlineSnippet": "Inline snippet",
+        "popupSnippet": "Popup snippet"
+      }
+    },
+    "availability": {
+      "title": "Availability",
+      "description": "Weekly hours and date overrides for your default schedule.",
+      "save": "Save availability",
+      "saved": "Availability saved",
+      "saveFailed": "Could not save availability",
+      "weekly": "Weekly hours",
+      "overrides": "Date overrides",
+      "addOverride": "Add override",
+      "unavailable": "Mark unavailable",
+      "customHours": "Custom hours",
+      "overrideSaved": "Date override saved",
+      "overrideRemoved": "Override removed",
+      "removeFailed": "Could not remove override",
+      "overrideFailed": "Could not save override",
+      "windowInvalid": "Each time window must end after it starts",
+      "customInvalid": "Enter valid custom hours",
+      "customOrder": "Custom hours must end after they start",
+      "days": {
+        "0": "Sunday",
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday"
+      },
+      "loadFailed": "Could not load schedules",
+      "noSchedule": "No schedule yet. Create an event type first.",
+      "saveShort": "Save",
+      "dayUnavailable": "Unavailable",
+      "pickDate": "Pick a date",
+      "dateSpecific": "Date-specific hours",
+      "dateSpecificBody": "Override a single date — holidays or extra hours.",
+      "customHoursLabel": "Custom hours",
+      "removeWindow": "Remove {day} window",
+      "addWindow": "Add window",
+      "markUnavailable": "Mark unavailable",
+      "saveOverride": "Save override",
+      "existingOverrides": "Existing overrides",
+      "removeOverride": "Remove",
+      "weeklyTitle": "Weekly hours"
+    },
+    "bookings": {
+      "title": "Meetings",
+      "description": "Upcoming and past bookings on this workspace. Refreshes every 30 seconds.",
+      "emptyTitle": "No meetings yet",
+      "emptyBody": "Create a booking from the dashboard or share an event type.",
+      "emptyAction": "Share an event type",
+      "loadFailed": "Could not load meetings",
+      "colInvitee": "Invitee",
+      "colEvent": "Event",
+      "colTime": "Time",
+      "colStatus": "Status",
+      "allEventTypes": "All event types",
+      "fromDate": "From date",
+      "toDate": "To date",
+      "previewNote": "Scheduling API is offline — bookings are stored in this browser for preview. Use New booking to seed the table.",
+      "ranges": {
+        "upcoming": "Upcoming",
+        "past": "Past",
+        "all": "Any time"
+      },
+      "statuses": {
+        "all": "All statuses",
+        "CONFIRMED": "Confirmed",
+        "PENDING_CONFIRMATION": "Pending confirmation",
+        "PENDING_PAYMENT": "Pending payment",
+        "CANCELLED": "Canceled",
+        "NO_SHOW": "No-show"
+      },
+      "newBooking": "New booking",
+      "createTitle": "Create a booking",
+      "createBody": "Schedule someone onto an event type from the dashboard. Works offline against the preview store when the API is down.",
+      "eventType": "Event type",
+      "selectEventType": "Select event type",
+      "startLabel": "Start ({timezone})",
+      "inviteeName": "Invitee name",
+      "inviteeEmail": "Invitee email",
+      "phoneOptional": "Phone (optional)",
+      "createCta": "Create booking",
+      "creating": "Creating…",
+      "created": "Booking created",
+      "createFailed": "Could not create booking",
+      "createRequired": "Event, time, name, and email are required",
+      "cancelDialog": "Cancel",
+      "detail": {
+        "when": "When",
+        "inviteeZone": "Invitee zone: {timezone}",
+        "source": "Source · {source}",
+        "viewContact": "View contact",
+        "answers": "Answers",
+        "cancelReason": "Cancel reason: {reason}",
+        "newStart": "New start",
+        "saveNewTime": "Save new time",
+        "saving": "Saving…",
+        "back": "Back",
+        "cancelReasonLabel": "Cancel reason (optional)",
+        "cancelReasonPlaceholder": "Invitee requested…",
+        "confirm": "Confirm",
+        "reschedule": "Reschedule",
+        "cancel": "Cancel",
+        "canceling": "Canceling…",
+        "markNoShow": "Mark no-show",
+        "canceled": "Meeting canceled",
+        "cancelFailed": "Could not cancel",
+        "confirmed": "Meeting confirmed",
+        "confirmFailed": "Could not confirm",
+        "noShowMarked": "Marked as no-show",
+        "noShowFailed": "Could not update",
+        "pickStart": "Pick a new start time",
+        "rescheduled": "Meeting rescheduled",
+        "rescheduleFailed": "Could not reschedule",
+        "refundSoon": "Refunds land with T-023",
+        "refundTitle": "Refund",
+        "refundBody": "Payment refunds ship with billing T-023. The button stays disabled until the billing refund route is available.",
+        "refundCta": "Refund payment"
+      }
+    },
+    "customers": {
+      "title": "Contacts",
+      "description": "People who have booked with this workspace.",
+      "search": "Search name, email, or phone",
+      "loadFailed": "Could not load contacts",
+      "emptyTitle": "No contacts yet",
+      "emptySearch": "No matching contacts",
+      "emptyBody": "Invitees appear here after their first booking.",
+      "emptySearchBody": "Try a different search.",
+      "colName": "Name",
+      "colEmail": "Email",
+      "colPhone": "Phone",
+      "colBookings": "Bookings",
+      "previewNote": "Scheduling API is offline — contacts come from bookings saved in this browser.",
+      "detailTitle": "Contact",
+      "loading": "Loading…",
+      "notFound": "Contact not found",
+      "backToList": "Back to contacts",
+      "back": "Back",
+      "profile": "Profile",
+      "emailLabel": "Email:",
+      "phoneLabel": "Phone:",
+      "timezoneLabel": "Timezone:",
+      "notesLabel": "Notes:",
+      "creditsTitle": "Membership credits",
+      "creditsBody": "Credit balances come from the billing BFF after memberships (T-022) and refunds (T-023). Nothing to show yet for this contact.",
+      "historyTitle": "Booking history",
+      "noHistory": "No bookings yet."
+    },
+    "billing": {
+      "title": "Billing",
+      "description": "Plan, Stripe Connect, and catalog prices.",
+      "upgradeUnavailable": "Upgrade unavailable",
+      "portalUnavailable": "Portal unavailable",
+      "portalSoon": "Customer portal is not available yet (T-024).",
+      "onboardFailed": "Could not start onboarding",
+      "stripeFailed": "Could not open Stripe",
+      "productCreated": "Product created",
+      "productFailed": "Could not create product",
+      "priceCreated": "Price created",
+      "priceFailed": "Could not create price",
+      "taxSaved": "Tax setting saved",
+      "taxFailed": "Could not save tax setting",
+      "pickProduct": "Pick a product and enter a valid amount",
+      "planTitle": "SchedFlow plan",
+      "planBody": "Free includes 3 event types. Pro unlocks paid bookings, branding, and the API.",
+      "priceMonth": "$29 / month",
+      "priceYear": "$290 / year",
+      "upgrading": "Redirecting…",
+      "upgradeCta": "Upgrade to Pro",
+      "upgradeHint": "Hits the billing BFF checkout route. If T-024 is not deployed yet, you are sent to a Stripe preview URL.",
+      "onPro": "You’re on Pro.",
+      "manageSubscription": "Manage subscription",
+      "connectTitle": "Stripe Connect",
+      "connectBody": "Connect an Express account so invitees can pay at checkout. Card numbers never touch SchedFlow.",
+      "connectLoadFailed": "Could not load Connect status",
+      "chargesEnabled": "Charges enabled",
+      "chargesPending": "Charges pending",
+      "payoutsEnabled": "Payouts enabled",
+      "payoutsPending": "Payouts pending",
+      "detailsSubmitted": "Details submitted",
+      "detailsIncomplete": "Details incomplete",
+      "billingOfflineTitle": "Billing service not connected",
+      "billingOfflineBody": "Start the billing API to load Connect status. Onboarding still attempts the BFF route.",
+      "opening": "Opening…",
+      "connectStripe": "Connect Stripe",
+      "openExpress": "Open Stripe Express",
+      "taxTitle": "Stripe Tax",
+      "taxBody": "When enabled, Checkout uses Stripe automatic tax (`org.settings.stripeTax`).",
+      "taxToggle": "Automatic tax on Checkout",
+      "taxHint": "Pro + Connect recommended.",
+      "catalogTitle": "Products & prices",
+      "catalogBody": "One-time session fees and memberships. Requires Pro and a connected Express account.",
+      "catalogUpgrade": "Upgrade to Pro to create catalog products.",
+      "catalogOfflineTitle": "Catalog API not available",
+      "catalogOfflineBody": "Products will appear here when the billing catalog routes respond. Create forms stay ready below once Connect is live.",
+      "colProduct": "Product",
+      "colType": "Type",
+      "colPrices": "Prices",
+      "noPrices": "No prices",
+      "noProducts": "No products yet.",
+      "productNamePlaceholder": "Product name",
+      "oneTime": "One-time",
+      "membership": "Membership",
+      "addProduct": "Add product",
+      "attachPrice": "Attach price to…",
+      "amount": "Amount",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "addPrice": "Add price",
+      "paymentsTitle": "Payments",
+      "paymentsBody": "Connected Checkout charges and refunds will list here after billing webhooks (T-021 / T-023).",
+      "colWhen": "When",
+      "colAmount": "Amount",
+      "colStatus": "Status",
+      "noPayments": "No payments yet."
+    },
+    "team": {
+      "title": "Team",
+      "description": "Invite teammates and manage roles.",
+      "invite": "Invite",
+      "email": "Email",
+      "sendInvite": "Send invite",
+      "sending": "Sending…",
+      "invited": "Invitation sent to {email}",
+      "inviteFailed": "Could not invite",
+      "inviteHint": "The API emails (or logs) the invite link. Accept via /invite/[token].",
+      "onlyAdmins": "Only owners and admins can invite teammates.",
+      "members": "Members",
+      "loadFailed": "Could not load members",
+      "colEmail": "Email",
+      "colRole": "Role",
+      "colStatus": "Status",
+      "colActions": "Actions",
+      "roleUpdated": "Role updated",
+      "roleFailed": "Could not update role",
+      "removed": "Member removed",
+      "removeFailed": "Could not remove member",
+      "revoked": "Invitation revoked",
+      "revokeFailed": "Could not revoke",
+      "member": "Member",
+      "admin": "Admin",
+      "pendingTitle": "Pending invitations",
+      "noPending": "No pending invites.",
+      "colExpires": "Expires",
+      "revoke": "Revoke",
+      "remove": "Remove",
+      "removeConfirm": "Remove {email}?",
+      "emailPlaceholder": "teammate@company.com"
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Workspace profile, branding, and cancellation defaults.",
+      "profile": "Profile",
+      "profileBody": "Brand color themes the hosted booking page. Slug changes are owner-only.",
+      "workspaceName": "Workspace name",
+      "slug": "Booking page slug",
+      "publicUrl": "Public URL: /{slug}",
+      "timezone": "Time zone",
+      "locale": "Locale",
+      "currency": "Currency",
+      "logoUrl": "Logo URL",
+      "brandColor": "Brand color",
+      "hideBadge": "Hide Powered by SchedFlow",
+      "hideBadgeHint": "Pro branding option.",
+      "saved": "Settings saved — brand color applies on public booking pages",
+      "saveFailed": "Could not save",
+      "adminOnly": "Only owners and admins can update workspace settings",
+      "ownerSlug": "Only the owner can change the booking page slug",
+      "colorFormat": "Brand color must be #RRGGBB",
+      "dangerTitle": "Danger zone",
+      "dangerBody": "Soft-delete this workspace. Existing bookings are kept as history.",
+      "deleteConfirm": "Delete this workspace?",
+      "deleted": "Workspace deleted",
+      "deleteFailed": "Could not delete",
+      "deleteWorkspace": "Delete workspace"
+    },
+    "developer": {
+      "title": "Developer",
+      "description": "API keys and webhooks for Pro workspaces.",
+      "upgradeTitle": "Upgrade to Pro",
+      "upgradeBody": "API keys and signed webhooks unlock on Pro. Create keys lands with T-033.",
+      "upgradeCta": "Upgrade to Pro",
+      "comingTitle": "Coming with the developer API (T-033)",
+      "comingBody": "Create API keys (secret shown once) and register webhook endpoints here next. Until then, use the dashboard for bookings.",
+      "apiKeys": "API keys",
+      "noKeys": "No keys yet.",
+      "freeKeysHint": "Upgrade to Pro, then create keys after T-033.",
+      "proKeysHint": "Key management ships in T-033.",
+      "webhooks": "Webhook endpoints",
+      "noWebhooks": "No endpoints yet.",
+      "webhooksHint": "HMAC-signed deliveries for booking.created and friends will show up here.",
+      "viewBilling": "View billing plan",
+      "upgradeFailed": "Upgrade unavailable"
+    }
+  },
+  "booking": {
+    "chrome": {
+      "poweredBy": "Powered by SchedFlow",
+      "backToOrg": "← {orgName}"
+    },
+    "org": {
+      "welcome": "Welcome to my scheduling page. Please select a meeting.",
+      "empty": "No public event types yet.",
+      "notFoundTitle": "Workspace not found",
+      "notFoundFallback": "Check the link and try again.",
+      "durationMinutes": "{count} min"
+    },
+    "event": {
+      "unavailableTitle": "This page isn’t available",
+      "notFoundFallback": "We couldn’t find that event type.",
+      "missingOrg": "Organization branding is missing for this event.",
+      "retry": "Retry",
+      "durationMinutes": "{count} min",
+      "googleMeet": "Google Meet"
+    },
+    "picker": {
+      "selectDateTime": "Select a Date & Time",
+      "enterDetails": "Enter details",
+      "back": "Back",
+      "name": "Name *",
+      "email": "Email *",
+      "phoneOptional": "Phone (optional)",
+      "selectOption": "Select an option",
+      "schedule": "Schedule event",
+      "continuePayment": "Continue to payment",
+      "scheduling": "Scheduling…",
+      "slotUnavailable": "That time is no longer available.",
+      "bookFailed": "Could not book",
+      "loadTimesFailed": "Could not load times.",
+      "emptyMonth": "No times available this month. Try another month or timezone.",
+      "emptyDay": "No times available this day.",
+      "pickDay": "Pick a day on the calendar to see times.",
+      "privacyConsent": "I agree to the <privacy>privacy policy</privacy> *",
+      "privacyRequired": "Please accept the privacy policy to continue."
+    },
+    "manage": {
+      "title": "Manage booking",
+      "metaTitle": "Manage booking",
+      "meetingFallback": "Meeting",
+      "notFoundTitle": "Booking not found",
+      "notFoundBody": "This manage link may have expired.",
+      "loading": "Loading booking…",
+      "reschedule": "Reschedule",
+      "cancel": "Cancel",
+      "cancelDialogTitle": "Cancel this meeting?",
+      "cancelDialogBody": "The time will be released for others to book.",
+      "reasonPlaceholder": "Reason (optional)",
+      "keepMeeting": "Keep meeting",
+      "cancelMeeting": "Cancel meeting",
+      "canceling": "Canceling…",
+      "canceledToast": "Meeting canceled",
+      "cancelFailed": "Could not cancel"
+    },
+    "reschedule": {
+      "title": "Reschedule",
+      "metaTitle": "Reschedule",
+      "currentTime": "Current time: {when}",
+      "timesUnavailableTitle": "Times unavailable",
+      "timesUnavailableBody": "Open reschedule from your confirmation link so we can load this event’s calendar.",
+      "emptyMonth": "No times available this month. Try another month.",
+      "successToast": "Meeting rescheduled",
+      "slotUnavailable": "That time is no longer available.",
+      "failed": "Could not reschedule",
+      "notFoundTitle": "Booking not found",
+      "notFoundBody": "This manage link may have expired."
+    },
+    "pay": {
+      "title": "Complete payment",
+      "metaTitle": "Complete payment",
+      "meetingFallback": "Meeting",
+      "holdNote": "Your slot is on hold. You’ll be sent to Stripe Checkout when it’s ready.",
+      "retry": "Retry checkout",
+      "checking": "Checking…",
+      "notReady": "Checkout URL not ready yet.",
+      "startFailed": "Could not start checkout",
+      "notFound": "Booking not found.",
+      "viewBooking": "View booking"
+    },
+    "result": {
+      "success": {
+        "metaTitle": "You’re scheduled",
+        "title": "You are scheduled",
+        "description": "A calendar invitation has been sent to your email address."
+      },
+      "cancelled": {
+        "metaTitle": "Meeting canceled",
+        "title": "Meeting canceled",
+        "description": "This time is now available for others."
+      },
+      "meetingFallback": "Meeting",
+      "waitingPayment": "Waiting for payment confirmation…",
+      "manage": "Manage booking"
+    },
+    "status": {
+      "CONFIRMED": "Confirmed",
+      "PENDING_PAYMENT": "Pending payment",
+      "PENDING_CONFIRMATION": "Pending",
+      "CANCELLED": "Canceled",
+      "RESCHEDULED": "Rescheduled",
+      "EXPIRED": "Expired",
+      "NO_SHOW": "No-show"
+    },
+    "timezone": {
+      "search": "Search time zones...",
+      "empty": "No time zone found."
+    }
+  },
+  "localeSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "fa": "فارسی"
+  }
+}

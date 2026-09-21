@@ -82,7 +82,7 @@ Multi-tenant core. Every subsequent module depends on this.
 
 ## T-009 — `apps/worker` + pg-boss + outbox relay
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-008  
 **Apps:** `apps/worker` (new)  
 **Design:** `mvp/01` worker, `mvp/07` §1
@@ -100,6 +100,6 @@ Multi-tenant core. Every subsequent module depends on this.
 
 ### Acceptance
 
-- [ ] Inserting a `domain_events` row in DB results in a worker log line within ~3s.
-- [ ] Poison payload: after retries, status FAILED, worker still running.
-- [ ] `GET http://localhost:3003/health` 200.
+- [x] Inserting a `domain_events` row in DB results in a worker log line within ~3s.
+- [x] Poison payload: after retries, status FAILED, worker still running.
+- [x] `GET http://localhost:3003/health` 200.

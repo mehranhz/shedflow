@@ -1,3 +1,42 @@
+/**
+ * Relative luminance (WCAG 2.1) and contrast helpers for brand colors.
+ */
+
+function srgbChannel(byte: number): number {
+  const c = byte / 255;
+  return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+
+export function relativeLuminance(hex: string): number {
+  const value = hex.replace("#", "");
+  if (value.length !== 6) {
+    return 0;
+  }
+  const r = srgbChannel(parseInt(value.slice(0, 2), 16));
+  const g = srgbChannel(parseInt(value.slice(2, 4), 16));
+  const b = srgbChannel(parseInt(value.slice(4, 6), 16));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrastRatio(l1: number, l2: number): number {
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+/** Pick black or white foreground for readable text on `hex` background. */
+export function foregroundOn(hex: string): string {
+  const value = hex.replace("#", "");
+  if (value.length !== 6) {
+    return "#ffffff";
+  }
+  const L = relativeLuminance(`#${value}`);
+  const onWhite = contrastRatio(L, 1);
+  const onBlack = contrastRatio(L, 0);
+  // Prefer white on low-luminance (dark) brands.
+  return onWhite >= onBlack ? "#ffffff" : "#0f172a";
+}
+
 const PALETTE = [
   "#0069ff",
   "#0b84f3",
@@ -18,16 +57,4 @@ export function eventColor(seed: string, fallback?: string | null): string {
     hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
   }
   return PALETTE[hash % PALETTE.length] ?? PALETTE[0];
-}
-
-export function foregroundOn(hex: string): string {
-  const value = hex.replace("#", "");
-  if (value.length !== 6) {
-    return "#ffffff";
-  }
-  const r = parseInt(value.slice(0, 2), 16) / 255;
-  const g = parseInt(value.slice(2, 4), 16) / 255;
-  const b = parseInt(value.slice(4, 6), 16) / 255;
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance < 0.45 ? "#ffffff" : "#0f172a";
 }

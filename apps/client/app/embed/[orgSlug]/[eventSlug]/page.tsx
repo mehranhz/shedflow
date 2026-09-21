@@ -1,24 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import { BookingPageShell } from "@/components/booking/booking-shell";
 import { PublicEventLoader } from "@/components/booking/public-event-loader";
-import { PUBLIC_API_URL } from "@/lib/public-config";
+import { fetchPublicJson } from "@/lib/public-fetch";
 import type { PublicEventType, PublicOrg } from "@/lib/types";
-
-async function fetchPublicJson<T>(path: string): Promise<T | null> {
-  try {
-    const response = await fetch(`${PUBLIC_API_URL}${path}`, {
-      cache: "no-store",
-      credentials: "include",
-    });
-    if (!response.ok) {
-      return null;
-    }
-    return (await response.json()) as T;
-  } catch {
-    return null;
-  }
-}
 
 export async function generateMetadata({
   params,
@@ -29,9 +15,10 @@ export async function generateMetadata({
   const event = await fetchPublicJson<PublicEventType & { organization?: PublicOrg }>(
     `/v1/public/orgs/${orgSlug}/event-types/${eventSlug}`,
   );
-  const title = event
-    ? `${event.title} · ${event.organization?.name ?? orgSlug}`
-    : `${eventSlug} · ${orgSlug}`;
+  const title =
+    event.kind === "ok"
+      ? `${event.data.title} · ${event.data.organization?.name ?? orgSlug}`
+      : `${eventSlug} · ${orgSlug}`;
   return { title };
 }
 
@@ -41,30 +28,38 @@ export default async function EmbedEventPage({
   params: Promise<{ orgSlug: string; eventSlug: string }>;
 }) {
   const { orgSlug, eventSlug } = await params;
-  const apiEvent = await fetchPublicJson<PublicEventType & { organization?: PublicOrg }>(
+  const fetched = await fetchPublicJson<PublicEventType & { organization?: PublicOrg }>(
     `/v1/public/orgs/${orgSlug}/event-types/${eventSlug}`,
   );
-  if (!apiEvent) {
+  if (fetched.kind === "not_found") {
     notFound();
   }
-  const organization: PublicOrg = apiEvent.organization ?? {
-    name: orgSlug,
-    slug: orgSlug,
-    logoUrl: null,
-    brandColor: "#0069ff",
-    locale: "en",
-    timezone: "UTC",
-  };
+
+  const organization: PublicOrg | null =
+    fetched.kind === "ok"
+      ? (fetched.data.organization ?? {
+          name: orgSlug,
+          slug: orgSlug,
+          logoUrl: null,
+          brandColor: "#0069ff",
+          locale: "en",
+          timezone: "UTC",
+        })
+      : null;
 
   return (
-    <div className="min-h-svh bg-background p-2">
+    <BookingPageShell
+      brandColor={organization?.brandColor}
+      locale={organization?.locale}
+      embed
+    >
       <PublicEventLoader
         orgSlug={orgSlug}
         eventSlug={eventSlug}
         embed
         fallbackOrg={organization}
-        fallbackEvent={apiEvent}
+        fallbackEvent={fetched.kind === "ok" ? fetched.data : null}
       />
-    </div>
+    </BookingPageShell>
   );
 }

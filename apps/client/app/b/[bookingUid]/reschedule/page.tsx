@@ -1,6 +1,13 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import { RescheduleBooking } from "@/components/booking/reschedule-booking";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("booking.reschedule");
+  return { title: t("metaTitle") };
+}
 
 export default async function ReschedulePage({
   params,

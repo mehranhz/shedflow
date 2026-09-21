@@ -22,5 +22,7 @@ export default defineConfig({
     },
     outDir: "dist",
     emptyOutDir: true,
+    minify: "esbuild",
+    target: "es2018",
   },
 });

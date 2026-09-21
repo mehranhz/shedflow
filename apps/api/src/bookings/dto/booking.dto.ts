@@ -47,6 +47,11 @@ export class CreatePublicBookingDto {
   @IsObject()
   answers?: Record<string, string | boolean>;
 
+  /** Consent / client metadata; `privacyAcceptedAt` set by the booking form. */
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
+
   @IsEnum(BookingSource)
   source!: BookingSource;
 }

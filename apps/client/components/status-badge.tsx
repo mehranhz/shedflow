@@ -1,19 +1,14 @@
+"use client";
+
 import { Badge } from "@shedflow/ui/components";
+import { useTranslations } from "next-intl";
 
 import type { BookingStatus } from "@/lib/types";
 
-const STATUS_LABEL: Record<BookingStatus, string> = {
-  CONFIRMED: "Confirmed",
-  PENDING_PAYMENT: "Pending payment",
-  PENDING_CONFIRMATION: "Pending",
-  CANCELLED: "Canceled",
-  RESCHEDULED: "Rescheduled",
-  EXPIRED: "Expired",
-  NO_SHOW: "No-show",
-};
-
 export function StatusBadge({ status }: { status: BookingStatus }) {
-  const label = STATUS_LABEL[status];
+  const t = useTranslations("booking.status");
+  const label = t(status);
+
   if (status === "CONFIRMED") {
     return (
       <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">

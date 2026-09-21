@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Button,
   Command,
@@ -27,6 +28,7 @@ export function TimezoneCombobox({
   onChange: (next: string) => void;
   className?: string;
 }) {
+  const t = useTranslations("booking.timezone");
   const [open, setOpen] = useState(false);
   const zones = useMemo(() => listTimeZones(), []);
 
@@ -43,14 +45,14 @@ export function TimezoneCombobox({
             <Globe className="size-4 shrink-0 text-muted-foreground" />
             <span className="truncate">{formatTimeZoneLabel(value)}</span>
           </span>
-          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ms-2 size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[360px] p-0" align="start">
         <Command>
-          <CommandInput placeholder="Search time zones..." />
+          <CommandInput placeholder={t("search")} />
           <CommandList>
-            <CommandEmpty>No time zone found.</CommandEmpty>
+            <CommandEmpty>{t("empty")}</CommandEmpty>
             <CommandGroup>
               {zones.map((zone) => (
                 <CommandItem
@@ -63,7 +65,7 @@ export function TimezoneCombobox({
                 >
                   <Check
                     className={cn(
-                      "mr-2 size-4",
+                      "me-2 size-4",
                       zone === value ? "opacity-100" : "opacity-0",
                     )}
                   />

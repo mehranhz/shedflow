@@ -83,11 +83,18 @@ describe('AvailabilityService', () => {
       countByEventTypeLocalDays: jest.fn().mockResolvedValue(new Map()),
     };
 
+    const calendars = {
+      listBusyForHost: jest.fn().mockResolvedValue([]),
+      isConflictSyncStale: jest.fn().mockResolvedValue(false),
+      liveFreeBusyMerge: jest.fn().mockResolvedValue([]),
+    };
+
     return new AvailabilityService(
       new FrozenClock(now),
       eventTypes as never,
       schedules as never,
       bookings as never,
+      calendars as never,
     );
   }
 

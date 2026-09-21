@@ -1,36 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import { BookingChrome, BookingPageShell } from "@/components/booking/booking-shell";
 import { PublicEventLoader } from "@/components/booking/public-event-loader";
-import { foregroundOn } from "@/lib/event-colors";
-import { PUBLIC_API_URL } from "@/lib/public-config";
+import { fetchPublicJson } from "@/lib/public-fetch";
 import type { PublicEventType, PublicOrg } from "@/lib/types";
-
-const RESERVED = new Set([
-  "login",
-  "register",
-  "dashboard",
-  "reset-password",
-  "verify-email",
-  "invite",
-  "api",
-  "b",
-  "embed",
-  "app",
-]);
-
-async function fetchPublicJson<T>(path: string): Promise<T | null> {
-  try {
-    const response = await fetch(`${PUBLIC_API_URL}${path}`, { cache: "no-store",credentials: "include" });
-    if (!response.ok) {
-      return null;
-    }
-    return (await response.json()) as T;
-  } catch {
-    return null;
-  }
-}
 
 export async function generateMetadata({
   params,
@@ -41,9 +15,10 @@ export async function generateMetadata({
   const event = await fetchPublicJson<PublicEventType & { organization?: PublicOrg }>(
     `/v1/public/orgs/${orgSlug}/event-types/${eventSlug}`,
   );
-  const title = event
-    ? `${event.title} · ${event.organization?.name ?? orgSlug}`
-    : `${eventSlug} · ${orgSlug}`;
+  const title =
+    event.kind === "ok"
+      ? `${event.data.title} · ${event.data.organization?.name ?? orgSlug}`
+      : `${eventSlug} · ${orgSlug}`;
   return { title };
 }
 
@@ -56,50 +31,40 @@ export default async function PublicEventPage({
 }) {
   const { orgSlug, eventSlug } = await params;
   const { embed } = await searchParams;
-  if (RESERVED.has(orgSlug)) {
-    notFound();
-  }
-
-  const apiEvent = await fetchPublicJson<PublicEventType & { organization?: PublicOrg }>(
-    `/v1/public/orgs/${orgSlug}/event-types/${eventSlug}`,
-  );
-  if (!apiEvent) {
-    notFound();
-  }
-  const organization: PublicOrg = apiEvent.organization ?? {
-    name: orgSlug,
-    slug: orgSlug,
-    logoUrl: null,
-    brandColor: "#0069ff",
-    locale: "en",
-    timezone: "UTC",
-  };
-  const eventType: PublicEventType = apiEvent;
-
-  const brand = organization.brandColor ?? "#0069ff";
   const hideChrome = embed === "1";
 
+  const fetched = await fetchPublicJson<PublicEventType & { organization?: PublicOrg }>(
+    `/v1/public/orgs/${orgSlug}/event-types/${eventSlug}`,
+  );
+  if (fetched.kind === "not_found") {
+    notFound();
+  }
+
+  const organization: PublicOrg | null =
+    fetched.kind === "ok"
+      ? (fetched.data.organization ?? {
+          name: orgSlug,
+          slug: orgSlug,
+          logoUrl: null,
+          brandColor: "#0069ff",
+          locale: "en",
+          timezone: "UTC",
+        })
+      : null;
+  const eventType = fetched.kind === "ok" ? fetched.data : null;
+
   return (
-    <div
-      className="min-h-svh bg-[#f4f5f7] px-4 py-8 md:py-16"
-      style={
-        {
-          "--brand": brand,
-          "--brand-foreground": foregroundOn(brand),
-          "--primary": brand,
-        } as React.CSSProperties
-      }
+    <BookingPageShell
+      brandColor={organization?.brandColor}
+      locale={organization?.locale}
+      embed={hideChrome}
     >
-      {!hideChrome ? (
-        <div className="mx-auto mb-6 flex max-w-4xl items-center justify-between">
-          <Link href={`/${orgSlug}`} className="text-sm text-muted-foreground hover:text-foreground">
-            ← {organization.name}
-          </Link>
-          {organization.hideSchedflowBadge ? null : (
-            <span className="text-xs text-muted-foreground">Powered by SchedFlow</span>
-          )}
-        </div>
-      ) : null}
+      <BookingChrome
+        orgName={organization?.name ?? orgSlug}
+        orgSlug={orgSlug}
+        hideBadge={organization?.hideSchedflowBadge}
+        embed={hideChrome}
+      />
       <PublicEventLoader
         orgSlug={orgSlug}
         eventSlug={eventSlug}
@@ -107,6 +72,6 @@ export default async function PublicEventPage({
         fallbackEvent={eventType}
         embed={hideChrome}
       />
-    </div>
+    </BookingPageShell>
   );
 }

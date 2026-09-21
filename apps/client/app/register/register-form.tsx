@@ -4,6 +4,7 @@ import { useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import {
   Alert,
   AlertDescription,
@@ -16,6 +17,7 @@ import {
 import { guessTimeZone } from "@/lib/timezones";
 
 export function RegisterForm() {
+  const t = useTranslations("auth.register");
   const router = useRouter();
   const [name, setName] = useState("");
   const [organizationName, setOrganizationName] = useState("");
@@ -45,7 +47,7 @@ export function RegisterForm() {
         const data = (await response.json().catch(() => ({}))) as {
           message?: string;
         };
-        setError(data.message ?? "Registration failed.");
+        setError(data.message ?? t("failedFallback"));
         return;
       }
 
@@ -69,13 +71,13 @@ export function RegisterForm() {
     <form onSubmit={onSubmit} className="flex w-full flex-col gap-5">
       {error ? (
         <Alert variant="destructive">
-          <AlertTitle>Registration failed</AlertTitle>
+          <AlertTitle>{t("failedTitle")}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
 
       <div className="grid gap-2">
-        <Label htmlFor="name">Name</Label>
+        <Label htmlFor="name">{t("name")}</Label>
         <Input
           id="name"
           name="name"
@@ -86,18 +88,18 @@ export function RegisterForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="organizationName">Workspace name</Label>
+        <Label htmlFor="organizationName">{t("workspaceName")}</Label>
         <Input
           id="organizationName"
           name="organizationName"
           value={organizationName}
-          placeholder="Acme Coaching"
+          placeholder={t("workspacePlaceholder")}
           onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setOrganizationName(event.target.value)}
         />
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("email")}</Label>
         <Input
           id="email"
           name="email"
@@ -110,7 +112,7 @@ export function RegisterForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">{t("password")}</Label>
         <Input
           id="password"
           name="password"
@@ -121,17 +123,17 @@ export function RegisterForm() {
           value={password}
           onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPassword(event.target.value)}
         />
-        <p className="text-xs text-muted-foreground">At least 8 characters.</p>
+        <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
       </div>
 
       <Button type="submit" disabled={isPending}>
-        {isPending ? "Creating account…" : "Sign up with email"}
+        {isPending ? t("submitting") : t("submit")}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
+        {t("hasAccount")}{" "}
         <Link href="/login" className="font-medium text-foreground underline">
-          Log in
+          {t("logIn")}
         </Link>
       </p>
     </form>

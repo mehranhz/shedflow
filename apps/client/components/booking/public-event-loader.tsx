@@ -1,7 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Alert, AlertDescription, AlertTitle, Skeleton } from "@shedflow/ui/components";
+import { useTranslations } from "next-intl";
+import { Alert, AlertDescription, AlertTitle, Button, Skeleton } from "@shedflow/ui/components";
 
 import { SlotPicker } from "@/components/booking/slot-picker";
 import { publicScheduling } from "@/lib/scheduling";
@@ -16,37 +17,57 @@ export function PublicEventLoader({
 }: {
   orgSlug: string;
   eventSlug: string;
-  fallbackOrg: PublicOrg;
-  fallbackEvent: PublicEventType;
+  fallbackOrg?: PublicOrg | null;
+  fallbackEvent?: PublicEventType | null;
   embed: boolean;
 }) {
+  const t = useTranslations("booking.event");
   const query = useQuery({
     queryKey: ["public-event", orgSlug, eventSlug],
     queryFn: () => publicScheduling.eventType(orgSlug, eventSlug),
     retry: false,
+    initialData:
+      fallbackEvent && fallbackOrg
+        ? {
+            data: { ...fallbackEvent, organization: fallbackOrg },
+            source: "api" as const,
+          }
+        : undefined,
   });
 
-  if (query.isLoading) {
+  if (query.isLoading && !query.data) {
     return <Skeleton className="mx-auto h-[520px] w-full max-w-4xl rounded-2xl" />;
   }
 
-  if (query.error && !query.data) {
+  if ((query.error && !query.data) || !query.data) {
     return (
       <div className="mx-auto max-w-lg">
         <Alert variant="destructive">
-          <AlertTitle>This page isn’t available</AlertTitle>
-          <AlertDescription>
-            {query.error instanceof Error
-              ? query.error.message
-              : "We couldn’t find that event type. Create it in your dashboard, then open this link in the same browser if the scheduling API isn’t running yet."}
+          <AlertTitle>{t("unavailableTitle")}</AlertTitle>
+          <AlertDescription className="space-y-3">
+            <p>
+              {query.error instanceof Error ? query.error.message : t("notFoundFallback")}
+            </p>
+            <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
+              {t("retry")}
+            </Button>
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  const eventType = query.data?.data ?? fallbackEvent;
-  const organization = query.data?.data.organization ?? fallbackOrg;
+  const eventType = query.data.data;
+  const organization = eventType.organization ?? fallbackOrg;
+
+  if (!organization) {
+    return (
+      <Alert variant="destructive" className="mx-auto max-w-lg">
+        <AlertTitle>{t("unavailableTitle")}</AlertTitle>
+        <AlertDescription>{t("missingOrg")}</AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <SlotPicker

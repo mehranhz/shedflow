@@ -12,15 +12,18 @@ import {
 import { CurrentOrgContext } from '../common/tenancy/current-org.decorator';
 import { OrgGuard } from '../common/tenancy/org.guard';
 import type { RequestContextValue } from '../common/tenancy/request-context';
+import { RequireScopes } from '../developer/scopes.decorator';
+import { ScopesGuard } from '../developer/scopes.guard';
 import { CreateEventTypeDto, UpdateEventTypeDto } from './dto/event-type.dto';
 import { EventTypesService } from './event-types.service';
 
 @Controller('organizations/:orgId/event-types')
-@UseGuards(OrgGuard)
+@UseGuards(OrgGuard, ScopesGuard)
 export class EventTypesController {
   constructor(private readonly eventTypes: EventTypesService) {}
 
   @Get()
+  @RequireScopes('event_types:read')
   list(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @CurrentOrgContext() ctx: RequestContextValue,
@@ -29,6 +32,7 @@ export class EventTypesController {
   }
 
   @Post()
+  @RequireScopes('event_types:write')
   create(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @CurrentOrgContext() ctx: RequestContextValue,
@@ -44,6 +48,7 @@ export class EventTypesController {
   }
 
   @Get(':id')
+  @RequireScopes('event_types:read')
   get(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('id', ParseUUIDPipe) id: string,
@@ -53,6 +58,7 @@ export class EventTypesController {
   }
 
   @Patch(':id')
+  @RequireScopes('event_types:write')
   update(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('id', ParseUUIDPipe) id: string,
@@ -69,6 +75,7 @@ export class EventTypesController {
   }
 
   @Delete(':id')
+  @RequireScopes('event_types:write')
   softDelete(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('id', ParseUUIDPipe) id: string,

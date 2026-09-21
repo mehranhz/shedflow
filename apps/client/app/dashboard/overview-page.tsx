@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { addDays } from "date-fns";
 import {
   Button,
@@ -23,6 +24,8 @@ import { schedulingApi } from "@/lib/scheduling";
 import type { OnboardingFlags } from "@/lib/types";
 
 export function OverviewPage() {
+  const t = useTranslations("dashboard.overview");
+  const tc = useTranslations("dashboard.common");
   const { organization, profile } = useOrg();
   const events = useQuery({
     queryKey: ["event-types", organization.id],
@@ -48,37 +51,37 @@ export function OverviewPage() {
   const firstEvent = events.data?.data[0];
 
   const steps = [
-    { key: "orgProfile", label: "Set workspace name and time zone", done: Boolean(organization.name), href: "/dashboard/settings" },
-    { key: "availability", label: "Set your working hours", done: Boolean(flags.availability) || eventCount > 0, href: "/dashboard/availability" },
-    { key: "eventType", label: "Create an event type", done: eventCount > 0, href: "/dashboard/event-types/new" },
-    { key: "copyLink", label: "Copy your booking link", done: Boolean(flags.copyLink), href: "/dashboard/event-types" },
-    { key: "calendar", label: "Connect Google Calendar", done: Boolean(flags.calendar), href: "/dashboard/settings" },
-    { key: "stripe", label: "Connect Stripe (Pro)", done: Boolean(flags.stripe) || organization.platformPlan === "PRO", href: "/dashboard/billing" },
+    { key: "orgProfile" as const, done: Boolean(organization.name), href: "/dashboard/settings" },
+    { key: "availability" as const, done: Boolean(flags.availability) || eventCount > 0, href: "/dashboard/availability" },
+    { key: "eventType" as const, done: eventCount > 0, href: "/dashboard/event-types/new" },
+    { key: "copyLink" as const, done: Boolean(flags.copyLink), href: "/dashboard/event-types" },
+    { key: "calendar" as const, done: Boolean(flags.calendar), href: "/dashboard/settings" },
+    { key: "stripe" as const, done: Boolean(flags.stripe) || organization.platformPlan === "PRO", href: "/dashboard/billing" },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Home"
-        description={`Welcome back. Here’s what’s happening in ${organization.name}.`}
+        title={t("title")}
+        description={t("welcome", { orgName: organization.name })}
       />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardDescription>Today</CardDescription>
+            <CardDescription>{t("today")}</CardDescription>
             <CardTitle className="text-3xl">{today.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>Next 7 days</CardDescription>
+            <CardDescription>{t("next7")}</CardDescription>
             <CardTitle className="text-3xl">{week.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>Event types</CardDescription>
+            <CardDescription>{t("eventTypes")}</CardDescription>
             <CardTitle className="text-3xl">{eventCount}</CardTitle>
           </CardHeader>
         </Card>
@@ -87,10 +90,8 @@ export function OverviewPage() {
       {eventCount === 0 ? (
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader>
-            <CardTitle>Finish setting up your booking page</CardTitle>
-            <CardDescription>
-              Create an event type, copy the link, and you’re ready to take meetings.
-            </CardDescription>
+            <CardTitle>{t("setupTitle")}</CardTitle>
+            <CardDescription>{t("setupBody")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {steps.map((step) => (
@@ -100,7 +101,7 @@ export function OverviewPage() {
                 className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2 text-sm hover:bg-muted/50"
               >
                 <Checkbox checked={step.done} disabled className="pointer-events-none" />
-                <span className="flex-1">{step.label}</span>
+                <span className="flex-1">{t(`steps.${step.key}`)}</span>
                 {step.done ? (
                   <Check className="size-4 text-emerald-600" />
                 ) : (
@@ -114,8 +115,8 @@ export function OverviewPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-base">Share your link</CardTitle>
-              <CardDescription>Send this to invitees or add it to your site.</CardDescription>
+              <CardTitle className="text-base">{t("shareTitle")}</CardTitle>
+              <CardDescription>{t("shareBody")}</CardDescription>
             </div>
             <Button
               variant="outline"
@@ -124,11 +125,11 @@ export function OverviewPage() {
                   ? `${APP_URL}/${organization.slug}/${firstEvent.slug}`
                   : `${APP_URL}/${organization.slug}`;
                 await navigator.clipboard.writeText(url);
-                toast.success("Copied");
+                toast.success(tc("copied"));
               }}
             >
               <Copy className="size-4" />
-              Copy link
+              {tc("copyLink")}
             </Button>
           </CardHeader>
           <CardContent>
@@ -145,21 +146,19 @@ export function OverviewPage() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Upcoming meetings</CardTitle>
+          <CardTitle className="text-base">{t("upcomingTitle")}</CardTitle>
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard/bookings">View all</Link>
+            <Link href="/dashboard/bookings">{tc("viewAll")}</Link>
           </Button>
         </CardHeader>
         <CardContent>
           {upcoming.length === 0 ? (
             <div className="flex flex-col items-center py-10 text-center">
               <CalendarDays className="mb-3 size-10 text-muted-foreground" />
-              <p className="font-medium">No upcoming meetings</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Share an event type to start filling your calendar.
-              </p>
+              <p className="font-medium">{t("emptyTitle")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t("emptyBody")}</p>
               <Button className="mt-4" asChild>
-                <Link href="/dashboard/event-types">Go to event types</Link>
+                <Link href="/dashboard/event-types">{t("goEventTypes")}</Link>
               </Button>
             </div>
           ) : (
@@ -168,8 +167,10 @@ export function OverviewPage() {
                 <li key={booking.id} className="flex items-center justify-between py-3">
                   <div>
                     <p className="font-medium">
-                      {booking.eventType?.title ?? "Meeting"} with{" "}
-                      {booking.customer?.name ?? "invitee"}
+                      {t("withInvitee", {
+                        title: booking.eventType?.title ?? tc("meeting"),
+                        name: booking.customer?.name ?? tc("invitee"),
+                      })}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(booking.startAt).toLocaleString()}

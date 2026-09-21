@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   Button,
   Calendar,
@@ -10,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
   Input,
+  Label,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -27,7 +29,7 @@ import { orgsApi, schedulingApi } from "@/lib/scheduling";
 import { formatMinute, minuteToInput, parseTimeToMinute } from "@/lib/slots";
 import type { AvailabilityRule } from "@/lib/types";
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAY_KEYS = ["0", "1", "2", "3", "4", "5", "6"] as const;
 
 type DayRow = {
   enabled: boolean;
@@ -35,7 +37,7 @@ type DayRow = {
 };
 
 function rulesToRows(rules: AvailabilityRule[]): DayRow[] {
-  return DAYS.map((_, dayOfWeek) => {
+  return DAY_KEYS.map((_, dayOfWeek) => {
     const windows = rules
       .filter((rule) => rule.dayOfWeek === dayOfWeek)
       .map((rule) => ({ startMinute: rule.startMinute, endMinute: rule.endMinute }));
@@ -59,6 +61,8 @@ function rowsToRules(rows: DayRow[]): AvailabilityRule[] {
 }
 
 export function AvailabilityEditor() {
+  const t = useTranslations("dashboard.availability");
+  const tc = useTranslations("dashboard.common");
   const { organization, profile, role } = useOrg();
   const queryClient = useQueryClient();
   const query = useQuery({
@@ -69,6 +73,8 @@ export function AvailabilityEditor() {
   const [rows, setRows] = useState<DayRow[] | null>(null);
   const [timezone, setTimezone] = useState(organization.timezone);
   const [overrideDate, setOverrideDate] = useState<Date | undefined>();
+  const [overrideStart, setOverrideStart] = useState("10:00");
+  const [overrideEnd, setOverrideEnd] = useState("14:00");
 
   useEffect(() => {
     if (schedule && !rows) {
@@ -82,17 +88,36 @@ export function AvailabilityEditor() {
       if (!schedule || !rows) {
         return;
       }
-      await schedulingApi.replaceRules(organization, profile.id, schedule.id, rowsToRules(rows));
+      for (const row of rows) {
+        if (!row.enabled) continue;
+        for (const window of row.windows) {
+          if (window.endMinute <= window.startMinute) {
+            throw new Error(t("windowInvalid"));
+          }
+        }
+      }
+      await schedulingApi.replaceRules(
+        organization,
+        profile.id,
+        schedule.id,
+        rowsToRules(rows),
+      );
+      if (timezone !== schedule.timezone) {
+        await schedulingApi.updateSchedule(organization, profile.id, schedule.id, {
+          timezone,
+        });
+      }
       if (timezone !== organization.timezone && role === "OWNER") {
         await orgsApi.update(organization.id, { timezone });
       }
     },
     onSuccess: async () => {
+      setRows(null);
       await queryClient.invalidateQueries({ queryKey: ["schedules", organization.id] });
-      toast.success("Availability saved");
+      toast.success(t("saved"));
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Could not save availability");
+      toast.error(error instanceof Error ? error.message : t("saveFailed"));
     },
   });
 
@@ -102,16 +127,45 @@ export function AvailabilityEditor() {
         return;
       }
       const date = format(overrideDate, "yyyy-MM-dd");
+      const startMinute = parseTimeToMinute(overrideStart);
+      const endMinute = parseTimeToMinute(overrideEnd);
+      if (!unavailable) {
+        if (startMinute == null || endMinute == null) {
+          throw new Error(t("customInvalid"));
+        }
+        if (endMinute <= startMinute) {
+          throw new Error(t("customOrder"));
+        }
+      }
       await schedulingApi.upsertOverride(organization, profile.id, schedule.id, date, {
         isUnavailable: unavailable,
-        startMinute: unavailable ? null : 10 * 60,
-        endMinute: unavailable ? null : 14 * 60,
+        startMinute: unavailable ? null : startMinute,
+        endMinute: unavailable ? null : endMinute,
       });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["schedules", organization.id] });
-      toast.success("Date override saved");
+      toast.success(t("overrideSaved"));
       setOverrideDate(undefined);
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : t("overrideFailed"));
+    },
+  });
+
+  const removeOverride = useMutation({
+    mutationFn: async (date: string) => {
+      if (!schedule) {
+        return;
+      }
+      await schedulingApi.deleteOverride(organization, profile.id, schedule.id, date);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["schedules", organization.id] });
+      toast.success(t("overrideRemoved"));
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : t("removeFailed"));
     },
   });
 
@@ -120,11 +174,11 @@ export function AvailabilityEditor() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Availability"
-        description="Set your weekly hours. Invitees book within these windows."
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button onClick={() => save.mutate()} disabled={save.isPending || !schedule}>
-            {save.isPending ? "Saving…" : "Save"}
+            {save.isPending ? tc("saving") : t("saveShort")}
           </Button>
         }
       />
@@ -132,23 +186,33 @@ export function AvailabilityEditor() {
       {query.isLoading ? <TableSkeleton /> : null}
       {query.error ? (
         <QueryError
-          message={query.error instanceof Error ? query.error.message : "Could not load schedules"}
+          message={
+            query.error instanceof Error ? query.error.message : t("loadFailed")
+          }
           onRetry={() => void query.refetch()}
         />
       ) : null}
 
+      {!query.isLoading && !schedule ? (
+        <p className="text-sm text-muted-foreground">{t("noSchedule")}</p>
+      ) : null}
+
       {schedule ? (
-        <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">{schedule.name}</CardTitle>
-              <TimezoneCombobox value={timezone} onChange={setTimezone} className="w-[260px]" />
+              <TimezoneCombobox
+                value={timezone}
+                onChange={setTimezone}
+                className="w-full sm:w-[260px]"
+              />
             </CardHeader>
             <CardContent className="divide-y">
-              {DAYS.map((day, index) => {
+              {DAY_KEYS.map((dayKey, index) => {
                 const row = editor[index];
                 return (
-                  <div key={day} className="grid gap-3 py-4 sm:grid-cols-[140px_1fr]">
+                  <div key={dayKey} className="grid gap-3 py-4 sm:grid-cols-[140px_1fr]">
                     <div className="flex items-center gap-3">
                       <Switch
                         checked={row.enabled}
@@ -160,17 +224,17 @@ export function AvailabilityEditor() {
                           });
                         }}
                       />
-                      <span className="text-sm font-medium">{day}</span>
+                      <span className="text-sm font-medium">{t(`days.${dayKey}`)}</span>
                     </div>
                     {row.enabled ? (
                       <div className="space-y-2">
                         {row.windows.map((window, windowIndex) => (
-                          <div key={windowIndex} className="flex items-center gap-2">
+                          <div key={windowIndex} className="flex flex-wrap items-center gap-2">
                             <Input
                               className="w-28"
                               type="time"
                               value={minuteToInput(window.startMinute)}
-                              onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                              onChange={(event: ChangeEvent<HTMLInputElement>) => {
                                 const minute = parseTimeToMinute(event.target.value);
                                 if (minute == null) return;
                                 setRows((current) => {
@@ -190,7 +254,7 @@ export function AvailabilityEditor() {
                               className="w-28"
                               type="time"
                               value={minuteToInput(window.endMinute)}
-                              onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                              onChange={(event: ChangeEvent<HTMLInputElement>) => {
                                 const minute = parseTimeToMinute(event.target.value);
                                 if (minute == null) return;
                                 setRows((current) => {
@@ -210,6 +274,9 @@ export function AvailabilityEditor() {
                               size="icon"
                               variant="ghost"
                               className="size-8"
+                              aria-label={t("removeWindow", {
+                                day: t(`days.${dayKey}`),
+                              })}
                               onClick={() => {
                                 setRows((current) => {
                                   const next = [...(current ?? editor)];
@@ -235,6 +302,7 @@ export function AvailabilityEditor() {
                                 size="icon"
                                 variant="ghost"
                                 className="size-8"
+                                aria-label={t("addWindow")}
                                 onClick={() => {
                                   setRows((current) => {
                                     const next = [...(current ?? editor)];
@@ -256,7 +324,9 @@ export function AvailabilityEditor() {
                         ))}
                       </div>
                     ) : (
-                      <p className="self-center text-sm text-muted-foreground">Unavailable</p>
+                      <p className="self-center text-sm text-muted-foreground">
+                        {t("dayUnavailable")}
+                      </p>
                     )}
                   </div>
                 );
@@ -266,16 +336,14 @@ export function AvailabilityEditor() {
 
           <Card className="h-fit">
             <CardHeader>
-              <CardTitle className="text-base">Date-specific hours</CardTitle>
+              <CardTitle className="text-base">{t("dateSpecific")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Override a single date — holidays or extra hours.
-              </p>
+              <p className="text-sm text-muted-foreground">{t("dateSpecificBody")}</p>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
-                    {overrideDate ? format(overrideDate, "PPP") : "Pick a date"}
+                    {overrideDate ? format(overrideDate, "PPP") : t("pickDate")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -286,6 +354,26 @@ export function AvailabilityEditor() {
                   />
                 </PopoverContent>
               </Popover>
+              <div className="grid gap-2">
+                <Label>{t("customHoursLabel")}</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="time"
+                    value={overrideStart}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      setOverrideStart(event.target.value)
+                    }
+                  />
+                  <span className="text-muted-foreground">–</span>
+                  <Input
+                    type="time"
+                    value={overrideEnd}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      setOverrideEnd(event.target.value)
+                    }
+                  />
+                </div>
+              </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -293,34 +381,54 @@ export function AvailabilityEditor() {
                   disabled={!overrideDate || addOverride.isPending}
                   onClick={() => addOverride.mutate(true)}
                 >
-                  Unavailable
+                  {t("markUnavailable")}
                 </Button>
                 <Button
                   className="flex-1"
                   disabled={!overrideDate || addOverride.isPending}
                   onClick={() => addOverride.mutate(false)}
                 >
-                  Custom hours
+                  {t("customHours")}
                 </Button>
               </div>
               <ul className="space-y-2 text-sm">
                 {(schedule.overrides ?? []).map((override) => (
                   <li
                     key={override.date}
-                    className="flex items-center justify-between rounded-md bg-muted/60 px-3 py-2"
+                    className="flex items-center justify-between gap-2 rounded-md bg-muted/60 px-3 py-2"
                   >
-                    <span>{override.date}</span>
-                    <span className="text-muted-foreground">
-                      {override.isUnavailable
-                        ? "Unavailable"
-                        : `${formatMinute(override.startMinute ?? 0)} – ${formatMinute(override.endMinute ?? 0)}`}
-                    </span>
+                    <div className="min-w-0">
+                      <p className="font-medium">{override.date}</p>
+                      <p className="text-muted-foreground">
+                        {override.isUnavailable
+                          ? t("dayUnavailable")
+                          : `${formatMinute(override.startMinute ?? 0)} – ${formatMinute(override.endMinute ?? 0)}`}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="size-8 shrink-0"
+                      aria-label={t("removeOverride")}
+                      disabled={removeOverride.isPending}
+                      onClick={() => removeOverride.mutate(override.date)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
                   </li>
                 ))}
               </ul>
             </CardContent>
           </Card>
         </div>
+      ) : null}
+
+      {query.data?.source === "preview" ? (
+        <p className="text-xs text-muted-foreground">
+          Scheduling API is not online yet, so availability is saved in this browser for
+          preview. Public slots regenerate from these hours after refresh.
+        </p>
       ) : null}
     </div>
   );

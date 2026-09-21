@@ -1,14 +1,14 @@
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 
 import { AuthShell } from "@/components/auth-shell";
 import { VerifyEmailStatus } from "./verify-email-status";
 
-export default function VerifyEmailPage() {
+export default async function VerifyEmailPage() {
+  const t = await getTranslations("auth.verify");
+
   return (
-    <AuthShell
-      title="Verify your email"
-      subtitle="Confirm your address to finish setting up your account."
-    >
+    <AuthShell title={t("title")} subtitle={t("subtitle")}>
       <Suspense fallback={null}>
         <VerifyEmailStatus />
       </Suspense>

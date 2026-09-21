@@ -1,0 +1,90 @@
+# Optional single-host prod-ish stack (topology C in mvp/12).
+# Prefer Vercel + Fly + Neon for staging/prod; use this for a VPS smoke path.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Run migrations once before first boot:
+#   docker compose -f docker-compose.prod.yml run --rm migrate
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: shedflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shedflow}
+      POSTGRES_DB: shedflow
+    volumes:
+      - shedflow-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U shedflow -d shedflow']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: packages/db/Dockerfile.migrate
+    environment:
+      DATABASE_URL: postgresql://shedflow:${POSTGRES_PASSWORD:-shedflow}@postgres:5432/shedflow?schema=public
+      DIRECT_DATABASE_URL: postgresql://shedflow:${POSTGRES_PASSWORD:-shedflow}@postgres:5432/shedflow?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://shedflow:${POSTGRES_PASSWORD:-shedflow}@postgres:5432/shedflow?schema=public
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?set INTERNAL_API_SECRET}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      BILLING_URL: ${BILLING_URL:-http://billing:3002}
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  billing:
+    build:
+      context: .
+      dockerfile: apps/billing/Dockerfile
+    environment:
+      BILLING_PORT: 3002
+      DATABASE_URL: postgresql://shedflow:${POSTGRES_PASSWORD:-shedflow}@postgres:5432/shedflow?schema=public
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?set INTERNAL_API_SECRET}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      API_URL: http://api:3001
+      BILLING_URL: http://billing:3002
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
+      STRIPE_CONNECT_WEBHOOK_SECRET: ${STRIPE_CONNECT_WEBHOOK_SECRET:-whsec_placeholder}
+    ports:
+      - '3002:3002'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      WORKER_PORT: 3003
+      DATABASE_URL: postgresql://shedflow:${POSTGRES_PASSWORD:-shedflow}@postgres:5432/shedflow?schema=public
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?set INTERNAL_API_SECRET}
+      API_URL: http://api:3001
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      EMAIL_FROM: ${EMAIL_FROM:-SchedFlow <notifications@mail.schedflow.com>}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  shedflow-pg:

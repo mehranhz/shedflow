@@ -1,0 +1,122 @@
+# SchedFlow CI — lint, unit, e2e (Postgres), build, format check
+# Design: docs/design/mvp/12-infrastructure-cicd-dr.md §4
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "11.6.0"
+  JWT_SECRET: ci-test-secret-not-for-production
+  INTERNAL_API_SECRET: ci-internal-secret
+  APP_URL: http://localhost:3000
+  API_URL: http://localhost:3001
+  BILLING_URL: http://localhost:3002
+  AUTH_SECRET: ci-auth-secret
+  AUTH_URL: http://localhost:3000
+
+jobs:
+  unit:
+    name: Lint, unit, format
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Format check
+        run: pnpm format:check
+
+  e2e:
+    name: API e2e (Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: shedflow
+          POSTGRES_PASSWORD: shedflow
+          POSTGRES_DB: shedflow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shedflow -d shedflow_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://shedflow:shedflow@localhost:5432/shedflow_test?schema=public
+      DIRECT_DATABASE_URL: postgresql://shedflow:shedflow@localhost:5432/shedflow_test?schema=public
+      TEST_DATABASE_URL: postgresql://shedflow:shedflow@localhost:5432/shedflow_test?schema=public
+      PRISMA_MIGRATE_URL: postgresql://shedflow:shedflow@localhost:5432/shedflow_test?schema=public
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Migrate test DB
+        run: pnpm db:migrate:deploy
+
+      - name: API e2e
+        run: pnpm --filter @shedflow/api test:e2e
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+        env:
+          DATABASE_URL: postgresql://shedflow:shedflow@localhost:5432/shedflow?schema=public
+          JWT_SECRET: ci-test-secret-not-for-production
+          AUTH_SECRET: ci-auth-secret

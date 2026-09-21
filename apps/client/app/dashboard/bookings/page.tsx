@@ -1,14 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   Button,
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Table,
   TableBody,
   TableCell,
@@ -16,33 +18,66 @@ import {
   TableHeader,
   TableRow,
 } from "@shedflow/ui/components";
-import { toast } from "sonner";
 
+import { BookingDetailSheet } from "@/components/dashboard/booking-detail-sheet";
+import { CreateBookingDialog } from "@/components/dashboard/create-booking-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { QueryError, TableSkeleton } from "@/components/query-state";
 import { StatusBadge } from "@/components/status-badge";
-import { TableSkeleton, QueryError } from "@/components/query-state";
 import { useOrg } from "@/components/org-provider";
 import { schedulingApi } from "@/lib/scheduling";
 import type { Booking, BookingStatus } from "@/lib/types";
 
-const FILTERS: Array<{ value: string; label: string }> = [
-  { value: "upcoming", label: "Upcoming" },
-  { value: "pending", label: "Pending" },
-  { value: "past", label: "Past" },
-  { value: "all", label: "All" },
-];
-
 export default function BookingsPage() {
+  const t = useTranslations("dashboard.bookings");
+  const tc = useTranslations("dashboard.common");
   const { organization, profile } = useOrg();
-  const queryClient = useQueryClient();
-  const [filter, setFilter] = useState("upcoming");
+  const [range, setRange] = useState("upcoming");
+  const [status, setStatus] = useState("all");
+  const [eventTypeId, setEventTypeId] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [selected, setSelected] = useState<Booking | null>(null);
 
+  const STATUS_FILTERS = [
+    { value: "all", label: t("statuses.all") },
+    { value: "CONFIRMED", label: t("statuses.CONFIRMED") },
+    { value: "PENDING_CONFIRMATION", label: t("statuses.PENDING_CONFIRMATION") },
+    { value: "PENDING_PAYMENT", label: t("statuses.PENDING_PAYMENT") },
+    { value: "CANCELLED", label: t("statuses.CANCELLED") },
+    { value: "NO_SHOW", label: t("statuses.NO_SHOW") },
+  ];
+
+  const RANGE_FILTERS = [
+    { value: "upcoming", label: t("ranges.upcoming") },
+    { value: "past", label: t("ranges.past") },
+    { value: "all", label: t("ranges.all") },
+  ];
+
+  const events = useQuery({
+    queryKey: ["event-types", organization.id],
+    queryFn: () => schedulingApi.listEventTypes(organization, profile.id),
+  });
+
   const query = useQuery({
-    queryKey: ["bookings", organization.id],
-    queryFn: () => schedulingApi.listBookings(organization, profile.id),
+    queryKey: [
+      "bookings",
+      organization.id,
+      status,
+      eventTypeId,
+      fromDate,
+      toDate,
+    ],
+    queryFn: () =>
+      schedulingApi.listBookings(organization, profile.id, {
+        status: status === "all" ? undefined : status,
+        eventTypeId: eventTypeId === "all" ? undefined : eventTypeId,
+        from: fromDate ? new Date(`${fromDate}T00:00:00`).toISOString() : undefined,
+        to: toDate ? new Date(`${toDate}T23:59:59`).toISOString() : undefined,
+      }),
     refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
 
   const items = useMemo(() => {
@@ -50,79 +85,106 @@ export default function BookingsPage() {
     const now = Date.now();
     return list.filter((booking) => {
       const start = new Date(booking.startAt).getTime();
-      if (filter === "upcoming") {
-        return start >= now && ["CONFIRMED", "PENDING_CONFIRMATION", "PENDING_PAYMENT"].includes(booking.status);
+      if (range === "upcoming") {
+        return start >= now;
       }
-      if (filter === "pending") {
-        return booking.status === "PENDING_CONFIRMATION" || booking.status === "PENDING_PAYMENT";
-      }
-      if (filter === "past") {
-        return start < now || ["CANCELLED", "EXPIRED", "NO_SHOW", "RESCHEDULED"].includes(booking.status);
+      if (range === "past") {
+        return start < now;
       }
       return true;
     });
-  }, [filter, query.data]);
+  }, [query.data, range]);
 
-  const cancel = useMutation({
-    mutationFn: (booking: Booking) =>
-      schedulingApi.cancelBooking(organization, profile.id, booking.id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["bookings", organization.id] });
-      toast.success("Meeting canceled");
-      setSelected(null);
-    },
-  });
-  const confirm = useMutation({
-    mutationFn: (booking: Booking) =>
-      schedulingApi.confirmBooking(organization, profile.id, booking.id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["bookings", organization.id] });
-      toast.success("Meeting confirmed");
-      setSelected(null);
-    },
-  });
-  const noShow = useMutation({
-    mutationFn: (booking: Booking) =>
-      schedulingApi.markNoShow(organization, profile.id, booking.id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["bookings", organization.id] });
-      toast.success("Marked as no-show");
-      setSelected(null);
-    },
-  });
+  useEffect(() => {
+    if (!selected) return;
+    const fresh = (query.data?.data.items ?? []).find((item) => item.id === selected.id);
+    if (fresh && fresh.updatedAt !== selected.updatedAt) {
+      setSelected(fresh);
+    }
+  }, [query.data, selected]);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Meetings"
-        description="Upcoming and past bookings on this workspace."
+        title={t("title")}
+        description={t("description")}
+        actions={<CreateBookingDialog />}
       />
-      <div className="flex flex-wrap items-center gap-2">
-        {FILTERS.map((item) => (
-          <Button
-            key={item.value}
-            size="sm"
-            variant={filter === item.value ? "default" : "outline"}
-            onClick={() => setFilter(item.value)}
-          >
-            {item.label}
-          </Button>
-        ))}
+
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {RANGE_FILTERS.map((item) => (
+            <Button
+              key={item.value}
+              size="sm"
+              variant={range === item.value ? "default" : "outline"}
+              onClick={() => setRange(item.value)}
+            >
+              {item.label}
+            </Button>
+          ))}
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger>
+              <SelectValue placeholder={t("colStatus")} />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_FILTERS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={eventTypeId} onValueChange={setEventTypeId}>
+            <SelectTrigger>
+              <SelectValue placeholder={t("colEvent")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("allEventTypes")}</SelectItem>
+              {(events.data?.data ?? []).map((event) => (
+                <SelectItem key={event.id} value={event.id}>
+                  {event.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            value={fromDate}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setFromDate(event.target.value)
+            }
+            aria-label={t("fromDate")}
+          />
+          <Input
+            type="date"
+            value={toDate}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setToDate(event.target.value)
+            }
+            aria-label={t("toDate")}
+          />
+        </div>
       </div>
 
       {query.isLoading ? <TableSkeleton /> : null}
       {query.error ? (
         <QueryError
-          message={query.error instanceof Error ? query.error.message : "Could not load meetings"}
+          message={
+            query.error instanceof Error ? query.error.message : t("loadFailed")
+          }
           onRetry={() => void query.refetch()}
         />
       ) : null}
+
       {query.data && items.length === 0 ? (
         <EmptyState
-          title="No meetings yet"
-          description="When someone books, the meeting will show up here."
+          title={t("emptyTitle")}
+          description={t("emptyBody")}
           actionHref="/dashboard/event-types"
-          actionLabel="Share an event type"
+          actionLabel={t("emptyAction")}
         />
       ) : null}
 
@@ -131,10 +193,10 @@ export default function BookingsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Invitee</TableHead>
-                <TableHead>Event</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("colInvitee")}</TableHead>
+                <TableHead>{t("colEvent")}</TableHead>
+                <TableHead>{t("colTime")}</TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,14 +205,22 @@ export default function BookingsPage() {
                   key={booking.id}
                   className="cursor-pointer"
                   onClick={() => setSelected(booking)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelected(booking);
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
                 >
                   <TableCell className="font-medium">
-                    {booking.customer?.name ?? "Invitee"}
+                    {booking.customer?.name ?? tc("invitee")}
                     <div className="text-xs text-muted-foreground">
                       {booking.customer?.email}
                     </div>
                   </TableCell>
-                  <TableCell>{booking.eventType?.title ?? "Meeting"}</TableCell>
+                  <TableCell>{booking.eventType?.title ?? tc("meeting")}</TableCell>
                   <TableCell>
                     {new Date(booking.startAt).toLocaleString(undefined, {
                       weekday: "short",
@@ -170,50 +240,18 @@ export default function BookingsPage() {
         </div>
       ) : null}
 
-      <Sheet open={Boolean(selected)} onOpenChange={(open: boolean) => !open && setSelected(null)}>
-        <SheetContent className="sm:max-w-md">
-          {selected ? (
-            <>
-              <SheetHeader>
-                <SheetTitle>{selected.eventType?.title ?? "Meeting"}</SheetTitle>
-                <SheetDescription>
-                  {selected.customer?.name} · {selected.customer?.email}
-                </SheetDescription>
-              </SheetHeader>
-              <div className="mt-6 space-y-4 text-sm">
-                <p>{new Date(selected.startAt).toLocaleString()}</p>
-                <StatusBadge status={selected.status} />
-                {Object.keys(selected.answers ?? {}).length > 0 ? (
-                  <div>
-                    <p className="mb-1 font-medium">Answers</p>
-                    {Object.entries(selected.answers).map(([key, value]) => (
-                      <p key={key} className="text-muted-foreground">
-                        {key}: {String(value)}
-                      </p>
-                    ))}
-                  </div>
-                ) : null}
-                <div className="flex flex-wrap gap-2 pt-4">
-                  {selected.status === "PENDING_CONFIRMATION" ? (
-                    <Button onClick={() => confirm.mutate(selected)}>Confirm</Button>
-                  ) : null}
-                  {selected.status === "CONFIRMED" ||
-                  selected.status === "PENDING_CONFIRMATION" ? (
-                    <Button variant="outline" onClick={() => cancel.mutate(selected)}>
-                      Cancel
-                    </Button>
-                  ) : null}
-                  {selected.status === "CONFIRMED" ? (
-                    <Button variant="ghost" onClick={() => noShow.mutate(selected)}>
-                      Mark no-show
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-            </>
-          ) : null}
-        </SheetContent>
-      </Sheet>
+      {query.data?.source === "preview" ? (
+        <p className="text-xs text-muted-foreground">{t("previewNote")}</p>
+      ) : null}
+
+      <BookingDetailSheet
+        booking={selected}
+        open={Boolean(selected)}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+        onUpdated={(next) => setSelected(next)}
+      />
     </div>
   );
 }

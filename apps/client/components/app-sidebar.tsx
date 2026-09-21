@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   Avatar,
@@ -39,26 +40,32 @@ import {
   Users,
 } from "lucide-react";
 
+import { LocaleSwitcher } from "@/components/i18n/locale-switcher";
 import { Logo } from "@/components/logo";
 import { canManageWorkspace, useOrg } from "@/components/org-provider";
 import { orgsApi } from "@/lib/scheduling";
 
 const MAIN_LINKS = [
-  { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/dashboard/event-types", label: "Event types", icon: Link2 },
-  { href: "/dashboard/bookings", label: "Meetings", icon: CalendarDays },
-  { href: "/dashboard/availability", label: "Availability", icon: CalendarRange },
-  { href: "/dashboard/customers", label: "Contacts", icon: Users },
+  { href: "/dashboard", key: "home" as const, icon: Home },
+  { href: "/dashboard/event-types", key: "eventTypes" as const, icon: Link2 },
+  { href: "/dashboard/bookings", key: "meetings" as const, icon: CalendarDays },
+  {
+    href: "/dashboard/availability",
+    key: "availability" as const,
+    icon: CalendarRange,
+  },
+  { href: "/dashboard/customers", key: "contacts" as const, icon: Users },
 ];
 
 const ADMIN_LINKS = [
-  { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
-  { href: "/dashboard/team", label: "Team", icon: Users },
-  { href: "/dashboard/developer", label: "Developer", icon: Code2 },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard/billing", key: "billing" as const, icon: CreditCard },
+  { href: "/dashboard/team", key: "team" as const, icon: Users },
+  { href: "/dashboard/developer", key: "developer" as const, icon: Code2 },
+  { href: "/dashboard/settings", key: "settings" as const, icon: Settings },
 ];
 
 export function AppSidebar() {
+  const t = useTranslations("dashboard");
   const pathname = usePathname();
   const router = useRouter();
   const { update } = useSession();
@@ -74,9 +81,9 @@ export function AppSidebar() {
       const result = await orgsApi.switchOrg(orgId);
       await update({ accessToken: result.accessToken });
       router.refresh();
-      toast.success("Workspace switched");
+      toast.success(t("switched"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not switch workspace");
+      toast.error(error instanceof Error ? error.message : t("switchFailed"));
     }
   };
 
@@ -106,12 +113,14 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-64" align="start">
-                <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("workspaces")}</DropdownMenuLabel>
                 {organizations.map((item) => (
                   <DropdownMenuItem key={item.id} onClick={() => void switchOrg(item.id)}>
                     {item.name}
                     {item.id === organization.id ? (
-                      <span className="ml-auto text-xs text-muted-foreground">Current</span>
+                      <span className="ms-auto text-xs text-muted-foreground">
+                        {t("current")}
+                      </span>
                     ) : null}
                   </DropdownMenuItem>
                 ))}
@@ -124,24 +133,27 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {MAIN_LINKS.map((link) => (
-                <SidebarMenuItem key={link.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={
-                      link.href === "/dashboard"
-                        ? pathname === "/dashboard"
-                        : pathname.startsWith(link.href)
-                    }
-                    tooltip={link.label}
-                  >
-                    <Link href={link.href}>
-                      <link.icon />
-                      <span>{link.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {MAIN_LINKS.map((link) => {
+                const label = t(`nav.${link.key}`);
+                return (
+                  <SidebarMenuItem key={link.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={
+                        link.href === "/dashboard"
+                          ? pathname === "/dashboard"
+                          : pathname.startsWith(link.href)
+                      }
+                      tooltip={label}
+                    >
+                      <Link href={link.href}>
+                        <link.icon />
+                        <span>{label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -151,20 +163,23 @@ export function AppSidebar() {
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {ADMIN_LINKS.map((link) => (
-                    <SidebarMenuItem key={link.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname.startsWith(link.href)}
-                        tooltip={link.label}
-                      >
-                        <Link href={link.href}>
-                          <link.icon />
-                          <span>{link.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {ADMIN_LINKS.map((link) => {
+                    const label = t(`nav.${link.key}`);
+                    return (
+                      <SidebarMenuItem key={link.href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={pathname.startsWith(link.href)}
+                          tooltip={label}
+                        >
+                          <Link href={link.href}>
+                            <link.icon />
+                            <span>{label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -172,6 +187,9 @@ export function AppSidebar() {
         ) : null}
       </SidebarContent>
       <SidebarFooter>
+        <div className="px-2 pb-2 group-data-[collapsible=icon]:hidden">
+          <LocaleSwitcher className="w-full justify-between text-sm text-muted-foreground" />
+        </div>
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
@@ -182,7 +200,9 @@ export function AppSidebar() {
                   </Avatar>
                   <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{profile.email}</span>
-                    <span className="truncate text-xs text-muted-foreground">Account</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {t("account")}
+                    </span>
                   </div>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
@@ -190,7 +210,7 @@ export function AppSidebar() {
                 <DropdownMenuLabel>{profile.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings">Settings</Link>
+                  <Link href="/dashboard/settings">{t("nav.settings")}</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
@@ -199,8 +219,8 @@ export function AppSidebar() {
                     );
                   }}
                 >
-                  <LogOut className="mr-2 size-4" />
-                  Sign out
+                  <LogOut className="me-2 size-4" />
+                  {t("signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

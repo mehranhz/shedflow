@@ -1,20 +1,8 @@
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { OrgEventList } from "@/components/booking/org-event-list";
-
-const RESERVED = new Set([
-  "login",
-  "register",
-  "dashboard",
-  "reset-password",
-  "verify-email",
-  "invite",
-  "api",
-  "b",
-  "embed",
-  "app",
-]);
+import { fetchPublicJson } from "@/lib/public-fetch";
+import type { PublicEventType, PublicOrg } from "@/lib/types";
 
 export async function generateMetadata({
   params,
@@ -22,22 +10,42 @@ export async function generateMetadata({
   params: Promise<{ orgSlug: string }>;
 }): Promise<Metadata> {
   const { orgSlug } = await params;
-  return { title: orgSlug };
+  const org = await fetchPublicJson<PublicOrg>(`/v1/public/orgs/${orgSlug}`);
+  return { title: org.kind === "ok" ? org.data.name : orgSlug };
 }
 
 export default async function PublicOrgPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ orgSlug: string }>;
+  searchParams: Promise<{ embed?: string }>;
 }) {
   const { orgSlug } = await params;
-  if (RESERVED.has(orgSlug)) {
-    notFound();
-  }
+  const { embed } = await searchParams;
+  const hideChrome = embed === "1";
+
+  const [org, events] = await Promise.all([
+    fetchPublicJson<PublicOrg>(`/v1/public/orgs/${orgSlug}`),
+    fetchPublicJson<PublicEventType[] | { items: PublicEventType[] }>(
+      `/v1/public/orgs/${orgSlug}/event-types`,
+    ),
+  ]);
+
+  const initialOrg = org.kind === "ok" ? org.data : null;
+  const initialEvents =
+    events.kind === "ok"
+      ? Array.isArray(events.data)
+        ? events.data
+        : events.data.items
+      : undefined;
 
   return (
-    <div className="min-h-svh bg-[#f4f5f7] px-4 py-16">
-      <OrgEventList orgSlug={orgSlug} />
-    </div>
+    <OrgEventList
+      orgSlug={orgSlug}
+      embed={hideChrome}
+      initialOrg={initialOrg}
+      initialEvents={initialEvents}
+    />
   );
 }

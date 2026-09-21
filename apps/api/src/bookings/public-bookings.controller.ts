@@ -33,6 +33,7 @@ export class PublicBookingsController {
       timezone: dto.timezone,
       invitee: dto.invitee,
       answers: dto.answers,
+      metadata: dto.metadata,
       source: dto.source,
     });
   }
@@ -55,5 +56,11 @@ export class PublicBookingsController {
       new Date(dto.startAt),
       dto.timezone,
     );
+  }
+
+  @Post(':uid/checkout')
+  @Throttle({ default: { limit: 20, ttl: 600_000 } })
+  checkout(@Param('uid') uid: string) {
+    return this.bookings.retryCheckout(uid);
   }
 }

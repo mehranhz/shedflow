@@ -7,7 +7,7 @@
 
 ## T-025 — Email templates and Resend
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-009, T-015, T-005  
 **Apps:** `apps/worker`, `packages/emails`
 
@@ -23,16 +23,16 @@
 
 ### Acceptance
 
-- [ ] Confirming a free booking produces two notification_logs (host, invitee) and no throw if Resend unset.
-- [ ] Duplicate outbox replay does not insert a second SENT row for same template.
-- [ ] `.ics` UID uses `booking.uid@schedflow.com`.
-- [ ] Invitation email used from T-006 accept flow (enqueue `invitation.created` in T-006 if missing — add emit now).
+- [x] Confirming a free booking produces two notification_logs (host, invitee) and no throw if Resend unset.
+- [x] Duplicate outbox replay does not insert a second SENT row for same template.
+- [x] `.ics` UID uses `booking.uid@schedflow.com`.
+- [x] Invitation email used from T-006 accept flow (enqueue `invitation.created` in T-006 if missing — add emit now).
 
 ---
 
 ## T-026 — Reminders, hold expiry, purge jobs
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-025, T-015, T-021  
 **Design:** `07` §3, §6; `05` revive already in T-021
 
@@ -46,6 +46,6 @@
 
 ### Acceptance
 
-- [ ] Freeze clock: booking in 2h → only 1h reminder scheduled (or 24h skipped).
-- [ ] PENDING_PAYMENT becomes EXPIRED after hold; slot bookable again.
-- [ ] Cancelled booking: reminder job no-ops.
+- [x] Freeze clock: booking in 2h → only 1h reminder scheduled (or 24h skipped).
+- [x] PENDING_PAYMENT becomes EXPIRED after hold; slot bookable again.
+- [x] Cancelled booking: reminder job no-ops.

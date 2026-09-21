@@ -1,0 +1,36 @@
+{
+  "name": "@shedflow/emails",
+  "version": "0.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "emails"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "email dev --dir src/templates"
+  },
+  "dependencies": {
+    "@react-email/components": "^0.5.7",
+    "@react-email/render": "^1.3.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@shedflow/typescript-config": "workspace:*",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "react-email": "^4.3.2",
+    "typescript": "^5.7.3"
+  }
+}

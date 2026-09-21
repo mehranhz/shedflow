@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Button, Card, CardContent, CardHeader, CardTitle, Progress } from "@shedflow/ui/components";
 import { Check } from "lucide-react";
 
@@ -10,6 +11,8 @@ import { useOrg } from "@/components/org-provider";
 import { schedulingApi } from "@/lib/scheduling";
 
 export default function OnboardingPage() {
+  const t = useTranslations("dashboard.onboarding");
+  const tc = useTranslations("dashboard.common");
   const { organization, profile } = useOrg();
   const events = useQuery({
     queryKey: ["event-types", organization.id],
@@ -17,30 +20,27 @@ export default function OnboardingPage() {
   });
   const count = events.data?.data.length ?? 0;
   const steps = [
-    { label: "Workspace created", done: true, href: "/dashboard/settings" },
-    { label: "Set availability", done: count > 0, href: "/dashboard/availability" },
-    { label: "Create an event type", done: count > 0, href: "/dashboard/event-types/new" },
-    { label: "Share your link", done: count > 0, href: "/dashboard/event-types" },
+    { key: "workspace" as const, done: true, href: "/dashboard/settings" },
+    { key: "availability" as const, done: count > 0, href: "/dashboard/availability" },
+    { key: "eventType" as const, done: count > 0, href: "/dashboard/event-types/new" },
+    { key: "share" as const, done: count > 0, href: "/dashboard/event-types" },
   ];
   const complete = steps.filter((step) => step.done).length;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <PageHeader
-        title="Let’s get you booked"
-        description="A few steps to a public page that looks like Calendly — minus the extra tools."
-      />
+      <PageHeader title={t("title")} description={t("description")} />
       <Progress value={(complete / steps.length) * 100} />
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            {complete} of {steps.length} complete
+            {t("progress", { complete, total: steps.length })}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {steps.map((step) => (
             <Link
-              key={step.label}
+              key={step.key}
               href={step.href}
               className="flex items-center justify-between rounded-lg border px-4 py-3 hover:bg-muted/40"
             >
@@ -48,10 +48,10 @@ export default function OnboardingPage() {
                 <span className="flex size-6 items-center justify-center rounded-full border">
                   {step.done ? <Check className="size-4 text-emerald-600" /> : null}
                 </span>
-                {step.label}
+                {t(`steps.${step.key}`)}
               </span>
               <Button size="sm" variant={step.done ? "outline" : "default"}>
-                {step.done ? "Edit" : "Start"}
+                {step.done ? tc("edit") : tc("start")}
               </Button>
             </Link>
           ))}

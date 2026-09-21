@@ -4,7 +4,7 @@
 
 ## T-033 — API keys, webhooks, OpenAPI
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-014, T-024 (Pro gate), T-009, T-008  
 **Design:** `docs/design/mvp/09-developer-api-and-webhooks.md`  
 **Apps:** `apps/api`, `apps/worker`, `apps/client` developer page, `packages/shared/openapi/v1.yaml`
@@ -23,8 +23,8 @@
 
 ### Acceptance
 
-- [ ] With API key, `GET /v1/organizations/:id/bookings` works without JWT.
-- [ ] Missing scope → 403.
-- [ ] Worker POSTs to `https://httpbin.org/post` in local manual test; CI uses a mock HTTP server.
-- [ ] `http://127.0.0.1:1/` endpoint rejected on create or on send (create-time URL parse + send-time DNS).
-- [ ] FREE org → `FEATURE_GATED`.
+- [x] With API key, `GET /v1/organizations/:id/bookings` works without JWT.
+- [x] Missing scope → 403.
+- [x] Worker POSTs to `https://httpbin.org/post` in local manual test; CI uses a mock HTTP server.
+- [x] `http://127.0.0.1:1/` endpoint rejected on create or on send (create-time URL parse + send-time DNS).
+- [x] FREE org → `FEATURE_GATED`.

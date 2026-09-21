@@ -8,7 +8,9 @@ packages:
 trustLockfile: true
 
 allowBuilds:
+  '@parcel/watcher': set this to true or false
   '@prisma/engines': true
+  '@swc/core': set this to true or false
   bcrypt: true
   esbuild: true
   prisma: true

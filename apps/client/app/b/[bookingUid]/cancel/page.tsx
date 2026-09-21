@@ -1,6 +1,13 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import { BookingResult } from "@/components/booking/booking-result";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("booking.result.cancelled");
+  return { title: t("metaTitle") };
+}
 
 export default async function CancelledPage({
   params,
@@ -10,11 +17,7 @@ export default async function CancelledPage({
   const { bookingUid } = await params;
   return (
     <Suspense>
-      <BookingResult
-        uid={bookingUid}
-        title="Meeting canceled"
-        description="This time is now available for others."
-      />
+      <BookingResult uid={bookingUid} variant="cancelled" />
     </Suspense>
   );
 }

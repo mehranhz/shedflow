@@ -70,5 +70,6 @@ export async function proxyBilling(
   request: Request,
   path: string[],
 ): Promise<Response> {
-  return proxy(request, path, BILLING_URL, "/v1");
+  // Billing Nest controllers live under `/v1/billing/...` (see design `05`).
+  return proxy(request, path, BILLING_URL, "/v1/billing");
 }

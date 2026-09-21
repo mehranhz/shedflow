@@ -2,17 +2,90 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SchedFlow embed demo</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 32px;
+        color: #0f172a;
+        background: #f8fafc;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.5rem;
+      }
+      p {
+        color: #475569;
+        line-height: 1.5;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 16px 0 24px;
+      }
+      button {
+        font: inherit;
+        cursor: pointer;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        border-radius: 8px;
+        padding: 10px 14px;
+      }
+      button.primary {
+        background: #0f172a;
+        border-color: #0f172a;
+        color: #fff;
+      }
+      .schedflow-inline {
+        max-width: 960px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+      }
+      code {
+        font-size: 0.9em;
+        background: #e2e8f0;
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+    </style>
   </head>
-  <body style="font-family: system-ui, sans-serif; padding: 32px">
+  <body>
     <h1>Embed demo</h1>
-    <p>Inline widget (points at local client):</p>
-    <div class="schedflow-inline" data-org="acme" data-event="intro"></div>
     <p>
-      <button data-schedflow-popup data-org="acme" data-event="intro">
-        Book a meeting
-      </button>
+      Inline iframe loads <code>http://localhost:3000/embed/{org}/{event}</code>.
+      Start the Next client on port 3000, then open this page via
+      <code>pnpm --filter @shedflow/embed dev</code> (or serve <code>demo.html</code> after
+      <code>pnpm --filter @shedflow/embed build</code>).
     </p>
-    <script src="./src/embed.ts"></script>
+
+    <div class="row">
+      <button class="primary" data-schedflow-popup data-org="acme" data-event="intro">
+        Book a meeting (popup)
+      </button>
+      <button type="button" id="simulate-booked">
+        Simulate <code>schedflow:booked</code>
+      </button>
+    </div>
+
+    <p>Inline widget:</p>
+    <div class="schedflow-inline" data-org="acme" data-event="intro"></div>
+
+    <!-- Vite serves src during `dev`; use dist/embed.js after `build`. -->
+    <script
+      src="./src/embed.ts"
+      data-app="http://localhost:3000"
+    ></script>
+    <script>
+      // Manual check: posts the same shape the iframe sends after a real booking.
+      // With a popup open, this closes it (widget trusts same-window simulate).
+      document.getElementById("simulate-booked")?.addEventListener("click", () => {
+        window.postMessage({ type: "schedflow:booked", uid: "demo-uid" }, "*");
+      });
+    </script>
   </body>
 </html>

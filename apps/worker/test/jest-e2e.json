@@ -1,16 +1,18 @@
 {
-  "moduleFileExtensions": ["js", "json", "ts"],
+  "moduleFileExtensions": ["js", "json", "ts", "tsx"],
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "globalSetup": "<rootDir>/setup-e2e.ts",
+  "setupFiles": ["<rootDir>/set-env.ts"],
   "maxWorkers": 1,
   "testTimeout": 60000,
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)sx?$": "ts-jest"
   },
   "moduleNameMapper": {
     "^@shedflow/shared$": "<rootDir>/../../../packages/shared/src/index.ts",
+    "^@shedflow/emails$": "<rootDir>/../src/mail/__mocks__/emails.ts",
     "^(\\.{1,2}/.*)\\.js$": "$1"
   }
 }

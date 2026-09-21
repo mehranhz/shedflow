@@ -9,7 +9,7 @@ Do not put Stripe logic in `apps/api` except HTTP calls to billing `/internal/*`
 
 ## T-018 — Billing service skeleton
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-003, T-006, T-001  
 **Apps:** `apps/billing`
 
@@ -25,15 +25,15 @@ Do not put Stripe logic in `apps/api` except HTTP calls to billing `/internal/*`
 
 ### Acceptance
 
-- [ ] `GET /health` 200.
-- [ ] Invalid JWT → 401 envelope.
-- [ ] Webhook without signature → 400 (once handler exists in T-019; until then 404 is ok if route reserved).
+- [x] `GET /health` 200.
+- [x] Invalid JWT → 401 envelope.
+- [x] Webhook without signature → 400 (once handler exists in T-019; until then 404 is ok if route reserved).
 
 ---
 
 ## T-019 — Stripe Connect Express
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-018  
 **Design:** `05` §2
 
@@ -46,15 +46,15 @@ Do not put Stripe logic in `apps/api` except HTTP calls to billing `/internal/*`
 
 ### Acceptance
 
-- [ ] Fake gateway returns account link URL.
-- [ ] Duplicate webhook no double row side effects.
-- [ ] FREE org onboard → 403 until T-024; **temporarily allow in test** or mock plan PRO. Document: gate after T-024; for now allow any OWNER so Connect can be dogfooded on FREE in staging if needed. **Product rule: Pro only** — implement the gate reading `organizations.platform_plan`.
+- [x] Fake gateway returns account link URL.
+- [x] Duplicate webhook no double row side effects.
+- [x] FREE org onboard → 403 until T-024; **temporarily allow in test** or mock plan PRO. Document: gate after T-024; for now allow any OWNER so Connect can be dogfooded on FREE in staging if needed. **Product rule: Pro only** — implement the gate reading `organizations.platform_plan`.
 
 ---
 
 ## T-020 — Product catalog
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-019  
 **Design:** `05` §3
 
@@ -66,14 +66,14 @@ Do not put Stripe logic in `apps/api` except HTTP calls to billing `/internal/*`
 
 ### Acceptance
 
-- [ ] Create one-time and recurring product+price; `stripeProductId` stored.
-- [ ] Wrong currency → 400.
+- [x] Create one-time and recurring product+price; `stripeProductId` stored.
+- [x] Wrong currency → 400.
 
 ---
 
 ## T-021 — Paid bookings (Checkout + webhooks + revive)
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-020, T-014, T-015, T-009  
 **Design:** `05` §4, `01` §6.2–6.3
 
@@ -89,16 +89,16 @@ Do not put Stripe logic in `apps/api` except HTTP calls to billing `/internal/*`
 
 ### Acceptance
 
-- [ ] Fake: create paid booking → checkout URL returned; simulated webhook → CONFIRMED.
-- [ ] Expire job then webhook paid → CONFIRMED (revive).
-- [ ] `CONNECT_INCOMPLETE` when charges not enabled.
-- [ ] No PAN in logs/DB.
+- [x] Fake: create paid booking → checkout URL returned; simulated webhook → CONFIRMED.
+- [x] Expire job then webhook paid → CONFIRMED (revive).
+- [x] `CONNECT_INCOMPLETE` when charges not enabled.
+- [x] No PAN in logs/DB.
 
 ---
 
 ## T-022 — Memberships, credits ledger
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-021  
 **Design:** `05` §5, `credit_balances` table
 
@@ -112,15 +112,15 @@ Do not put Stripe logic in `apps/api` except HTTP calls to billing `/internal/*`
 
 ### Acceptance
 
-- [ ] Two concurrent consumes with balance 1 → one success.
-- [ ] Release after cancel restores balance.
-- [ ] New period resets leftover to grant (not additive).
+- [x] Two concurrent consumes with balance 1 → one success.
+- [x] Release after cancel restores balance.
+- [x] New period resets leftover to grant (not additive).
 
 ---
 
 ## T-023 — Refunds, invoices, dunning email event
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-021  
 **Design:** `05` §6–§8
 
@@ -134,8 +134,8 @@ Do not put Stripe logic in `apps/api` except HTTP calls to billing `/internal/*`
 
 ### Acceptance
 
-- [ ] Refund updates payment status; fake Stripe refund called.
-- [ ] Invoice upsert from fixture webhook.
+- [x] Refund updates payment status; fake Stripe refund called.
+- [x] Invoice upsert from fixture webhook.
 
 ---
 

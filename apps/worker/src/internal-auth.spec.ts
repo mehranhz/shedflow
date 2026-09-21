@@ -5,9 +5,10 @@ import {
 
 describe('internalAuth', () => {
   const secret = 'test-internal-secret';
+  const now = new Date('2026-01-01T00:00:00.000Z');
   const base = {
     secret,
-    timestamp: '1000000',
+    timestamp: String(Math.floor(now.getTime() / 1000)),
     method: 'POST',
     path: '/internal/bookings/1/expire',
     body: '{"ok":true}',
@@ -19,7 +20,7 @@ describe('internalAuth', () => {
       verifyInternalRequest({
         ...base,
         signature,
-        now: new Date(1_000_000),
+        now,
       }),
     ).toBe(true);
   });
@@ -30,7 +31,7 @@ describe('internalAuth', () => {
       verifyInternalRequest({
         ...base,
         signature,
-        now: new Date(1_000_000 + 31_000),
+        now: new Date(now.getTime() + 31_000),
       }),
     ).toBe(false);
   });
@@ -42,7 +43,7 @@ describe('internalAuth', () => {
         ...base,
         signature,
         body: '{"ok":false}',
-        now: new Date(1_000_000),
+        now,
       }),
     ).toBe(false);
   });

@@ -1,0 +1,171 @@
+openapi: 3.0.3
+info:
+  title: SchedFlow API
+  version: "1.0.0"
+  description: |
+    Pro-gated developer REST API. Authenticate with a JWT (dashboard) or an
+    organization API key (`Bearer sf_test_…` / `sf_live_…`).
+servers:
+  - url: http://localhost:3001/v1
+    description: Local API
+security:
+  - bearerAuth: []
+tags:
+  - name: Bookings
+  - name: Event types
+  - name: API keys
+  - name: Webhooks
+paths:
+  /organizations/{orgId}/bookings:
+    get:
+      tags: [Bookings]
+      summary: List bookings
+      description: Requires `bookings:read` when using an API key.
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Paginated bookings
+        "403":
+          description: Missing scope or FEATURE_GATED
+  /organizations/{orgId}/event-types:
+    get:
+      tags: [Event types]
+      summary: List event types
+      description: Requires `event_types:read` when using an API key.
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      responses:
+        "200":
+          description: Event types
+  /organizations/{orgId}/api-keys:
+    get:
+      tags: [API keys]
+      summary: List API keys
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      responses:
+        "200":
+          description: Keys (secret never returned)
+    post:
+      tags: [API keys]
+      summary: Create API key
+      description: Pro-only. Returns `secret` once.
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, scopes]
+              properties:
+                name:
+                  type: string
+                scopes:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: Created (includes secret)
+        "403":
+          description: FEATURE_GATED on Free
+  /organizations/{orgId}/api-keys/{id}:
+    delete:
+      tags: [API keys]
+      summary: Revoke API key
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Revoked
+  /organizations/{orgId}/webhook-endpoints:
+    get:
+      tags: [Webhooks]
+      summary: List webhook endpoints
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      responses:
+        "200":
+          description: Endpoints
+    post:
+      tags: [Webhooks]
+      summary: Create webhook endpoint
+      description: Pro-only. Returns `secret` once (`whsec_…`). HTTPS + SSRF checks.
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, events]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                events:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: Created
+  /organizations/{orgId}/webhook-endpoints/{id}/deliveries/{deliveryId}/redeliver:
+    post:
+      tags: [Webhooks]
+      summary: Manually redeliver a webhook
+      parameters:
+        - $ref: "#/components/parameters/OrgId"
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: deliveryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "202":
+          description: Queued
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT access token or `sf_test_` / `sf_live_` API key
+  parameters:
+    OrgId:
+      name: orgId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid

@@ -1,0 +1,18 @@
+# One-shot migrate job. Build from repo root:
+#   docker build -f packages/db/Dockerfile.migrate .
+#   docker run --rm -e DIRECT_DATABASE_URL=… <image>
+
+FROM node:22-alpine AS base
+RUN corepack enable && corepack prepare pnpm@11.6.0 --activate
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/db/package.json packages/db/
+COPY packages/typescript-config/package.json packages/typescript-config/
+RUN pnpm install --frozen-lockfile --filter @shedflow/db... --ignore-scripts
+
+COPY packages/db packages/db
+COPY packages/typescript-config packages/typescript-config
+WORKDIR /app/packages/db
+RUN pnpm exec prisma generate
+CMD ["pnpm", "exec", "prisma", "migrate", "deploy"]

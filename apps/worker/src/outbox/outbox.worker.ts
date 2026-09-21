@@ -22,7 +22,8 @@ export class OutboxWorker implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    const polling = 1;
+    const polling =
+      this.config.get<number>('OUTBOX_POLLING_INTERVAL_SECONDS') ?? 1;
     await this.boss.workRelay(async () => {
       await this.relay.relay();
     }, polling);
@@ -38,11 +39,13 @@ export class OutboxWorker implements OnModuleInit, OnModuleDestroy {
 
     const interval =
       this.config.get<number>('OUTBOX_RELAY_INTERVAL_MS') ?? 1000;
-    this.timer = setInterval(() => {
+    const tick = () => {
       void this.boss.sendRelayTick().catch((error) => {
         this.logger.error(error);
       });
-    }, interval);
+    };
+    tick();
+    this.timer = setInterval(tick, interval);
     this.logger.log(`outbox.relay every ${interval}ms`);
   }
 

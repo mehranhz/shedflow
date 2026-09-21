@@ -20,6 +20,7 @@ export function configureApp(app: INestApplication): void {
       { path: 'health', method: RequestMethod.GET },
       { path: 'metrics', method: RequestMethod.ALL },
       { path: 'internal/(.*)', method: RequestMethod.ALL },
+      { path: 'webhooks/(.*)', method: RequestMethod.ALL },
       { path: '', method: RequestMethod.GET },
     ],
   });

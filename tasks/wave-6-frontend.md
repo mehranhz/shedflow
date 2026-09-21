@@ -9,7 +9,7 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 
 ## T-027 — Hosted booking page
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-011, T-012, T-014, T-015, T-021 (paid redirect; can stub if billing missing)  
 **Apps:** `apps/client`
 
@@ -30,16 +30,16 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 
 ### Acceptance
 
-- [ ] Can complete a **free** booking without logging in (Playwright in T-037; until then manual + component doesn't crash).
-- [ ] Invalid TZ handled (picker only lists IANA).
-- [ ] Keyboard: can book without mouse (Radix calendar + buttons).
-- [ ] `?embed=1` hides chrome.
+- [x] Can complete a **free** booking without logging in (Playwright in T-037; until then manual + component doesn't crash).
+- [x] Invalid TZ handled (picker only lists IANA).
+- [x] Keyboard: can book without mouse (Radix calendar + buttons).
+- [x] `?embed=1` hides chrome.
 
 ---
 
 ## T-028 — Embed widget
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-027  
 **Apps:** `apps/embed` (new)
 
@@ -52,8 +52,8 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 
 ### Acceptance
 
-- [ ] Static HTML fixture in `apps/embed/demo.html` loads inline iframe against local client.
-- [ ] Popup closes on Esc and on `schedflow:booked`.
+- [x] Static HTML fixture in `apps/embed/demo.html` loads inline iframe against local client.
+- [x] Popup closes on Esc and on `schedflow:booked`.
 
 ---
 
@@ -86,7 +86,7 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 
 ## T-030 — Event types and availability UI
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-029, T-010, T-011
 
 ### Implementation
@@ -97,15 +97,15 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 
 ### Acceptance
 
-- [ ] Create event type, see it on public booking page.
-- [ ] Change Friday hours, slots on booking page reflect after refresh.
-- [ ] FREE fourth event type shows upgrade Alert.
+- [x] Create event type, see it on public booking page.
+- [x] Change Friday hours, slots on booking page reflect after refresh.
+- [x] FREE fourth event type shows upgrade Alert.
 
 ---
 
 ## T-031 — Bookings and customers UI
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-029, T-014, T-015, T-013
 
 ### Implementation
@@ -117,14 +117,14 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 
 ### Acceptance
 
-- [ ] Host-created booking appears in table.
-- [ ] Cancel from sheet updates status without full reload (invalidate query).
+- [x] Host-created booking appears in table.
+- [x] Cancel from sheet updates status without full reload (invalidate query).
 
 ---
 
 ## T-032 — Billing, team, settings, developer UI
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-029, T-019, T-020, T-024, T-006  
 **Developer keys UI can land with T-033** — settings/team/billing first; developer tab empty state until T-033.
 
@@ -137,6 +137,6 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 
 ### Acceptance
 
-- [ ] Invite flow: send invite (email logged), second user accepts, appears in members.
-- [ ] Brand color appears on hosted booking page.
-- [ ] Pro upgrade button hits billing BFF (fake URL ok in test env).
+- [x] Invite flow: send invite (email logged), second user accepts, appears in members.
+- [x] Brand color appears on hosted booking page.
+- [x] Pro upgrade button hits billing BFF (fake URL ok in test env).

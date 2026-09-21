@@ -14,6 +14,8 @@ import { Idempotent } from '../common/idempotency/idempotent.decorator';
 import { CurrentOrgContext } from '../common/tenancy/current-org.decorator';
 import { OrgGuard } from '../common/tenancy/org.guard';
 import type { RequestContextValue } from '../common/tenancy/request-context';
+import { RequireScopes } from '../developer/scopes.decorator';
+import { ScopesGuard } from '../developer/scopes.guard';
 import { BookingsService } from './bookings.service';
 import {
   CancelBookingDto,
@@ -22,11 +24,12 @@ import {
 } from './dto/booking.dto';
 
 @Controller('organizations/:orgId/bookings')
-@UseGuards(OrgGuard)
+@UseGuards(OrgGuard, ScopesGuard)
 export class BookingsController {
   constructor(private readonly bookings: BookingsService) {}
 
   @Get()
+  @RequireScopes('bookings:read')
   list(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @CurrentOrgContext() ctx: RequestContextValue,
@@ -51,6 +54,7 @@ export class BookingsController {
   }
 
   @Get(':id')
+  @RequireScopes('bookings:read')
   get(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('id', ParseUUIDPipe) id: string,
@@ -61,6 +65,7 @@ export class BookingsController {
 
   @Post()
   @Idempotent()
+  @RequireScopes('bookings:write')
   create(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @CurrentOrgContext() ctx: RequestContextValue,
@@ -73,6 +78,7 @@ export class BookingsController {
   }
 
   @Post(':id/cancel')
+  @RequireScopes('bookings:write')
   cancel(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('id', ParseUUIDPipe) id: string,
@@ -83,6 +89,7 @@ export class BookingsController {
   }
 
   @Post(':id/reschedule')
+  @RequireScopes('bookings:write')
   reschedule(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('id', ParseUUIDPipe) id: string,
@@ -99,6 +106,7 @@ export class BookingsController {
   }
 
   @Post(':id/confirm')
+  @RequireScopes('bookings:write')
   confirm(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('id', ParseUUIDPipe) id: string,
@@ -108,6 +116,7 @@ export class BookingsController {
   }
 
   @Post(':id/no-show')
+  @RequireScopes('bookings:write')
   noShow(
     @Param('orgId', ParseUUIDPipe) orgId: string,
     @Param('id', ParseUUIDPipe) id: string,

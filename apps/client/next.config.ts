@@ -1,6 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 // `next build` type-checks this file and cannot resolve `@next/env`. Load the
 // repo-root `.env` with Node fs so AUTH_SECRET / API_URL are available.
@@ -32,6 +35,7 @@ if (existsSync(rootEnv)) {
 const nextConfig: NextConfig = {
   transpilePackages: ["@shedflow/ui"],
   async headers() {
+    // Allow framing only for dedicated embed routes and public booking with ?embed=1.
     return [
       {
         source: "/embed/:path*",
@@ -44,6 +48,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/:orgSlug/:eventSlug",
+        has: [{ type: "query", key: "embed", value: "1" }],
         headers: [
           {
             key: "Content-Security-Policy",
@@ -55,4 +60,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

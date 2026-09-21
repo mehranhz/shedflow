@@ -56,6 +56,7 @@ export type UpdateBookingData = Partial<{
   paymentId: string | null;
   subscriptionId: string | null;
   metadata: Record<string, unknown>;
+  answers: BookingAnswers;
 }>;
 
 export type BookingListFilter = {
@@ -64,4 +65,5 @@ export type BookingListFilter = {
   to?: Date;
   eventTypeId?: string;
   hostUserId?: string;
+  customerId?: string;
 };

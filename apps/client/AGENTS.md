@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Localization (next-intl)
+
+Cookie-based locale (`NEXT_LOCALE`), **no URL prefix** — booking paths like `/acme/30min` stay stable. See [`i18n/README.md`](./i18n/README.md). Messages live in `messages/{locale}.json`; registry in `i18n/config.ts`.

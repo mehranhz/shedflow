@@ -1,0 +1,32 @@
+{
+  "id": "evt_test_subscription_created",
+  "object": "event",
+  "type": "customer.subscription.created",
+  "data": {
+    "object": {
+      "id": "sub_test_1",
+      "object": "subscription",
+      "status": "active",
+      "cancel_at_period_end": false,
+      "current_period_start": 1704067200,
+      "current_period_end": 1706745600,
+      "customer": "cus_test_1",
+      "metadata": {
+        "kind": "membership",
+        "organizationId": "11111111-1111-4111-8111-111111111111",
+        "customerId": "44444444-4444-4444-8444-444444444444",
+        "productId": "66666666-6666-4666-8666-666666666666",
+        "priceId": "55555555-5555-4555-8555-555555555555"
+      },
+      "items": {
+        "data": [
+          {
+            "price": { "id": "price_stripe_membership" },
+            "current_period_start": 1704067200,
+            "current_period_end": 1706745600
+          }
+        ]
+      }
+    }
+  }
+}

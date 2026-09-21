@@ -9,12 +9,14 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js",
       "default": "./dist/index.js"
-    }
+    },
+    "./openapi/v1.yaml": "./openapi/v1.yaml"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "openapi"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",

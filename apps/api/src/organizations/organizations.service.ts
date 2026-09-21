@@ -360,13 +360,26 @@ export class OrganizationsService {
     }
 
     const raw = generateInvitationToken();
-    const invitation = await this.invitations.create({
-      organizationId,
-      email,
-      role: input.role as Role,
-      tokenHash: hashInvitationToken(raw),
-      invitedById: actor.userId,
-      expiresAt: new Date(this.clock.now().getTime() + INVITATION_TTL_MS),
+    const invitation = await this.transactions.runInTransaction(async () => {
+      const created = await this.invitations.create({
+        organizationId,
+        email,
+        role: input.role as Role,
+        tokenHash: hashInvitationToken(raw),
+        invitedById: actor.userId,
+        expiresAt: new Date(this.clock.now().getTime() + INVITATION_TTL_MS),
+      });
+      await this.outbox.emit(
+        DOMAIN_EVENTS.InvitationCreated,
+        {
+          invitationId: created.id,
+          email,
+          role: created.role,
+          token: raw,
+        },
+        organizationId,
+      );
+      return created;
     });
 
     this.logInviteLink(raw);

@@ -3,9 +3,12 @@
 import { addMinutes } from "date-fns";
 
 import { apiBff, billingBff } from "@/lib/bff";
+import type { PublicBookingResult } from "@/lib/booking-types";
+import { readBookingSession } from "@/lib/booking-session";
 import { ClientApiError, isMissingRoute } from "@/lib/http";
 import { previewStore, slugify, defaultQuestions } from "@/lib/preview-store";
 import { publicApi } from "@/lib/public-api";
+import { isPublicApiUnavailable } from "@/lib/public-fetch";
 import { generateSlots } from "@/lib/slots";
 import type {
   AvailabilityRule,
@@ -35,6 +38,17 @@ async function tryApi<T>(run: () => Promise<T>): Promise<Result<T> | null> {
     return { data: await run(), source: "api" };
   } catch (error) {
     if (isMissingRoute(error)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function tryPublicApi<T>(run: () => Promise<T>): Promise<Result<T> | null> {
+  try {
+    return { data: await run(), source: "api" };
+  } catch (error) {
+    if (isPublicApiUnavailable(error)) {
       return null;
     }
     throw error;
@@ -115,6 +129,18 @@ export const orgsApi = {
     return apiBff<void>(`organizations/${orgId}/members/${userId}`, {
       method: "DELETE",
     });
+  },
+  async revokeInvitation(orgId: string, invitationId: string): Promise<void> {
+    try {
+      await apiBff<void>(`organizations/${orgId}/invitations/${invitationId}`, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      if (!isMissingRoute(error)) {
+        throw error;
+      }
+      previewStore.revokeInvitation(orgId, invitationId);
+    }
   },
   async acceptInvite(token: string): Promise<unknown> {
     return apiBff(`invitations/${token}/accept`, { method: "POST" });
@@ -269,7 +295,7 @@ export const schedulingApi = {
     const api = await tryApi(() =>
       apiBff<Schedule>(`organizations/${org.id}/schedules/${scheduleId}/rules`, {
         method: "PUT",
-        body: JSON.stringify(rules),
+        body: JSON.stringify({ rules }),
       }),
     );
     if (api) {
@@ -277,6 +303,36 @@ export const schedulingApi = {
     }
     return {
       data: previewStore.replaceRules(org.id, scheduleId, rules),
+      source: "preview",
+    };
+  },
+
+  async updateSchedule(
+    org: Organization,
+    hostUserId: string,
+    scheduleId: string,
+    patch: { name?: string; timezone?: string; isDefault?: boolean },
+  ): Promise<Result<Schedule>> {
+    previewStore.ensure(org, hostUserId);
+    const api = await tryApi(() =>
+      apiBff<Schedule>(`organizations/${org.id}/schedules/${scheduleId}`, {
+        method: "PATCH",
+        body: JSON.stringify(patch),
+      }),
+    );
+    if (api) {
+      return api;
+    }
+    const current = previewStore.listSchedules(org.id).find((item) => item.id === scheduleId);
+    if (!current) {
+      throw new ClientApiError("Schedule not found", 404, "NOT_FOUND");
+    }
+    return {
+      data: previewStore.saveSchedule(org.id, {
+        ...current,
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      }),
       source: "preview",
     };
   },
@@ -304,13 +360,51 @@ export const schedulingApi = {
     };
   },
 
+  async deleteOverride(
+    org: Organization,
+    hostUserId: string,
+    scheduleId: string,
+    date: string,
+  ): Promise<Result<Schedule>> {
+    previewStore.ensure(org, hostUserId);
+    const api = await tryApi(async () => {
+      await apiBff<void>(
+        `organizations/${org.id}/schedules/${scheduleId}/overrides/${date}`,
+        { method: "DELETE" },
+      );
+      return true;
+    });
+    if (api) {
+      const refreshed = await this.listSchedules(org, hostUserId);
+      const schedule = refreshed.data.find((item) => item.id === scheduleId);
+      if (!schedule) {
+        throw new ClientApiError("Schedule not found", 404, "NOT_FOUND");
+      }
+      return { data: schedule, source: "api" };
+    }
+    return {
+      data: previewStore.deleteOverride(org.id, scheduleId, date),
+      source: "preview",
+    };
+  },
+
   async listBookings(
     org: Organization,
     hostUserId: string,
-    query?: { status?: string },
+    query?: {
+      status?: string;
+      eventTypeId?: string;
+      from?: string;
+      to?: string;
+    },
   ): Promise<Result<Page<Booking>>> {
     previewStore.ensure(org, hostUserId);
-    const search = query?.status ? `?status=${encodeURIComponent(query.status)}` : "";
+    const params = new URLSearchParams();
+    if (query?.status) params.set("status", query.status);
+    if (query?.eventTypeId) params.set("eventTypeId", query.eventTypeId);
+    if (query?.from) params.set("from", query.from);
+    if (query?.to) params.set("to", query.to);
+    const search = params.toString() ? `?${params.toString()}` : "";
     const api = await tryApi(() =>
       apiBff<Page<Booking>>(`organizations/${org.id}/bookings${search}`),
     );
@@ -320,6 +414,17 @@ export const schedulingApi = {
     let items = previewStore.listBookings(org.id);
     if (query?.status) {
       items = items.filter((item) => item.status === query.status);
+    }
+    if (query?.eventTypeId) {
+      items = items.filter((item) => item.eventTypeId === query.eventTypeId);
+    }
+    if (query?.from) {
+      const from = new Date(query.from).getTime();
+      items = items.filter((item) => new Date(item.startAt).getTime() >= from);
+    }
+    if (query?.to) {
+      const to = new Date(query.to).getTime();
+      items = items.filter((item) => new Date(item.startAt).getTime() <= to);
     }
     const events = previewStore.listEventTypes(org.id);
     const customers = previewStore.listCustomers(org.id);
@@ -331,6 +436,116 @@ export const schedulingApi = {
       }))
       .sort((a, b) => a.startAt.localeCompare(b.startAt));
     return { data: pageOf(items), source: "preview" };
+  },
+
+  async createHostBooking(
+    org: Organization,
+    hostUserId: string,
+    input: {
+      eventTypeId: string;
+      startAt: string;
+      timezone: string;
+      invitee: { name: string; email: string; phone?: string };
+      answers?: Record<string, string | boolean>;
+    },
+  ): Promise<Result<Booking>> {
+    previewStore.ensure(org, hostUserId);
+    const api = await tryApi(() =>
+      apiBff<Booking>(`organizations/${org.id}/bookings`, {
+        method: "POST",
+        body: JSON.stringify(input),
+        idempotencyKey: crypto.randomUUID(),
+      }),
+    );
+    if (api) {
+      return api;
+    }
+    const eventType = previewStore
+      .listEventTypes(org.id)
+      .find((item) => item.id === input.eventTypeId && item.isActive);
+    if (!eventType) {
+      throw new ClientApiError("Event type not found", 404, "NOT_FOUND");
+    }
+    const now = new Date().toISOString();
+    const customer = previewStore.upsertCustomer(org.id, {
+      id: crypto.randomUUID(),
+      organizationId: org.id,
+      email: input.invitee.email,
+      name: input.invitee.name,
+      phone: input.invitee.phone ?? null,
+      timezone: input.timezone,
+      notes: "",
+      createdAt: now,
+      updatedAt: now,
+    });
+    const start = new Date(input.startAt);
+    const booking: Booking = {
+      id: crypto.randomUUID(),
+      uid: previewStore.newUid(),
+      organizationId: org.id,
+      eventTypeId: eventType.id,
+      hostUserId: eventType.hostUserId,
+      customerId: customer.id,
+      startAt: start.toISOString(),
+      endAt: addMinutes(start, eventType.durationMinutes).toISOString(),
+      timezone: input.timezone,
+      status: eventType.requiresConfirmation ? "PENDING_CONFIRMATION" : "CONFIRMED",
+      source: "DASHBOARD",
+      locationType: eventType.locationType,
+      locationValue: eventType.locationValue,
+      answers: input.answers ?? {},
+      cancellationReason: null,
+      rescheduledFromId: null,
+      createdAt: now,
+      updatedAt: now,
+      eventType: {
+        id: eventType.id,
+        title: eventType.title,
+        slug: eventType.slug,
+        durationMinutes: eventType.durationMinutes,
+      },
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      },
+    };
+    return { data: previewStore.saveBooking(org.id, booking), source: "preview" };
+  },
+
+  async rescheduleBooking(
+    org: Organization,
+    hostUserId: string,
+    bookingId: string,
+    startAt: string,
+    timezone: string,
+  ): Promise<Result<Booking>> {
+    previewStore.ensure(org, hostUserId);
+    const api = await tryApi(() =>
+      apiBff<Booking>(`organizations/${org.id}/bookings/${bookingId}/reschedule`, {
+        method: "POST",
+        body: JSON.stringify({ startAt, timezone }),
+      }),
+    );
+    if (api) {
+      return api;
+    }
+    const booking = previewStore.listBookings(org.id).find((item) => item.id === bookingId);
+    if (!booking) {
+      throw new ClientApiError("Booking not found", 404, "NOT_FOUND");
+    }
+    const start = new Date(startAt);
+    const duration =
+      new Date(booking.endAt).getTime() - new Date(booking.startAt).getTime();
+    const updated: Booking = {
+      ...booking,
+      startAt: start.toISOString(),
+      endAt: new Date(start.getTime() + duration).toISOString(),
+      timezone,
+      updatedAt: new Date().toISOString(),
+    };
+    return { data: previewStore.saveBooking(org.id, updated), source: "preview" };
   },
 
   async cancelBooking(
@@ -420,7 +635,7 @@ export const schedulingApi = {
 
 export const publicScheduling = {
   async org(slug: string): Promise<Result<PublicOrg>> {
-    const api = await tryApi(() => publicApi<PublicOrg>(`/v1/public/orgs/${slug}`));
+    const api = await tryPublicApi(() => publicApi<PublicOrg>(`/v1/public/orgs/${slug}`));
     if (api) {
       return api;
     }
@@ -432,7 +647,7 @@ export const publicScheduling = {
   },
 
   async eventTypes(slug: string): Promise<Result<PublicEventType[]>> {
-    const api = await tryApi(() =>
+    const api = await tryPublicApi(() =>
       publicApi<PublicEventType[] | Page<PublicEventType>>(`/v1/public/orgs/${slug}/event-types`),
     );
     if (api) {
@@ -452,7 +667,7 @@ export const publicScheduling = {
   },
 
   async eventType(slug: string, eventSlug: string): Promise<Result<PublicEventType & { organization: PublicOrg }>> {
-    const api = await tryApi(() =>
+    const api = await tryPublicApi(() =>
       publicApi<PublicEventType & { organization?: PublicOrg }>(
         `/v1/public/orgs/${slug}/event-types/${eventSlug}`,
       ),
@@ -489,7 +704,7 @@ export const publicScheduling = {
       to: rangeEnd.toISOString(),
       tz: timeZone,
     });
-    const api = await tryApi(() =>
+    const api = await tryPublicApi(() =>
       publicApi<SlotList>(
         `/v1/public/orgs/${slug}/event-types/${eventSlug}/slots?${params.toString()}`,
       ),
@@ -531,12 +746,13 @@ export const publicScheduling = {
       timezone: string;
       invitee: { name: string; email: string; phone?: string };
       answers: Record<string, string | boolean>;
+      metadata?: Record<string, unknown>;
       source: "HOSTED" | "EMBED";
     },
     idempotencyKey: string,
-  ): Promise<Result<Booking>> {
-    const api = await tryApi(() =>
-      publicApi<Booking>("/v1/public/bookings", {
+  ): Promise<Result<PublicBookingResult>> {
+    const api = await tryPublicApi(() =>
+      publicApi<PublicBookingResult>("/v1/public/bookings", {
         method: "POST",
         body: JSON.stringify({
           orgSlug: body.orgSlug,
@@ -545,6 +761,7 @@ export const publicScheduling = {
           timezone: body.timezone,
           invitee: body.invitee,
           answers: body.answers,
+          metadata: body.metadata,
           source: body.source,
         }),
         idempotencyKey,
@@ -578,7 +795,13 @@ export const publicScheduling = {
       updatedAt: now,
     });
     const start = new Date(body.startAt);
-    const booking: Booking = {
+    const paid = Boolean(eventType.priceId);
+    const status = paid
+      ? "PENDING_PAYMENT"
+      : eventType.requiresConfirmation
+        ? "PENDING_CONFIRMATION"
+        : "CONFIRMED";
+    const booking: PublicBookingResult = {
       id: crypto.randomUUID(),
       uid: previewStore.newUid(),
       organizationId: bundle.org.id,
@@ -588,7 +811,7 @@ export const publicScheduling = {
       startAt: start.toISOString(),
       endAt: addMinutes(start, eventType.durationMinutes).toISOString(),
       timezone: body.timezone,
-      status: eventType.requiresConfirmation ? "PENDING_CONFIRMATION" : "CONFIRMED",
+      status,
       source: body.source,
       locationType: eventType.locationType,
       locationValue: eventType.locationValue,
@@ -597,6 +820,9 @@ export const publicScheduling = {
       rescheduledFromId: null,
       createdAt: now,
       updatedAt: now,
+      orgSlug: bundle.org.slug,
+      // Stub until billing Checkout (T-021) is wired for public bookings.
+      checkoutUrl: paid ? null : undefined,
       eventType: {
         id: eventType.id,
         title: eventType.title,
@@ -604,28 +830,74 @@ export const publicScheduling = {
         durationMinutes: eventType.durationMinutes,
       },
       customer,
+      actionTokens: {
+        manage: "preview",
+        cancel: "preview",
+        reschedule: "preview",
+      },
+      ...(body.metadata ? { metadata: body.metadata } : {}),
     };
     return { data: previewStore.saveBooking(bundle.org.id, booking), source: "preview" };
   },
 
-  async getBooking(uid: string): Promise<Result<Booking>> {
-    const api = await tryApi(() => publicApi<Booking>(`/v1/public/bookings/${uid}`));
+  async retryCheckout(uid: string): Promise<Result<{ checkoutUrl: string | null }>> {
+    const api = await tryPublicApi(() =>
+      publicApi<{ checkoutUrl?: string | null }>(`/v1/public/bookings/${uid}/checkout`, {
+        method: "POST",
+      }),
+    );
     if (api) {
-      return api;
+      return { data: { checkoutUrl: api.data.checkoutUrl ?? null }, source: "api" };
+    }
+    return { data: { checkoutUrl: null }, source: "preview" };
+  },
+
+  async getBooking(uid: string): Promise<Result<PublicBookingResult>> {
+    const api = await tryPublicApi(() =>
+      publicApi<PublicBookingResult>(`/v1/public/bookings/${uid}`),
+    );
+    const session = typeof window === "undefined" ? null : readBookingSession(uid);
+    if (api) {
+      return {
+        data: {
+          ...api.data,
+          orgSlug: api.data.orgSlug ?? session?.orgSlug,
+        },
+        source: "api",
+      };
+    }
+    if (typeof window === "undefined") {
+      throw new ClientApiError("Booking not found", 404, "NOT_FOUND");
     }
     for (const orgId of Object.keys(
       JSON.parse(window.localStorage.getItem("sf-preview-v1") ?? '{"orgs":{}}').orgs ?? {},
     )) {
-      const booking = previewStore.listBookings(orgId).find((item) => item.uid === uid);
-      if (booking) {
-        return { data: booking, source: "preview" };
+      const bundle = previewStore.getById(orgId);
+      const booking = bundle?.bookings.find((item) => item.uid === uid);
+      if (booking && bundle) {
+        const eventType = bundle.eventTypes.find((item) => item.id === booking.eventTypeId);
+        return {
+          data: {
+            ...booking,
+            orgSlug: bundle.org.slug,
+            eventType: eventType
+              ? {
+                  id: eventType.id,
+                  title: eventType.title,
+                  slug: eventType.slug,
+                  durationMinutes: eventType.durationMinutes,
+                }
+              : booking.eventType,
+          },
+          source: "preview",
+        };
       }
     }
     throw new ClientApiError("Booking not found", 404, "NOT_FOUND");
   },
 
   async cancel(uid: string, token: string, reason?: string): Promise<Result<Booking>> {
-    const api = await tryApi(() =>
+    const api = await tryPublicApi(() =>
       publicApi<Booking>(`/v1/public/bookings/${uid}/cancel`, {
         method: "POST",
         body: JSON.stringify({ token, reason }),
@@ -646,7 +918,7 @@ export const publicScheduling = {
   },
 
   async reschedule(uid: string, token: string, startAt: string, timezone: string): Promise<Result<Booking>> {
-    const api = await tryApi(() =>
+    const api = await tryPublicApi(() =>
       publicApi<Booking>(`/v1/public/bookings/${uid}/reschedule`, {
         method: "POST",
         body: JSON.stringify({ token, startAt, timezone }),
@@ -686,17 +958,186 @@ export const billingApi = {
       throw error;
     }
   },
-  async onboard(orgId: string): Promise<{ url: string }> {
-    return billingBff(`organizations/${orgId}/connect/onboard`, { method: "POST" });
+  async onboard(orgId: string, country = "US"): Promise<{ url: string }> {
+    return billingBff(`organizations/${orgId}/connect/onboard`, {
+      method: "POST",
+      body: JSON.stringify({ country }),
+    });
   },
-  async upgrade(orgId: string): Promise<{ url: string }> {
+  async dashboardLink(orgId: string): Promise<{ url: string }> {
+    return billingBff(`organizations/${orgId}/connect/dashboard-link`, {
+      method: "POST",
+    });
+  },
+  async upgrade(
+    orgId: string,
+    interval: "month" | "year" = "month",
+  ): Promise<{ url: string }> {
     try {
-      return await billingBff(`organizations/${orgId}/platform/checkout`, { method: "POST" });
+      return await billingBff(`organizations/${orgId}/platform/checkout`, {
+        method: "POST",
+        body: JSON.stringify({ interval }),
+      });
     } catch (error) {
       if (isMissingRoute(error)) {
         return { url: "https://checkout.stripe.com/c/pay/preview" };
       }
       throw error;
     }
+  },
+  async portal(orgId: string): Promise<{ url: string } | null> {
+    try {
+      return await billingBff(`organizations/${orgId}/platform/portal`, {
+        method: "POST",
+      });
+    } catch (error) {
+      if (isMissingRoute(error) || (error instanceof ClientApiError && error.status === 404)) {
+        return null;
+      }
+      throw error;
+    }
+  },
+  async listProducts(orgId: string): Promise<
+    Array<{
+      id: string;
+      name: string;
+      type: "ONE_TIME" | "RECURRING";
+      isActive: boolean;
+      creditGrantPerPeriod: number;
+      prices?: Array<{
+        id: string;
+        amountMinor: number;
+        currency: string;
+        interval: "month" | "year" | null;
+      }>;
+    }> | null
+  > {
+    try {
+      return await billingBff(`organizations/${orgId}/products`);
+    } catch (error) {
+      if (
+        isMissingRoute(error) ||
+        (error instanceof ClientApiError && (error.status === 404 || error.status === 403))
+      ) {
+        return null;
+      }
+      throw error;
+    }
+  },
+  async createProduct(
+    orgId: string,
+    body: {
+      name: string;
+      type: "ONE_TIME" | "RECURRING";
+      creditGrantPerPeriod?: number;
+    },
+  ): Promise<{ id: string; name: string }> {
+    return billingBff(`organizations/${orgId}/products`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+  async createPrice(
+    orgId: string,
+    productId: string,
+    body: {
+      amountMinor: number;
+      currency: string;
+      interval?: "month" | "year";
+    },
+  ): Promise<{ id: string }> {
+    return billingBff(`organizations/${orgId}/products/${productId}/prices`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+};
+
+export type ApiKeyRow = {
+  id: string;
+  organizationId: string;
+  name: string;
+  prefix: string;
+  scopes: string[];
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+};
+
+export type WebhookEndpointRow = {
+  id: string;
+  organizationId: string;
+  url: string;
+  events: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WebhookDeliveryRow = {
+  id: string;
+  endpointId: string;
+  eventId: string;
+  status: "PENDING" | "SUCCESS" | "FAILED";
+  attempt: number;
+  nextRetryAt: string | null;
+  lastStatus: number | null;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const developerApi = {
+  listKeys(orgId: string): Promise<ApiKeyRow[]> {
+    return apiBff(`organizations/${orgId}/api-keys`);
+  },
+  createKey(
+    orgId: string,
+    body: { name: string; scopes: string[] },
+  ): Promise<ApiKeyRow & { secret: string }> {
+    return apiBff(`organizations/${orgId}/api-keys`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+  revokeKey(orgId: string, id: string): Promise<void> {
+    return apiBff(`organizations/${orgId}/api-keys/${id}`, {
+      method: "DELETE",
+    });
+  },
+  listEndpoints(orgId: string): Promise<WebhookEndpointRow[]> {
+    return apiBff(`organizations/${orgId}/webhook-endpoints`);
+  },
+  createEndpoint(
+    orgId: string,
+    body: { url: string; events: string[] },
+  ): Promise<WebhookEndpointRow & { secret: string }> {
+    return apiBff(`organizations/${orgId}/webhook-endpoints`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+  deleteEndpoint(orgId: string, id: string): Promise<void> {
+    return apiBff(`organizations/${orgId}/webhook-endpoints/${id}`, {
+      method: "DELETE",
+    });
+  },
+  listDeliveries(
+    orgId: string,
+    endpointId: string,
+  ): Promise<WebhookDeliveryRow[]> {
+    return apiBff(
+      `organizations/${orgId}/webhook-endpoints/${endpointId}/deliveries`,
+    );
+  },
+  redeliver(
+    orgId: string,
+    endpointId: string,
+    deliveryId: string,
+  ): Promise<{ id: string; status: string; nextRetryAt: string | null }> {
+    return apiBff(
+      `organizations/${orgId}/webhook-endpoints/${endpointId}/deliveries/${deliveryId}/redeliver`,
+      { method: "POST" },
+    );
   },
 };

@@ -20,6 +20,7 @@ export type CreateCustomerData = {
 };
 
 export type UpdateCustomerData = Partial<{
+  email: string;
   name: string;
   phone: string | null;
   timezone: string | null;

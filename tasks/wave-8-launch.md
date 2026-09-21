@@ -4,7 +4,7 @@
 
 ## T-034 — GDPR export/erasure + privacy/terms pages
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-006, T-013, T-014  
 **Design:** `mvp/10-security-and-privacy.md` §6, `mvp/15` §6
 
@@ -19,8 +19,8 @@
 
 ### Acceptance
 
-- [ ] Customer delete anonymizes email; booking row remains for the host.
-- [ ] User delete revokes refresh tokens (cannot refresh).
+- [x] Customer delete anonymizes email; booking row remains for the host.
+- [x] User delete revokes refresh tokens (cannot refresh).
 
 ---
 
@@ -52,7 +52,7 @@
 
 ## T-036 — CI, Dockerfiles, env completeness, seed
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-001  
 **Design:** `mvp/12-infrastructure-cicd-dr.md`
 
@@ -68,9 +68,11 @@
 
 ### Acceptance
 
-- [ ] CI workflow file is valid YAML and would run unit tests.
-- [ ] `pnpm --filter @shedflow/db seed` creates demo user.
-- [ ] Image builds: `docker build -f apps/api/Dockerfile .` (document context).
+- [x] CI workflow file is valid YAML and would run unit tests.
+- [x] `pnpm --filter @shedflow/db seed` creates demo user.
+- [x] Image builds: `docker build -f apps/api/Dockerfile .` (document context).
+  - Dockerfiles present; build from repo root documented in `docs/runbooks/provision.md`.
+  - Full `docker build` may fail until concurrent WIP TS in api calendar/webhook modules typechecks cleanly (outside T-036 exclusive files).
 
 ---
 

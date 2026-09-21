@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { EventTypeQuestionsSchema } from "@shedflow/shared";
 import {
   Alert,
   AlertDescription,
@@ -24,32 +27,50 @@ import {
 } from "@shedflow/ui/components";
 import { toast } from "sonner";
 
+import { EventTypeSharePanel } from "@/components/dashboard/event-type-share-panel";
 import { PageHeader } from "@/components/page-header";
 import { useOrg } from "@/components/org-provider";
 import { ClientApiError } from "@/lib/http";
 import { defaultQuestions, slugify } from "@/lib/preview-store";
 import { schedulingApi } from "@/lib/scheduling";
-import type { EventType, LocationType } from "@/lib/types";
+import type { EventType, LocationType, Question } from "@/lib/types";
 
 const DURATIONS = [15, 30, 45, 60];
 
-const LOCATIONS: Array<{ value: LocationType; label: string }> = [
-  { value: "GOOGLE_MEET", label: "Google Meet" },
-  { value: "PHONE", label: "Phone call" },
-  { value: "IN_PERSON", label: "In-person" },
-  { value: "LINK", label: "Link" },
-  { value: "CUSTOM", label: "Custom" },
+const LOCATION_VALUES: LocationType[] = [
+  "GOOGLE_MEET",
+  "PHONE",
+  "IN_PERSON",
+  "LINK",
+  "CUSTOM",
 ];
 
 export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
+  const t = useTranslations("dashboard.eventTypes");
+  const tf = useTranslations("dashboard.eventTypes.form");
   const router = useRouter();
   const queryClient = useQueryClient();
   const { organization, profile } = useOrg();
+  const isPro = organization.platformPlan === "PRO";
+  const isCreate = !eventTypeId;
+
+  const listQuery = useQuery({
+    queryKey: ["event-types", organization.id],
+    queryFn: () => schedulingApi.listEventTypes(organization, profile.id),
+  });
+
   const existing = useQuery({
     queryKey: ["event-type", organization.id, eventTypeId],
     enabled: Boolean(eventTypeId),
     queryFn: () => schedulingApi.getEventType(organization, eventTypeId!, profile.id),
   });
+
+  const activeCount = useMemo(
+    () => (listQuery.data?.data ?? []).filter((item) => item.isActive).length,
+    [listQuery.data],
+  );
+  const freeLimitReached =
+    isCreate && !isPro && activeCount >= 3;
 
   const seed = existing.data?.data;
   const [title, setTitle] = useState(seed?.title ?? "");
@@ -69,11 +90,27 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
   const [maxDays, setMaxDays] = useState(seed?.maxDaysAhead ?? 60);
   const [bufferBefore, setBufferBefore] = useState(seed?.bufferBeforeMinutes ?? 0);
   const [bufferAfter, setBufferAfter] = useState(seed?.bufferAfterMinutes ?? 0);
+  const [slotInterval, setSlotInterval] = useState(seed?.slotIntervalMinutes ?? 0);
+  const [dailyCap, setDailyCap] = useState(
+    seed?.dailyCap != null ? String(seed.dailyCap) : "",
+  );
+  const [cancellationNotice, setCancellationNotice] = useState(
+    seed?.cancellationNoticeHours ?? 24,
+  );
+  const [rescheduleNotice, setRescheduleNotice] = useState(
+    seed?.rescheduleNoticeHours ?? 24,
+  );
+  const [creditCost, setCreditCost] = useState(seed?.creditCost ?? 0);
   const [requiresConfirmation, setRequiresConfirmation] = useState(
     seed?.requiresConfirmation ?? false,
   );
   const [isActive, setIsActive] = useState(seed?.isActive ?? true);
+  const [isHidden, setIsHidden] = useState(seed?.isHidden ?? false);
+  const [questionsJson, setQuestionsJson] = useState(
+    JSON.stringify(seed?.questions ?? defaultQuestions(), null, 2),
+  );
   const [gated, setGated] = useState(false);
+  const [fieldError, setFieldError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!seed) {
@@ -89,18 +126,48 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
     setMaxDays(seed.maxDaysAhead);
     setBufferBefore(seed.bufferBeforeMinutes);
     setBufferAfter(seed.bufferAfterMinutes);
+    setSlotInterval(seed.slotIntervalMinutes);
+    setDailyCap(seed.dailyCap != null ? String(seed.dailyCap) : "");
+    setCancellationNotice(seed.cancellationNoticeHours);
+    setRescheduleNotice(seed.rescheduleNoticeHours);
+    setCreditCost(seed.creditCost);
     setRequiresConfirmation(seed.requiresConfirmation);
     setIsActive(seed.isActive);
+    setIsHidden(seed.isHidden);
+    setQuestionsJson(JSON.stringify(seed.questions ?? defaultQuestions(), null, 2));
     if (!DURATIONS.includes(seed.durationMinutes)) {
       setCustomDuration(String(seed.durationMinutes));
     }
   }, [seed]);
 
+  useEffect(() => {
+    if (freeLimitReached) {
+      setGated(true);
+    }
+  }, [freeLimitReached]);
+
   const mutation = useMutation({
     mutationFn: async () => {
+      if (freeLimitReached) {
+        throw new ClientApiError(tf("freeLimitBody"), 403, "FEATURE_GATED");
+      }
       const minutes = customDuration ? Number(customDuration) : duration;
+      if (!Number.isFinite(minutes) || minutes < 1 || minutes > 24 * 60) {
+        throw new Error(tf("durationRange"));
+      }
+      if (!title.trim()) {
+        throw new Error(tf("nameRequired"));
+      }
+      let questions: Question[];
+      try {
+        const parsed = JSON.parse(questionsJson) as unknown;
+        questions = EventTypeQuestionsSchema.parse(parsed);
+      } catch {
+        throw new Error(tf("questionsInvalid"));
+      }
+      setFieldError(null);
       const payload: Partial<EventType> & { title: string; durationMinutes: number } = {
-        title,
+        title: title.trim(),
         slug: slug || slugify(title),
         description,
         durationMinutes: minutes,
@@ -110,9 +177,18 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
         maxDaysAhead: maxDays,
         bufferBeforeMinutes: bufferBefore,
         bufferAfterMinutes: bufferAfter,
+        slotIntervalMinutes: slotInterval,
+        dailyCap: dailyCap.trim() ? Number(dailyCap) : null,
+        cancellationNoticeHours: cancellationNotice,
+        rescheduleNoticeHours: rescheduleNotice,
         requiresConfirmation,
         isActive,
-        questions: seed?.questions ?? defaultQuestions(),
+        isHidden,
+        questions,
+        creditCost: isPro ? creditCost : 0,
+        // Stripe catalog ids stay unset on Free; Pro attaches them in Billing (T-032).
+        priceId: isPro ? seed?.priceId ?? null : null,
+        subscriptionProductId: isPro ? seed?.subscriptionProductId ?? null : null,
       };
       if (eventTypeId) {
         return schedulingApi.updateEventType(
@@ -126,7 +202,7 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["event-types", organization.id] });
-      toast.success(eventTypeId ? "Event type saved" : "Event type created");
+      toast.success(eventTypeId ? tf("saved") : tf("created"));
       router.push("/dashboard/event-types");
     },
     onError: (error) => {
@@ -134,9 +210,14 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
         setGated(true);
         return;
       }
-      toast.error(error instanceof Error ? error.message : "Could not save event type");
+      const message = error instanceof Error ? error.message : tf("saveFailed");
+      setFieldError(message);
+      toast.error(message);
     },
   });
+
+  const origin =
+    typeof window === "undefined" ? APP_ORIGIN_FALLBACK : window.location.origin;
 
   return (
     <form
@@ -147,42 +228,55 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
       }}
     >
       <PageHeader
-        title={eventTypeId ? "Edit event type" : "New event type"}
-        description="What event is this?"
+        title={eventTypeId ? tf("editTitle") : tf("newTitle")}
+        description={tf("description")}
         actions={
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => router.back()}>
-              Cancel
+              {tf("cancel")}
             </Button>
-            <Button type="submit" disabled={mutation.isPending || !title}>
-              {mutation.isPending ? "Saving…" : "Save"}
+            <Button
+              type="submit"
+              disabled={mutation.isPending || !title || freeLimitReached}
+            >
+              {mutation.isPending ? tf("saving") : tf("save")}
             </Button>
           </div>
         }
       />
 
-      {gated ? (
+      {gated || freeLimitReached ? (
         <Alert>
-          <AlertTitle>Upgrade to Pro</AlertTitle>
-          <AlertDescription>
-            The Free plan includes 3 event types. Upgrade to publish more.
+          <AlertTitle>{tf("upgradeTitle")}</AlertTitle>
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>{tf("freeLimitAlert")}</span>
+            <Button asChild size="sm" className="shrink-0">
+              <Link href="/dashboard/billing">{tf("upgradeCta")}</Link>
+            </Button>
           </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {fieldError ? (
+        <Alert variant="destructive">
+          <AlertTitle>{tf("saveErrorTitle")}</AlertTitle>
+          <AlertDescription>{fieldError}</AlertDescription>
         </Alert>
       ) : null}
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Event details</CardTitle>
+          <CardTitle className="text-base">{tf("detailsTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="title">Event name *</Label>
+            <Label htmlFor="title">{tf("name")}</Label>
             <Input
               id="title"
               required
               value={title}
-              placeholder="30 Minute Meeting"
-              onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+              placeholder={tf("namePlaceholder")}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 setTitle(event.target.value);
                 if (!eventTypeId) {
                   setSlug(slugify(event.target.value));
@@ -191,20 +285,22 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="slug">Link</Label>
+            <Label htmlFor="slug">{tf("link")}</Label>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="hidden sm:inline">
-                {typeof window === "undefined" ? "" : window.location.origin}/{organization.slug}/
+              <span className="hidden truncate sm:inline">
+                {origin}/{organization.slug}/
               </span>
               <Input
                 id="slug"
                 value={slug}
-                onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setSlug(slugify(event.target.value))}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setSlug(slugify(event.target.value))
+                }
               />
             </div>
           </div>
           <div className="grid gap-2">
-            <Label>Duration *</Label>
+            <Label>{tf("duration")}</Label>
             <div className="flex flex-wrap gap-2">
               {DURATIONS.map((item) => (
                 <Button
@@ -216,20 +312,22 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
                     setCustomDuration("");
                   }}
                 >
-                  {item} min
+                  {tf("minutesShort", { count: item })}
                 </Button>
               ))}
               <Input
                 className="w-28"
                 inputMode="numeric"
-                placeholder="Custom"
+                placeholder={tf("customDuration")}
                 value={customDuration}
-                onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setCustomDuration(event.target.value)}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setCustomDuration(event.target.value)
+                }
               />
             </div>
           </div>
           <div className="grid gap-2">
-            <Label>Location</Label>
+            <Label>{tf("location")}</Label>
             <Select
               value={locationType}
               onValueChange={(value: string) => setLocationType(value as LocationType)}
@@ -238,9 +336,9 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {LOCATIONS.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
+                {LOCATION_VALUES.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {t(`locations.${value}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -248,21 +346,27 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
             {locationType !== "GOOGLE_MEET" && locationType !== "PHONE" ? (
               <Input
                 value={locationValue}
-                onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setLocationValue(event.target.value)}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setLocationValue(event.target.value)
+                }
                 placeholder={
-                  locationType === "IN_PERSON" ? "Address or room" : "https://"
+                  locationType === "IN_PERSON"
+                    ? tf("addressPlaceholder")
+                    : "https://"
                 }
               />
             ) : null}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="description">Description/instructions</Label>
+            <Label htmlFor="description">{tf("descriptionLabel")}</Label>
             <Textarea
               id="description"
               rows={4}
               value={description}
-              onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDescription(event.target.value)}
-              placeholder="What should invitees know before they book?"
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                setDescription(event.target.value)
+              }
+              placeholder={tf("descriptionPlaceholder")}
             />
           </div>
         </CardContent>
@@ -270,50 +374,103 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Booking limits</CardTitle>
+          <CardTitle className="text-base">{tf("limitsTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-2">
-            <Label>Minimum notice (minutes)</Label>
+            <Label>{tf("minNotice")}</Label>
             <Input
               type="number"
               min={0}
               value={minNotice}
-              onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setMinNotice(Number(event.target.value))}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setMinNotice(Number(event.target.value))
+              }
             />
           </div>
           <div className="grid gap-2">
-            <Label>Date range (days ahead)</Label>
+            <Label>{tf("dateRange")}</Label>
             <Input
               type="number"
               min={1}
               value={maxDays}
-              onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setMaxDays(Number(event.target.value))}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setMaxDays(Number(event.target.value))
+              }
             />
           </div>
           <div className="grid gap-2">
-            <Label>Buffer before (minutes)</Label>
+            <Label>{tf("bufferBefore")}</Label>
             <Input
               type="number"
               min={0}
               value={bufferBefore}
-              onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setBufferBefore(Number(event.target.value))}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setBufferBefore(Number(event.target.value))
+              }
             />
           </div>
           <div className="grid gap-2">
-            <Label>Buffer after (minutes)</Label>
+            <Label>{tf("bufferAfter")}</Label>
             <Input
               type="number"
               min={0}
               value={bufferAfter}
-              onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setBufferAfter(Number(event.target.value))}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setBufferAfter(Number(event.target.value))
+              }
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>{tf("slotInterval")}</Label>
+            <Input
+              type="number"
+              min={0}
+              value={slotInterval}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setSlotInterval(Number(event.target.value))
+              }
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>{tf("dailyCap")}</Label>
+            <Input
+              type="number"
+              min={1}
+              value={dailyCap}
+              placeholder={tf("unlimited")}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setDailyCap(event.target.value)
+              }
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>{tf("cancelNotice")}</Label>
+            <Input
+              type="number"
+              min={0}
+              value={cancellationNotice}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setCancellationNotice(Number(event.target.value))
+              }
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>{tf("rescheduleNotice")}</Label>
+            <Input
+              type="number"
+              min={0}
+              value={rescheduleNotice}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setRescheduleNotice(Number(event.target.value))
+              }
             />
           </div>
           <div className="flex items-center justify-between rounded-lg border px-3 py-2 sm:col-span-2">
             <div>
-              <p className="text-sm font-medium">Require confirmation</p>
+              <p className="text-sm font-medium">{tf("requireConfirmation")}</p>
               <p className="text-xs text-muted-foreground">
-                Hold the time until you approve the booking.
+                {tf("requireConfirmationHint")}
               </p>
             </div>
             <Switch
@@ -323,15 +480,88 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
           </div>
           <div className="flex items-center justify-between rounded-lg border px-3 py-2 sm:col-span-2">
             <div>
-              <p className="text-sm font-medium">On / Off</p>
-              <p className="text-xs text-muted-foreground">
-                Turn off to hide this event type from your public page.
-              </p>
+              <p className="text-sm font-medium">{tf("onOff")}</p>
+              <p className="text-xs text-muted-foreground">{tf("onOffHint")}</p>
             </div>
             <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
+          <div className="flex items-center justify-between rounded-lg border px-3 py-2 sm:col-span-2">
+            <div>
+              <p className="text-sm font-medium">{tf("hideFromProfile")}</p>
+              <p className="text-xs text-muted-foreground">
+                {tf("hideFromProfileHint", { slug: organization.slug })}
+              </p>
+            </div>
+            <Switch checked={isHidden} onCheckedChange={setIsHidden} />
+          </div>
         </CardContent>
       </Card>
+
+      {isPro ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{tf("paymentsTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2 sm:col-span-2">
+              <p className="text-sm text-muted-foreground">{tf("paymentsHint")}</p>
+            </div>
+            <div className="grid gap-2">
+              <Label>{tf("creditCost")}</Label>
+              <Input
+                type="number"
+                min={0}
+                value={creditCost}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setCreditCost(Number(event.target.value))
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>{tf("priceId")}</Label>
+              <Input
+                value={seed?.priceId ?? ""}
+                disabled
+                placeholder={tf("pricePlaceholder")}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Alert>
+          <AlertTitle>{tf("paidProTitle")}</AlertTitle>
+          <AlertDescription>
+            {tf("paidProAlert")}{" "}
+            <Link href="/dashboard/billing" className="underline underline-offset-2">
+              {tf("viewBilling")}
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{tf("questionsTitle")}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2">
+          <Label htmlFor="questions">{tf("questionsLabel")}</Label>
+          <Textarea
+            id="questions"
+            rows={8}
+            className="font-mono text-xs"
+            value={questionsJson}
+            onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+              setQuestionsJson(event.target.value)
+            }
+          />
+        </CardContent>
+      </Card>
+
+      {slug ? (
+        <EventTypeSharePanel orgSlug={organization.slug} eventSlug={slug} />
+      ) : null}
     </form>
   );
 }
+
+const APP_ORIGIN_FALLBACK = "http://localhost:3000";

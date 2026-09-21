@@ -4,6 +4,7 @@ import { useState, useTransition, type ChangeEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import {
   Alert,
   AlertDescription,
@@ -14,6 +15,7 @@ import {
 } from "@shedflow/ui/components";
 
 export function LoginForm() {
+  const t = useTranslations("auth.login");
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
@@ -35,7 +37,7 @@ export function LoginForm() {
       });
 
       if (!result || result.error) {
-        setError("Invalid email or password.");
+        setError(t("invalidCredentials"));
         return;
       }
 
@@ -48,13 +50,13 @@ export function LoginForm() {
     <form onSubmit={onSubmit} className="flex w-full flex-col gap-5">
       {error ? (
         <Alert variant="destructive">
-          <AlertTitle>Sign in failed</AlertTitle>
+          <AlertTitle>{t("failedTitle")}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
 
       <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("email")}</Label>
         <Input
           id="email"
           name="email"
@@ -67,7 +69,7 @@ export function LoginForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">{t("password")}</Label>
         <Input
           id="password"
           name="password"
@@ -81,19 +83,19 @@ export function LoginForm() {
       </div>
 
       <Button type="submit" disabled={isPending}>
-        {isPending ? "Signing in…" : "Log in"}
+        {isPending ? t("submitting") : t("submit")}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
         <Link href="/reset-password" className="font-medium text-foreground underline">
-          Forgot password?
+          {t("forgotPassword")}
         </Link>
       </p>
 
       <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
+        {t("noAccount")}{" "}
         <Link href="/register" className="font-medium text-foreground underline">
-          Sign up
+          {t("signUp")}
         </Link>
       </p>
     </form>

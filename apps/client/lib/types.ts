@@ -173,6 +173,7 @@ export type Booking = {
   answers: Record<string, string | boolean>;
   cancellationReason: string | null;
   rescheduledFromId: string | null;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
   eventType?: Pick<EventType, "id" | "title" | "slug" | "durationMinutes">;

@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { CalendarModule } from './calendar/calendar.module';
 import { validateEnv } from './config/env';
 import { HealthController } from './health/health.controller';
+import { JobsModule } from './jobs/jobs.module';
 import { MetricsController } from './metrics/metrics.controller';
 import { OutboxModule } from './outbox/outbox.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QueueModule } from './queue/queue.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -16,6 +19,9 @@ import { QueueModule } from './queue/queue.module';
     }),
     PrismaModule,
     QueueModule,
+    CalendarModule,
+    JobsModule,
+    WebhooksModule,
     OutboxModule,
   ],
   controllers: [HealthController, MetricsController],

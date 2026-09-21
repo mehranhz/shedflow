@@ -9,6 +9,7 @@ import { addDays, addMinutes, startOfDay } from 'date-fns';
 import { BookingStatus } from '@shedflow/db';
 import { Clock } from '../common/clock/clock';
 import { BookingRepository } from '../bookings/booking.repository';
+import { CalendarService } from '../calendar/calendar.service';
 import { EventTypeRepository } from '../event-types/event-type.repository';
 import { ScheduleRepository } from '../schedules/schedule.repository';
 
@@ -53,6 +54,7 @@ export class AvailabilityService {
     private readonly eventTypes: EventTypeRepository,
     private readonly schedules: ScheduleRepository,
     private readonly bookings: BookingRepository,
+    private readonly calendars: CalendarService,
   ) {}
 
   async listSlots(input: ListSlotsInput): Promise<SlotListResult> {
@@ -135,7 +137,7 @@ export class AvailabilityService {
     ) *
       60 *
       1000;
-    const busy = await this.loadBusy(
+    const { busy, stale } = await this.loadBusy(
       eventType.hostUserId,
       new Date(rangeStart.getTime() - padMs),
       new Date(rangeEnd.getTime() + padMs),
@@ -257,7 +259,7 @@ export class AvailabilityService {
 
     return {
       timezone: input.inviteeTimeZone,
-      stale: false,
+      stale,
       truncated,
       slots,
     };
@@ -267,18 +269,36 @@ export class AvailabilityService {
     hostUserId: string,
     from: Date,
     to: Date,
-  ): Promise<BusyInterval[]> {
+  ): Promise<{ busy: BusyInterval[]; stale: boolean }> {
     const bookings = await this.bookings.listOccupiedForHost(
       hostUserId,
       from,
       to,
       ACTIVE_STATUSES,
     );
-    // external_busy_blocks empty until T-016
-    return bookings.map((booking) => ({
+    const busy: BusyInterval[] = bookings.map((booking) => ({
       start: addMinutes(booking.startAt, -booking.bufferBeforeMinutes),
       end: addMinutes(booking.endAt, booking.bufferAfterMinutes),
     }));
+
+    const external = await this.calendars.listBusyForHost(hostUserId, from, to);
+    for (const block of external) {
+      busy.push(block);
+    }
+
+    let stale = false;
+    if (await this.calendars.isConflictSyncStale(hostUserId)) {
+      try {
+        const live = await this.calendars.liveFreeBusyMerge(hostUserId, from, to);
+        for (const block of live) {
+          busy.push(block);
+        }
+      } catch {
+        stale = true;
+      }
+    }
+
+    return { busy, stale };
   }
 }
 

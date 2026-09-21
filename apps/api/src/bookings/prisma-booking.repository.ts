@@ -103,6 +103,7 @@ export class PrismaBookingRepository
       ...(filter.status ? { status: filter.status } : {}),
       ...(filter.eventTypeId ? { eventTypeId: filter.eventTypeId } : {}),
       ...(filter.hostUserId ? { hostUserId: filter.hostUserId } : {}),
+      ...(filter.customerId ? { customerId: filter.customerId } : {}),
       ...(filter.from || filter.to
         ? {
             startAt: {
@@ -211,6 +212,19 @@ export class PrismaBookingRepository
       }
       const record = await this.model.findUnique({ where: { id } });
       return record ? this.toEntity(record) : null;
+    });
+  }
+
+  clearAnswersForCustomer(
+    organizationId: string,
+    customerId: string,
+  ): Promise<number> {
+    return this.run(async () => {
+      const result = await this.model.updateMany({
+        where: { organizationId, customerId },
+        data: { answers: {} },
+      });
+      return result.count;
     });
   }
 }

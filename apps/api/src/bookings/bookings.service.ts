@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { addMinutes } from 'date-fns';
 import {
   BookingSource,
@@ -33,6 +34,8 @@ import {
   BookingEntity,
   BookingListFilter,
 } from './booking';
+import { BillingCheckoutClient } from './billing-checkout.client';
+import { BillingCreditsClient } from './billing-credits.client';
 import { BookingRepository } from './booking.repository';
 import {
   generateActionToken,
@@ -54,7 +57,13 @@ export type CreatePublicBookingInput = {
   timezone: string;
   invitee: { name: string; email: string; phone?: string };
   answers?: BookingAnswers;
+  metadata?: Record<string, unknown>;
   source: BookingSource;
+};
+
+export type PublicBookingResult = BookingEntity & {
+  checkoutUrl?: string | null;
+  actionTokens?: Record<string, string>;
 };
 
 const HOLD_MINUTES = 15;
@@ -76,6 +85,9 @@ export class BookingsService {
     private readonly clock: Clock,
     private readonly transactions: TransactionManager,
     private readonly outbox: Outbox,
+    private readonly billing: BillingCheckoutClient,
+    private readonly credits: BillingCreditsClient,
+    private readonly config: ConfigService,
   ) {}
 
   list(
@@ -114,19 +126,57 @@ export class BookingsService {
     return booking;
   }
 
-  async createPublic(input: CreatePublicBookingInput): Promise<BookingEntity> {
+  async createPublic(
+    input: CreatePublicBookingInput,
+  ): Promise<PublicBookingResult> {
     const org = await this.organizations.findBySlug(input.orgSlug);
     if (!org || org.deletedAt) {
       throw new NotFoundException('Not found');
     }
-    return this.createBooking(org.id, {
+    const booking = await this.createBooking(org.id, {
       eventTypeSlug: input.eventTypeSlug,
       startAt: input.startAt,
       timezone: input.timezone,
       invitee: input.invitee,
       answers: input.answers,
+      metadata: input.metadata,
       source: input.source,
     });
+    if (booking.status !== BookingStatus.PENDING_PAYMENT) {
+      return booking;
+    }
+    return this.attachCheckout(booking, input.invitee);
+  }
+
+  async retryCheckout(uid: string): Promise<{ checkoutUrl: string | null }> {
+    const booking = await this.bookings.findByUid(uid);
+    if (!booking) {
+      throw new NotFoundException('Not found');
+    }
+    if (booking.status !== BookingStatus.PENDING_PAYMENT) {
+      throw new ConflictException({
+        code: 'CONFLICT',
+        message: 'Checkout is only available for pending payment bookings',
+      });
+    }
+    const eventType = await this.eventTypes.findInOrganization(
+      booking.organizationId,
+      booking.eventTypeId,
+    );
+    if (!eventType?.priceId) {
+      throw new UnprocessableEntityException({
+        message: 'Booking has no price',
+      });
+    }
+    const customer = await this.customers.get(
+      booking.organizationId,
+      booking.customerId,
+    );
+    const result = await this.attachCheckout(booking, {
+      email: customer.email,
+      name: customer.name,
+    });
+    return { checkoutUrl: result.checkoutUrl ?? null };
   }
 
   async createHost(
@@ -254,7 +304,8 @@ export class BookingsService {
     }
     if (
       booking.status !== BookingStatus.PENDING_CONFIRMATION &&
-      booking.status !== BookingStatus.PENDING_PAYMENT
+      booking.status !== BookingStatus.PENDING_PAYMENT &&
+      booking.status !== BookingStatus.EXPIRED
     ) {
       throw new ConflictException({
         code: 'CONFLICT',
@@ -308,6 +359,7 @@ export class BookingsService {
       timezone: string;
       invitee: { name: string; email: string; phone?: string };
       answers?: BookingAnswers;
+      metadata?: Record<string, unknown>;
       source: BookingSource;
     },
   ): Promise<BookingEntity> {
@@ -318,8 +370,11 @@ export class BookingsService {
       });
     }
 
+    let creditCost = 0;
+    let creditCustomerId: string | null = null;
+
     try {
-      return await this.transactions.runInTransaction(async () => {
+      const booking = await this.transactions.runInTransaction(async () => {
         const eventType = await this.eventTypes.findBySlug(
           organizationId,
           input.eventTypeSlug,
@@ -341,6 +396,8 @@ export class BookingsService {
 
         const endAt = addMinutes(input.startAt, eventType.durationMinutes);
         const paid = Boolean(eventType.priceId);
+        creditCost = !paid && eventType.creditCost > 0 ? eventType.creditCost : 0;
+        creditCustomerId = creditCost > 0 ? customer.id : null;
         const status = paid
           ? BookingStatus.PENDING_PAYMENT
           : eventType.requiresConfirmation
@@ -348,7 +405,7 @@ export class BookingsService {
             : BookingStatus.CONFIRMED;
         const now = this.clock.now();
 
-        const booking = await this.bookings.create({
+        const created = await this.bookings.create({
           uid: generateBookingUid(),
           organizationId,
           eventTypeId: eventType.id,
@@ -364,35 +421,71 @@ export class BookingsService {
           locationType: eventType.locationType,
           locationValue: eventType.locationValue,
           answers,
+          metadata: input.metadata ?? {},
           holdExpiresAt: paid
             ? addMinutes(now, HOLD_MINUTES)
             : null,
         });
 
-        const actionTokens = await this.issueRawTokens(booking);
+        const actionTokens = await this.issueRawTokens(created);
         await this.outbox.emit(
           DOMAIN_EVENTS.BookingCreated,
           {
-            bookingId: booking.id,
-            uid: booking.uid,
-            status: booking.status,
+            bookingId: created.id,
+            uid: created.uid,
+            status: created.status,
             actionTokens,
           },
           organizationId,
         );
+        if (paid) {
+          await this.outbox.emit(
+            DOMAIN_EVENTS.BookingPaymentRequired,
+            {
+              bookingId: created.id,
+              uid: created.uid,
+              holdExpiresAt: created.holdExpiresAt?.toISOString() ?? null,
+            },
+            organizationId,
+          );
+        }
         if (status === BookingStatus.CONFIRMED) {
           await this.outbox.emit(
             DOMAIN_EVENTS.BookingConfirmed,
             {
-              bookingId: booking.id,
-              uid: booking.uid,
+              bookingId: created.id,
+              uid: created.uid,
               actionTokens,
             },
             organizationId,
           );
         }
-        return Object.assign(booking, { actionTokens });
+        return Object.assign(created, { actionTokens });
       });
+
+      if (creditCost > 0 && creditCustomerId) {
+        const debit = await this.credits.consume({
+          organizationId,
+          customerId: creditCustomerId,
+          bookingId: booking.id,
+          cost: creditCost,
+        });
+        if (debit !== 'ok') {
+          await this.bookings.updateInOrganization(organizationId, booking.id, {
+            status: BookingStatus.EXPIRED,
+            holdExpiresAt: null,
+          });
+          throw new UnprocessableEntityException({
+            code: 'INSUFFICIENT_CREDITS',
+            message:
+              debit === 'insufficient'
+                ? 'Insufficient credits'
+                : 'Credits service unavailable',
+          });
+        }
+      }
+
+      return booking;
     } catch (error) {
       if (isExclusionViolation(error)) {
         throw new ConflictException({
@@ -454,6 +547,13 @@ export class BookingsService {
         { bookingId: updated.id, uid: updated.uid },
         booking.organizationId,
       );
+      return updated;
+    }).then(async (updated) => {
+      await this.credits.release({
+        organizationId: updated.organizationId,
+        customerId: updated.customerId,
+        bookingId: updated.id,
+      });
       return updated;
     });
   }
@@ -597,6 +697,42 @@ export class BookingsService {
     if (oneTime) {
       await this.tokens.markUsed(token.id, this.clock.now());
     }
+  }
+
+  private async attachCheckout(
+    booking: BookingEntity,
+    invitee: { email: string; name: string },
+  ): Promise<PublicBookingResult> {
+    const eventType = await this.eventTypes.findInOrganization(
+      booking.organizationId,
+      booking.eventTypeId,
+    );
+    if (!eventType?.priceId || !booking.holdExpiresAt) {
+      return { ...booking, checkoutUrl: null };
+    }
+
+    const appUrl = this.config.getOrThrow<string>('APP_URL').replace(/\/$/, '');
+    const session = await this.billing.createCheckoutSession({
+      organizationId: booking.organizationId,
+      bookingId: booking.id,
+      customerId: booking.customerId,
+      priceId: eventType.priceId,
+      invitee,
+      successUrl: `${appUrl}/b/${booking.uid}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${appUrl}/b/${booking.uid}`,
+      expiresAt: booking.holdExpiresAt.toISOString(),
+    });
+
+    if (!session) {
+      return { ...booking, checkoutUrl: null };
+    }
+
+    const updated = await this.bookings.updateInOrganization(
+      booking.organizationId,
+      booking.id,
+      { paymentId: session.paymentId },
+    );
+    return { ...updated, checkoutUrl: session.url };
   }
 
   private requireTimeZone(timezone: string): void {

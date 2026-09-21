@@ -1,14 +1,14 @@
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 
 import { AuthShell } from "@/components/auth-shell";
 import { ResetPasswordForm } from "./reset-password-form";
 
-export default function ResetPasswordPage() {
+export default async function ResetPasswordPage() {
+  const t = await getTranslations("auth.reset");
+
   return (
-    <AuthShell
-      title="Reset your password"
-      subtitle="Enter your email to receive a reset link, or set a new password if you already have a token."
-    >
+    <AuthShell title={t("title")} subtitle={t("subtitle")}>
       <Suspense fallback={null}>
         <ResetPasswordForm />
       </Suspense>

@@ -257,6 +257,16 @@ export const previewStore = {
     return read().orgs[orgId]?.invitations ?? [];
   },
 
+  revokeInvitation(orgId: string, invitationId: string): void {
+    const store = read();
+    const bundle = store.orgs[orgId];
+    if (!bundle) {
+      return;
+    }
+    bundle.invitations = bundle.invitations.filter((item) => item.id !== invitationId);
+    write(store);
+  },
+
   toPublicOrg(bundle: OrgBundle): PublicOrg {
     const branding = (bundle.org.settings as { branding?: { hideSchedflowBadge?: boolean } })
       .branding;

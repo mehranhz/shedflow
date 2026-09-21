@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { auth } from "@/auth";
 import { AuthShell } from "@/components/auth-shell";
@@ -11,8 +12,10 @@ export default async function LoginPage() {
     redirect("/dashboard");
   }
 
+  const t = await getTranslations("auth.login");
+
   return (
-    <AuthShell title="Welcome back" subtitle="Log in to your SchedFlow account.">
+    <AuthShell title={t("title")} subtitle={t("subtitle")}>
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>

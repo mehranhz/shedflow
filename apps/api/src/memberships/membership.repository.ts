@@ -37,4 +37,7 @@ export abstract class MembershipRepository extends Repository<
     organizationId: string,
     id: string,
   ): Promise<void>;
+
+  /** GDPR: set all of the user's memberships to DISABLED. */
+  abstract disableAllForUser(userId: string): Promise<number>;
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Alert,
   AlertDescription,
@@ -13,12 +14,11 @@ import {
 type Status = "missing" | "pending" | "success" | "error";
 
 export function VerifyEmailStatus() {
+  const t = useTranslations("auth.verify");
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const [status, setStatus] = useState<Status>(token ? "pending" : "missing");
-  const [message, setMessage] = useState(
-    "This verification link is missing a token.",
-  );
+  const [message, setMessage] = useState(t("missingToken"));
 
   useEffect(() => {
     if (!token) {
@@ -43,7 +43,7 @@ export function VerifyEmailStatus() {
           message?: string;
         };
         setStatus("error");
-        setMessage(data.message ?? "This verification link is invalid or expired.");
+        setMessage(data.message ?? t("invalidToken"));
         return;
       }
 
@@ -54,13 +54,13 @@ export function VerifyEmailStatus() {
     return () => {
       cancelled = true;
     };
+    // Intentionally only re-verify when the token changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is stable for message keys
   }, [token]);
 
   if (status === "pending") {
     return (
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Confirming your email…
-      </p>
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">{t("pending")}</p>
     );
   }
 
@@ -68,13 +68,11 @@ export function VerifyEmailStatus() {
     return (
       <div className="flex flex-col gap-5">
         <Alert>
-          <AlertTitle>Email verified</AlertTitle>
-          <AlertDescription>
-            Your address is confirmed. You can continue using SchedFlow.
-          </AlertDescription>
+          <AlertTitle>{t("successTitle")}</AlertTitle>
+          <AlertDescription>{t("successBody")}</AlertDescription>
         </Alert>
         <Link href="/dashboard">
-          <Button className="w-full">Go to dashboard</Button>
+          <Button className="w-full">{t("goDashboard")}</Button>
         </Link>
       </div>
     );
@@ -83,12 +81,12 @@ export function VerifyEmailStatus() {
   return (
     <div className="flex flex-col gap-5">
       <Alert variant="destructive">
-        <AlertTitle>Verification failed</AlertTitle>
+        <AlertTitle>{t("failedTitle")}</AlertTitle>
         <AlertDescription>{message}</AlertDescription>
       </Alert>
       <Link href="/login">
         <Button variant="outline" className="w-full">
-          Back to sign in
+          {t("backToSignIn")}
         </Button>
       </Link>
     </div>

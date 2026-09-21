@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DomainEventStatus, Prisma } from '@shedflow/db';
+import { EventSideEffectsService } from '../jobs/event-side-effects.service';
+import { NotificationDispatcher } from '../mail/notification-dispatcher';
 import { PrismaService } from '../prisma/prisma.service';
 import { DomainEventJob, PgBossService } from '../queue/pg-boss.service';
+import { WebhookDispatchService } from '../webhooks/webhook-dispatch.service';
 import {
   ClaimedOutboxRow,
   nextOutboxAttempt,
@@ -27,6 +30,9 @@ export class OutboxRelayService {
     private readonly prisma: PrismaService,
     private readonly boss: PgBossService,
     private readonly config: ConfigService,
+    private readonly notifications: NotificationDispatcher,
+    private readonly sideEffects: EventSideEffectsService,
+    private readonly webhooks: WebhookDispatchService,
   ) {}
 
   async relay(): Promise<number> {
@@ -38,6 +44,7 @@ export class OutboxRelayService {
         type: row.type,
         organizationId: row.organizationId,
         payload: row.payload,
+        attempts: row.attempts,
       });
     }
     if (claimed.length > 0) {
@@ -50,7 +57,12 @@ export class OutboxRelayService {
     const now = new Date();
     try {
       this.assertNotPoison(job);
-      this.logger.log(`domain_event ${job.type} id=${job.eventId}`);
+      this.logger.log(
+        `domain_event ${job.type} id=${job.eventId} payload=${JSON.stringify(job.payload)}`,
+      );
+      await this.notifications.handle(job);
+      await this.sideEffects.afterDomainEvent(job);
+      await this.webhooks.afterDomainEvent(job);
       await this.prisma.domainEvent.update({
         where: { id: job.eventId },
         data: {
