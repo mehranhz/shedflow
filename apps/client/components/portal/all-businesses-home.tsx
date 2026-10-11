@@ -9,7 +9,6 @@ import {
   formatRelativeInZone,
   type AggregatedAppointment,
   type MultiBusinessSource,
-  writePortalUiPrefs,
 } from "@/lib/portal/multi-business";
 
 /**
@@ -61,10 +60,10 @@ export function AllBusinessesHome() {
             <li key={`${item.organizationId}:${item.uid}`}>
               <Link
                 href={buildAppointmentHref(item, (orgId) => {
-                  writePortalUiPrefs({ lastActiveOrgId: orgId });
+                 return "";
                 })}
                 className="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                onClick={() => writePortalUiPrefs({ lastActiveOrgId: item.organizationId })}
+                onClick={() => ""}
               >
                 <div className="flex items-center gap-2">
                   <span
