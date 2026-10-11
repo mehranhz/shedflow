@@ -14,8 +14,8 @@ export type StripeCustomerParams = {
 };
 
 export type CheckoutParams = {
-  mode: 'payment' | 'subscription';
-  stripePriceId: string;
+  mode: 'payment' | 'subscription' | 'setup';
+  stripePriceId?: string;
   successUrl: string;
   cancelUrl: string;
   customerEmail?: string;
@@ -97,7 +97,15 @@ export abstract class PaymentGateway {
   abstract createBillingPortalSession(params: {
     stripeCustomerId: string;
     returnUrl: string;
+    stripeAccount?: string;
+    idempotencyKey?: string;
   }): Promise<{ url: string }>;
+
+  abstract updateSubscription(
+    stripeSubscriptionId: string,
+    params: { cancelAtPeriodEnd: boolean },
+    stripeAccount?: string,
+  ): Promise<void>;
 
   abstract constructWebhookEvent(
     rawBody: Buffer,

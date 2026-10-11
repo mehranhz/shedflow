@@ -2,6 +2,12 @@ export const FEATURE_FLAGS = {
   outlookCalendar: 'outlook_calendar',
   sms: 'sms',
   embedV2: 'embed_v2',
+  /** Wave 13 T-065 — gift cards & store credit redeem UI/API. */
+  customerGiftCards: 'customer_gift_cards',
+  /** Wave 14 T-071 — referral credits. */
+  customerReferrals: 'customer_referrals',
+  /** Wave 14 T-070 — public review aggregate on org page. */
+  publicReviews: 'public_reviews',
 } as const;
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS];

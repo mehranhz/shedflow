@@ -20,7 +20,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
 
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -31,12 +31,13 @@ export function LoginForm() {
 
     startTransition(async () => {
       const result = await signIn("credentials", {
-        email,
+        email: phone,
         password,
         redirect: false,
       });
 
       if (!result || result.error) {
+        console.log(result);
         setError(t("invalidCredentials"));
         return;
       }
@@ -56,15 +57,17 @@ export function LoginForm() {
       ) : null}
 
       <div className="grid gap-2">
-        <Label htmlFor="email">{t("email")}</Label>
+        <Label htmlFor="phone">{t("phone")}</Label>
         <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id="phone"
+          name="phone"
+          type="phone"
+          autoComplete="phone"
           required
-          value={email}
-          onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEmail(event.target.value)}
+          value={phone}
+          onChange={(
+            event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+          ) => setPhone(event.target.value)}
         />
       </div>
 
@@ -78,7 +81,9 @@ export function LoginForm() {
           required
           minLength={8}
           value={password}
-          onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPassword(event.target.value)}
+          onChange={(
+            event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+          ) => setPassword(event.target.value)}
         />
       </div>
 
@@ -87,14 +92,20 @@ export function LoginForm() {
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
-        <Link href="/reset-password" className="font-medium text-foreground underline">
+        <Link
+          href="/reset-password"
+          className="font-medium text-foreground underline"
+        >
           {t("forgotPassword")}
         </Link>
       </p>
 
       <p className="text-center text-sm text-muted-foreground">
         {t("noAccount")}{" "}
-        <Link href="/register" className="font-medium text-foreground underline">
+        <Link
+          href="/register"
+          className="font-medium text-foreground underline"
+        >
           {t("signUp")}
         </Link>
       </p>

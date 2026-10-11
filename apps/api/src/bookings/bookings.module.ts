@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { CustomersModule } from '../customers/customers.module';
 import { EventTypesModule } from '../event-types/event-types.module';
+import { FormsModule } from '../forms/forms.module';
 import { MembershipsModule } from '../memberships/memberships.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 import { BillingCheckoutClient } from './billing-checkout.client';
@@ -19,6 +20,7 @@ import { SignedActionTokenRepository } from './signed-action-token.repository';
     CustomersModule,
     forwardRef(() => EventTypesModule),
     forwardRef(() => OrganizationsModule),
+    forwardRef(() => FormsModule),
   ],
   controllers: [
     BookingsController,

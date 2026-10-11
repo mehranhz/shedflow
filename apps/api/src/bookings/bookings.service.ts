@@ -2,10 +2,12 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException,
   UnprocessableEntityException,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { addMinutes } from 'date-fns';
@@ -40,6 +42,7 @@ import {
   SignedActionPurpose,
 } from './signed-action-token';
 import { SignedActionTokenRepository } from './signed-action-token.repository';
+import { FormsService } from '../forms/forms.service';
 
 export type BookingActor = {
   userId: string;
@@ -84,6 +87,8 @@ export class BookingsService {
     private readonly billing: BillingCheckoutClient,
     private readonly credits: BillingCreditsClient,
     private readonly config: ConfigService,
+    @Inject(forwardRef(() => FormsService))
+    private readonly forms: FormsService,
   ) {}
 
   list(
@@ -260,6 +265,7 @@ export class BookingsService {
         message: 'Booking cannot be confirmed',
       });
     }
+    await this.forms.assertCanConfirm(organizationId, id);
     return this.transactions.runInTransaction(async () => {
       const updated = await this.bookings.updateInOrganization(
         organizationId,
@@ -308,6 +314,7 @@ export class BookingsService {
         message: 'Booking cannot be confirmed',
       });
     }
+    await this.forms.assertCanConfirm(booking.organizationId, id);
     return this.transactions.runInTransaction(async () => {
       const updated = await this.bookings.updateInOrganization(
         booking.organizationId,
@@ -403,9 +410,10 @@ export class BookingsService {
         }
         creditCost = !paid && eventType.creditCost > 0 ? eventType.creditCost : 0;
         creditCustomerId = creditCost > 0 ? customer.id : null;
+        const formsRequired = await this.forms.shouldDeferConfirm(eventType.id);
         const status = paid
           ? BookingStatus.PENDING_PAYMENT
-          : eventType.requiresConfirmation
+          : eventType.requiresConfirmation || formsRequired
             ? BookingStatus.PENDING_CONFIRMATION
             : BookingStatus.CONFIRMED;
         const now = this.clock.now();
@@ -430,6 +438,13 @@ export class BookingsService {
           holdExpiresAt: paid
             ? addMinutes(now, HOLD_MINUTES)
             : null,
+        });
+
+        await this.forms.createAssignmentsForBooking({
+          organizationId,
+          bookingId: created.id,
+          customerId: customer.id,
+          eventTypeId: eventType.id,
         });
 
         const actionTokens = await this.issueRawTokens(created);

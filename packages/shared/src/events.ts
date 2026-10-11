@@ -20,6 +20,14 @@ export const DOMAIN_EVENTS = {
   SubscriptionUpdated: 'subscription.updated',
   SubscriptionCanceled: 'subscription.canceled',
   SubscriptionRenewed: 'subscription.renewed',
+  // Wave 14 engagement
+  WaitlistOffer: 'waitlist.offer',
+  WaitlistClaimed: 'waitlist.claimed',
+  WaitlistExpired: 'waitlist.expired',
+  SupportMessageCreated: 'support.message_created',
+  ReviewRequested: 'review.requested',
+  ReferralAwarded: 'referral.awarded',
+  UserNotificationCreated: 'user_notification.created',
 } as const;
 
 /** Notification log / Resend template ids used by the worker (T-025 / T-026). */
@@ -43,6 +51,10 @@ export const EMAIL_TEMPLATES = {
   PaymentReceipt: 'payment-receipt',
   PaymentFailed: 'payment-failed',
   PaymentFailedHost: 'payment-failed-host',
+  // Wave 14
+  WaitlistOffer: 'waitlist-offer',
+  SupportMessage: 'support-message',
+  ReviewRequest: 'review-request',
 } as const;
 
 export type EmailTemplateName =

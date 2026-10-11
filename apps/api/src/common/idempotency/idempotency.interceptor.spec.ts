@@ -191,4 +191,47 @@ describe('IdempotencyInterceptor', () => {
       ),
     ).rejects.toBeInstanceOf(ConflictException);
   });
+
+  it('requires Idempotency-Key on customer cancel-style POST (T-081)', () => {
+    const response = { statusCode: 200, status: jest.fn() };
+    const ctx = contextFor(
+      {
+        method: 'POST',
+        url: '/v1/customer/bookings/abc/cancel',
+        body: { reason: 'change of plans' },
+        header: () => undefined,
+        headers: {},
+        user: { id: 'customer-user-1' },
+      },
+      response,
+    );
+
+    expect(() => interceptor.intercept(ctx, { handle: () => of({}) })).toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('scopes customer mutations to user:{id} when org context is absent', async () => {
+    const response = {
+      statusCode: 200,
+      status: jest.fn().mockReturnThis(),
+    };
+    const request = {
+      method: 'POST',
+      url: '/v1/customer/bookings/abc/cancel',
+      body: {},
+      header: (name: string) =>
+        name.toLowerCase() === 'idempotency-key' ? 'cust-cancel-1' : undefined,
+      headers: {},
+      user: { id: 'customer-user-1' },
+      requestId: 'req-cust-1',
+    };
+    await lastValueFrom(
+      interceptor.intercept(contextFor(request, response), {
+        handle: () => of({ status: 'NOT_IMPLEMENTED' }),
+      }),
+    );
+    const stored = [...keys['rows'].values()][0];
+    expect(stored?.scope).toBe('user:customer-user-1');
+  });
 });

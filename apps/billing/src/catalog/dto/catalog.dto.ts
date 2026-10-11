@@ -15,8 +15,8 @@ export class CreateProductDto {
   @MaxLength(200)
   name!: string;
 
-  @IsIn(['ONE_TIME', 'RECURRING'])
-  type!: 'ONE_TIME' | 'RECURRING';
+  @IsIn(['ONE_TIME', 'RECURRING', 'PACKAGE'])
+  type!: 'ONE_TIME' | 'RECURRING' | 'PACKAGE';
 
   @IsOptional()
   @IsInt()

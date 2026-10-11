@@ -400,6 +400,7 @@
       "title": "خوش آمدید",
       "subtitle": "وارد حساب SchedFlow خود شوید.",
       "email": "ایمیل",
+      "phone":" موبایل",
       "password": "رمز عبور",
       "submit": "ورود",
       "submitting": "در حال ورود…",

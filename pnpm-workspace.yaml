@@ -8,11 +8,11 @@ packages:
 trustLockfile: true
 
 allowBuilds:
-  '@parcel/watcher': set this to true or false
+  '@parcel/watcher': true
   '@prisma/engines': true
-  '@swc/core': set this to true or false
+  '@swc/core': true
   bcrypt: true
   esbuild: true
   prisma: true
-  protobufjs: set this to true or false
+  protobufjs: true
   unrs-resolver: true

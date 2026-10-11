@@ -5,12 +5,15 @@ import { CatalogModule } from './catalog/catalog.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { ConnectModule } from './connect/connect.module';
 import { CreditsModule } from './credits/credits.module';
+import { CustomerPortalModule } from './customer-portal/customer-portal.module';
 import { validateEnv } from './config/env';
+import { GiftCardsModule } from './gift-cards/gift-cards.module';
 import { HealthController } from './health/health.controller';
 import { InternalModule } from './internal/internal.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { MembershipsModule } from './memberships/memberships.module';
 import { ObservabilityModule } from './observability/observability.module';
+import { PackagesModule } from './packages/packages.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PlatformBillingModule } from './platform/platform-billing.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -35,6 +38,9 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     CheckoutModule,
     CreditsModule,
     MembershipsModule,
+    PackagesModule,
+    CustomerPortalModule,
+    GiftCardsModule,
     RefundsModule,
     InvoicesModule,
     PlatformBillingModule,

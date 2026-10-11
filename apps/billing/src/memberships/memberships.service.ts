@@ -13,6 +13,7 @@ import { PlatformAccountRepository } from '../connect/platform-account.repositor
 import { BillingOutbox } from '../checkout/billing-outbox';
 import { CreditsService } from '../credits/credits.service';
 import { PaymentGateway } from '../payments/payment-gateway';
+import { PrismaService } from '../prisma/prisma.service';
 import { StripeCustomerRepository } from './stripe-customer.repository';
 import { SubscriptionRepository } from './subscription.repository';
 
@@ -48,6 +49,7 @@ export class MembershipsService {
     private readonly credits: CreditsService,
     private readonly outbox: BillingOutbox,
     private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async createCheckoutSession(
@@ -121,6 +123,95 @@ export class MembershipsService {
     });
 
     return { url: session.url };
+  }
+
+  async listForCustomer(
+    organizationId: string,
+    customerId: string,
+  ): Promise<
+    Array<{
+      id: string;
+      organizationId: string;
+      customerId: string;
+      productId: string;
+      productName: string;
+      status: SubscriptionStatus;
+      currentPeriodStart: Date;
+      currentPeriodEnd: Date;
+      cancelAtPeriodEnd: boolean;
+      creditBalance: number;
+    }>
+  > {
+    const rows = await this.prisma.subscription.findMany({
+      where: { organizationId, customerId },
+      orderBy: { createdAt: 'desc' },
+    });
+    const balance = await this.credits.getBalance(organizationId, customerId);
+    const result = [];
+    for (const row of rows) {
+      const product = await this.products.findById(organizationId, row.productId);
+      result.push({
+        id: row.id,
+        organizationId: row.organizationId,
+        customerId: row.customerId,
+        productId: row.productId,
+        productName: product?.name ?? 'Membership',
+        status: row.status,
+        currentPeriodStart: row.currentPeriodStart,
+        currentPeriodEnd: row.currentPeriodEnd,
+        cancelAtPeriodEnd: row.cancelAtPeriodEnd,
+        creditBalance: balance,
+      });
+    }
+    return result;
+  }
+
+  async setCancelAtPeriodEnd(input: {
+    organizationId: string;
+    customerId: string;
+    subscriptionId: string;
+    cancelAtPeriodEnd: boolean;
+  }): Promise<{ cancelAtPeriodEnd: boolean }> {
+    const sub = await this.prisma.subscription.findFirst({
+      where: {
+        id: input.subscriptionId,
+        organizationId: input.organizationId,
+        customerId: input.customerId,
+      },
+    });
+    if (!sub) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    const account = await this.accounts.findByOrganizationId(
+      input.organizationId,
+    );
+    if (!account || !account.chargesEnabled) {
+      throw new UnprocessableEntityException({
+        code: 'CONNECT_INCOMPLETE',
+        message: 'Stripe Connect charges are not enabled for this organization.',
+      });
+    }
+
+    await this.gateway.updateSubscription(
+      sub.stripeSubscriptionId,
+      { cancelAtPeriodEnd: input.cancelAtPeriodEnd },
+      account.stripeAccountId,
+    );
+
+    await this.subscriptions.upsertByStripeId({
+      organizationId: sub.organizationId,
+      customerId: sub.customerId,
+      productId: sub.productId,
+      priceId: sub.priceId,
+      stripeSubscriptionId: sub.stripeSubscriptionId,
+      status: sub.status,
+      currentPeriodStart: sub.currentPeriodStart,
+      currentPeriodEnd: sub.currentPeriodEnd,
+      cancelAtPeriodEnd: input.cancelAtPeriodEnd,
+    });
+
+    return { cancelAtPeriodEnd: input.cancelAtPeriodEnd };
   }
 
   async applySubscriptionEvent(

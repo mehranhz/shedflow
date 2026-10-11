@@ -54,4 +54,27 @@ export class MembershipsInternalController {
   create(@Body() body: CreateMembershipCheckoutDto): Promise<{ url: string }> {
     return this.memberships.createCheckoutSession(body);
   }
+
+  @Post('memberships/list')
+  list(
+    @Body() body: { organizationId: string; customerId: string },
+  ) {
+    return this.memberships.listForCustomer(
+      body.organizationId,
+      body.customerId,
+    );
+  }
+
+  @Post('memberships/cancel-at-period-end')
+  cancelAtPeriodEnd(
+    @Body()
+    body: {
+      organizationId: string;
+      customerId: string;
+      subscriptionId: string;
+      cancelAtPeriodEnd: boolean;
+    },
+  ) {
+    return this.memberships.setCancelAtPeriodEnd(body);
+  }
 }

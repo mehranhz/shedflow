@@ -400,6 +400,7 @@
       "title": "Welcome back",
       "subtitle": "Log in to your SchedFlow account.",
       "email": "Email",
+      "phone": "Phone",
       "password": "Password",
       "submit": "Log in",
       "submitting": "Signing in…",

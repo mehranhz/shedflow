@@ -176,6 +176,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
           details: this.detailsFromPayload(payload),
         };
       }
+      if (payload.code === 'OUTSIDE_POLICY') {
+        return {
+          status: HttpStatus.CONFLICT,
+          code: 'OUTSIDE_POLICY',
+          message,
+          details: this.detailsFromPayload(payload),
+        };
+      }
+      if (payload.code === 'CONFLICT') {
+        return {
+          status: HttpStatus.CONFLICT,
+          code: 'CONFLICT',
+          message,
+          details: this.detailsFromPayload(payload),
+        };
+      }
       if (payload.code === 'SLUG_TAKEN' || /slug/i.test(message)) {
         return {
           status: HttpStatus.CONFLICT,

@@ -13,6 +13,7 @@ import {
 } from "@shedflow/ui/components";
 import { ArrowLeft } from "lucide-react";
 
+import { PortalCrmComplements } from "@/components/dashboard/portal-crm-complements";
 import { PageHeader } from "@/components/page-header";
 import { QueryError, TableSkeleton } from "@/components/query-state";
 import { StatusBadge } from "@/components/status-badge";
@@ -128,6 +129,11 @@ export default function CustomerDetailPage({
             {t("creditsBody")}
           </CardContent>
         </Card>
+
+        <PortalCrmComplements
+          organizationId={organization.id}
+          customerId={customer.id}
+        />
       </div>
 
       <Card>

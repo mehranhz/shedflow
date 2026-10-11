@@ -85,7 +85,10 @@ export class StripePaymentGateway extends PaymentGateway {
     const session = await this.stripe.checkout.sessions.create(
       {
         mode: params.mode,
-        line_items: [{ price: params.stripePriceId, quantity: 1 }],
+        line_items:
+          params.mode === 'setup' || !params.stripePriceId
+            ? undefined
+            : [{ price: params.stripePriceId, quantity: 1 }],
         success_url: params.successUrl,
         cancel_url: params.cancelUrl,
         customer: params.stripeCustomerId,
@@ -190,12 +193,32 @@ export class StripePaymentGateway extends PaymentGateway {
   async createBillingPortalSession(params: {
     stripeCustomerId: string;
     returnUrl: string;
+    stripeAccount?: string;
+    idempotencyKey?: string;
   }): Promise<{ url: string }> {
-    const session = await this.stripe.billingPortal.sessions.create({
-      customer: params.stripeCustomerId,
-      return_url: params.returnUrl,
-    });
+    const session = await this.stripe.billingPortal.sessions.create(
+      {
+        customer: params.stripeCustomerId,
+        return_url: params.returnUrl,
+      },
+      {
+        ...requestOptions(params.stripeAccount),
+        idempotencyKey: params.idempotencyKey,
+      },
+    );
     return { url: session.url };
+  }
+
+  async updateSubscription(
+    stripeSubscriptionId: string,
+    params: { cancelAtPeriodEnd: boolean },
+    stripeAccount?: string,
+  ): Promise<void> {
+    await this.stripe.subscriptions.update(
+      stripeSubscriptionId,
+      { cancel_at_period_end: params.cancelAtPeriodEnd },
+      requestOptions(stripeAccount),
+    );
   }
 
   constructWebhookEvent(

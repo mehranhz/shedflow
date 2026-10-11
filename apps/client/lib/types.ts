@@ -1,4 +1,11 @@
+export type APIResponse<T> = {
+  data?: T
+  message?: string
+  success: boolean 
+  status: number
+}
 export type OrgRole = "OWNER" | "ADMIN" | "MEMBER";
+export type OrgRoleStatus = "ACTIVE" | "PENDING";
 export type PlatformPlan = "FREE" | "PRO";
 
 export type Organization = {
@@ -26,17 +33,21 @@ export type OnboardingFlags = {
   dismissed?: boolean;
 };
 
-export type AuthMembership = {
-  organizationId: string;
-  role: OrgRole;
-  status: "ACTIVE" | "DISABLED";
-};
+export type AuthMembership = Organization & {
+  membership : {
+    user_id: string,
+    organization_id:string,
+    type: OrgRole,
+		status: OrgRoleStatus
+  }
+}
 
 export type AuthProfile = {
   id: string;
-  email: string;
+  name: string;
+  phone: string;
   createdAt: string;
-  emailVerifiedAt: string | null;
+  phoneVerifiedAt: string | null;
   memberships: AuthMembership[];
   activeOrganization: Organization | null;
   impersonatingOrgId?: string | null;

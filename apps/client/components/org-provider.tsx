@@ -2,12 +2,12 @@
 
 import { createContext, useContext } from "react";
 
-import type { AuthProfile, Organization, OrgRole } from "@/lib/types";
+import type { AuthMembership, AuthProfile, Organization, OrgRole } from "@/lib/types";
 
 type OrgContextValue = {
   profile: AuthProfile;
   organization: Organization;
-  organizations: Organization[];
+  organizations: AuthMembership[];
   role: OrgRole;
 };
 
@@ -19,7 +19,7 @@ export function OrgProvider({
   children,
 }: {
   profile: AuthProfile;
-  organizations: Organization[];
+  organizations: AuthMembership[];
   children: React.ReactNode;
 }) {
   const organization = profile.activeOrganization;
@@ -27,10 +27,10 @@ export function OrgProvider({
     return null;
   }
   const membership = profile.memberships.find(
-    (item) => item.organizationId === organization.id,
+    (item) => item.id === organization.id,
   );
   const role =
-    membership?.role ??
+    membership?.membership.type ??
     (profile.impersonatingOrgId === organization.id ? "ADMIN" : "MEMBER");
 
   return (

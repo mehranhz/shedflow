@@ -220,6 +220,27 @@ export function BookingDetailSheet({
                 </div>
               ) : null}
 
+              <div className="rounded-lg border border-dashed p-3 text-muted-foreground">
+                <p className="mb-1 font-medium text-foreground">Portal details</p>
+                <p>
+                  Customer note:{" "}
+                  {(booking.metadata as { customerNote?: string } | null)
+                    ?.customerNote ?? "—"}
+                </p>
+                <p>
+                  Dependent:{" "}
+                  {(booking.metadata as { dependentName?: string } | null)
+                    ?.dependentName ?? "—"}
+                </p>
+                <p>
+                  Review:{" "}
+                  {(booking.metadata as { reviewRating?: number } | null)
+                    ?.reviewRating != null
+                    ? `${(booking.metadata as { reviewRating: number }).reviewRating}/5`
+                    : "No review yet (T-070)"}
+                </p>
+              </div>
+
               {booking.cancellationReason ? (
                 <p className="text-muted-foreground">
                   {t("cancelReason", { reason: booking.cancellationReason })}

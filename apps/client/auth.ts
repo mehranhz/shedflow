@@ -49,16 +49,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const response = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
+          body: JSON.stringify({ "username":email, password }),
+        }); 
 
         // The API returns 401 for bad credentials; anything non-2xx means "no user".
         if (!response.ok) {
           return null;
         }
 
-        const { accessToken, refreshToken, user } =
-          (await response.json()) as AuthResponse;
+        const { accessToken, refreshToken, user } = (await response.json()).data as AuthResponse;
         return {
           id: user.id,
           email: user.email,
@@ -82,9 +81,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
         applyAccessToken(token, user.accessToken, user.refreshToken);
+
         await persistOrgCookie(token.orgId);
         delete token.error;
-        return token;
+        return {
+          ...token,
+          "accessToken": user.accessToken
+        };
       }
 
       if (
@@ -98,7 +101,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!token.refreshToken) {
         return {
           ...token,
-          accessToken: undefined,
+          // accessToken: undefined,
           orgId: undefined,
           role: undefined,
           impersonatingOrgId: undefined,
@@ -119,7 +122,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       } catch {
         return {
           ...token,
-          accessToken: undefined,
+          // accessToken: undefined,
           refreshToken: undefined,
           accessTokenExpires: undefined,
           orgId: undefined,

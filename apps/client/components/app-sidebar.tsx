@@ -71,7 +71,7 @@ export function AppSidebar() {
   const { update } = useSession();
   const { organization, organizations, profile, role } = useOrg();
   const admin = canManageWorkspace(role);
-  const initials = (profile.email[0] ?? "S").toUpperCase();
+  const initials = (profile.name[0] ?? "S").toUpperCase();
 
   const switchOrg = async (orgId: string) => {
     if (orgId === organization.id) {
@@ -106,7 +106,7 @@ export function AppSidebar() {
                   <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{organization.name}</span>
                     <span className="truncate text-xs text-muted-foreground">
-                      {role.toLowerCase()} · {organization.platformPlan.toLowerCase()}
+                      {role?.toLowerCase()} · {organization.platformPlan?.toLowerCase()}
                     </span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
@@ -117,6 +117,7 @@ export function AppSidebar() {
                 {organizations.map((item) => (
                   <DropdownMenuItem key={item.id} onClick={() => void switchOrg(item.id)}>
                     {item.name}
+                    -({item.membership.type})
                     {item.id === organization.id ? (
                       <span className="ms-auto text-xs text-muted-foreground">
                         {t("current")}
@@ -199,7 +200,7 @@ export function AppSidebar() {
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{profile.email}</span>
+                    <span className="truncate font-medium">{profile.phone}</span>
                     <span className="truncate text-xs text-muted-foreground">
                       {t("account")}
                     </span>
@@ -207,7 +208,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuLabel>{profile.email}</DropdownMenuLabel>
+                <DropdownMenuLabel>{profile.phone}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings">{t("nav.settings")}</Link>

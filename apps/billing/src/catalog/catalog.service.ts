@@ -52,7 +52,7 @@ export class CatalogService {
     user: AuthenticatedUser,
     input: {
       name: string;
-      type: 'ONE_TIME' | 'RECURRING';
+      type: 'ONE_TIME' | 'RECURRING' | 'PACKAGE';
       creditGrantPerPeriod?: number;
     },
   ): Promise<CatalogProduct> {
@@ -65,6 +65,14 @@ export class CatalogService {
         message: 'One-time products cannot grant credits',
         fieldErrors: {
           creditGrantPerPeriod: ['Must be 0 for ONE_TIME products'],
+        },
+      });
+    }
+    if (input.type === ProductType.PACKAGE && creditGrantPerPeriod < 1) {
+      throw new BadRequestException({
+        message: 'Package products must grant at least 1 credit',
+        fieldErrors: {
+          creditGrantPerPeriod: ['Must be >= 1 for PACKAGE products'],
         },
       });
     }

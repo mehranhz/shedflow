@@ -3,6 +3,7 @@ import { CheckoutModule } from '../checkout/checkout.module';
 import { ConnectModule } from '../connect/connect.module';
 import { InvoicesModule } from '../invoices/invoices.module';
 import { MembershipsModule } from '../memberships/memberships.module';
+import { PackagesModule } from '../packages/packages.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PlatformBillingModule } from '../platform/platform-billing.module';
 import { RefundsModule } from '../refunds/refunds.module';
@@ -17,6 +18,7 @@ import { StripeWebhooksService } from './stripe-webhooks.service';
     ConnectModule,
     CheckoutModule,
     MembershipsModule,
+    PackagesModule,
     InvoicesModule,
     RefundsModule,
     PlatformBillingModule,

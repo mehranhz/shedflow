@@ -17,6 +17,7 @@ export class InMemoryPaymentGateway extends PaymentGateway {
     string,
     { id: string; url: string }
   >();
+  private readonly portalByIdempotency = new Map<string, { url: string }>();
 
   private nextId(prefix: string): string {
     this.seq += 1;
@@ -81,7 +82,11 @@ export class InMemoryPaymentGateway extends PaymentGateway {
       }
     }
     const id = this.nextId('cs');
-    const session = { id, url: `https://checkout.stripe.test/c/pay/${id}` };
+    const path = params.mode === 'setup' ? 'setup' : 'pay';
+    const session = {
+      id,
+      url: `https://checkout.stripe.test/c/${path}/${id}`,
+    };
     if (params.idempotencyKey) {
       this.checkoutByIdempotency.set(params.idempotencyKey, session);
     }
@@ -131,11 +136,35 @@ export class InMemoryPaymentGateway extends PaymentGateway {
   async createBillingPortalSession(params: {
     stripeCustomerId: string;
     returnUrl: string;
+    stripeAccount?: string;
+    idempotencyKey?: string;
   }): Promise<{ url: string }> {
     this.record('createBillingPortalSession', [params]);
-    return {
+    if (params.idempotencyKey) {
+      const existing = this.portalByIdempotency.get(params.idempotencyKey);
+      if (existing) {
+        return existing;
+      }
+    }
+    const session = {
       url: `https://billing.stripe.test/p/session/${params.stripeCustomerId}`,
     };
+    if (params.idempotencyKey) {
+      this.portalByIdempotency.set(params.idempotencyKey, session);
+    }
+    return session;
+  }
+
+  async updateSubscription(
+    stripeSubscriptionId: string,
+    params: { cancelAtPeriodEnd: boolean },
+    stripeAccount?: string,
+  ): Promise<void> {
+    this.record('updateSubscription', [
+      stripeSubscriptionId,
+      params,
+      stripeAccount,
+    ]);
   }
 
   constructWebhookEvent(

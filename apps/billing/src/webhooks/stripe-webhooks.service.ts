@@ -4,6 +4,7 @@ import { ConnectService } from '../connect/connect.service';
 import { CheckoutService } from '../checkout/checkout.service';
 import { InvoicesService } from '../invoices/invoices.service';
 import { MembershipsService } from '../memberships/memberships.service';
+import { PackagesService } from '../packages/packages.service';
 import { PlatformBillingService } from '../platform/platform-billing.service';
 import { RefundsService } from '../refunds/refunds.service';
 import { StripeEventRepository } from '../stripe-events/stripe-event.repository';
@@ -15,6 +16,7 @@ export class StripeWebhooksService {
     private readonly connect: ConnectService,
     private readonly checkout: CheckoutService,
     private readonly memberships: MembershipsService,
+    private readonly packages: PackagesService,
     private readonly invoices: InvoicesService,
     private readonly refunds: RefundsService,
     private readonly platform: PlatformBillingService,
@@ -34,6 +36,8 @@ export class StripeWebhooksService {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.metadata?.kind === 'platform') {
           await this.platform.applyCheckoutCompleted(session);
+        } else if (session.metadata?.kind === 'package') {
+          await this.packages.applyCheckoutCompleted(session);
         } else {
           await this.checkout.applyCheckoutCompleted(session);
         }

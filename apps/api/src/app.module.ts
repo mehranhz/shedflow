@@ -13,9 +13,11 @@ import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { RequestContextModule } from './common/tenancy/request-context.module';
 import { validateEnv } from './config/env';
 import { CustomersModule } from './customers/customers.module';
+import { CustomerPaymentsModule } from './customer-payments/customer-payments.module';
 import { DeveloperModule } from './developer/developer.module';
 import { DomainEventsModule } from './domain-events/domain-events.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { CustomerPortalModule } from './customer/customer-portal.module';
 import { EventTypesModule } from './event-types/event-types.module';
 import { FallbackModule } from './fallback/fallback.module';
 import { FlagsModule } from './flags/flags.module';
@@ -52,6 +54,7 @@ import { UsersModule } from './users/users.module';
     EventTypesModule,
     AvailabilityModule,
     CustomersModule,
+    CustomerPortalModule,
     BookingsModule,
     DeveloperModule,
     FlagsModule,

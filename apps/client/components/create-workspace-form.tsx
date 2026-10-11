@@ -22,7 +22,7 @@ import { guessTimeZone } from "@/lib/timezones";
 import type { Organization } from "@/lib/types";
 import { randomUUID } from "@/lib/uuid";
 
-export function CreateWorkspaceForm({ email }: { email: string }) {
+export function CreateWorkspaceForm({ phone }: { phone: string }) {
   const router = useRouter();
   const { update } = useSession();
   const [name, setName] = useState("");
@@ -35,7 +35,7 @@ export function CreateWorkspaceForm({ email }: { email: string }) {
         <Logo className="mb-4" />
         <CardTitle>Create your workspace</CardTitle>
         <CardDescription>
-          Signed in as {email}. Name the business your invitees will see.
+          Signed in as {phone}. Name the business your invitees will see.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -45,13 +45,13 @@ export function CreateWorkspaceForm({ email }: { email: string }) {
             event.preventDefault();
             setPending(true);
             try {
-              const org = await apiBff<Organization>("organizations", {
+              const org = await apiBff<Organization>("v1/organizations", {
                 method: "POST",
                 body: JSON.stringify({ name, timezone }),
                 idempotencyKey: randomUUID(),
               });
               const switched = await apiBff<{ accessToken: string }>(
-                `organizations/${org.id}/switch`,
+                `v1/sorganizations/${org.id}/switch`,
                 { method: "POST" },
               );
               await update({ accessToken: switched.accessToken });

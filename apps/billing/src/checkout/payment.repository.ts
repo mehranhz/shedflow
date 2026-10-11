@@ -18,7 +18,7 @@ export type PaymentRecord = {
 export type CreatePaymentData = {
   organizationId: string;
   customerId: string;
-  bookingId: string;
+  bookingId: string | null;
   stripeCheckoutSessionId: string;
   amountMinor: number;
   currency: string;

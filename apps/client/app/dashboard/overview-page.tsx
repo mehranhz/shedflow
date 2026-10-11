@@ -36,7 +36,7 @@ export function OverviewPage() {
     queryFn: () => schedulingApi.listBookings(organization, profile.id),
   });
 
-  const flags = (organization.settings.onboarding ?? {}) as OnboardingFlags;
+  const flags = (organization.settings?.onboarding ?? {}) as OnboardingFlags;
   const eventCount = events.data?.data.length ?? 0;
   const upcoming = (bookings.data?.data.items ?? []).filter((booking) => {
     const start = new Date(booking.startAt);
