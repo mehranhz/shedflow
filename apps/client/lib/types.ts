@@ -29,7 +29,6 @@ export type OnboardingFlags = {
   availability?: boolean;
   eventType?: boolean;
   copyLink?: boolean;
-  stripe?: boolean;
   dismissed?: boolean;
 };
 
@@ -105,6 +104,8 @@ export type EventType = {
   slotIntervalMinutes: number;
   dailyCap: number | null;
   requiresConfirmation: boolean;
+  requiresPaymentReceipt?: boolean;
+  paymentInstructions?: string | null;
   cancellationNoticeHours: number;
   rescheduleNoticeHours: number;
   priceId: string | null;
@@ -154,6 +155,20 @@ export type BookingStatus =
   | "EXPIRED"
   | "NO_SHOW";
 
+export type PaymentReceiptStatus = "UPLOADED" | "APPROVED" | "REJECTED";
+
+export type BookingPaymentReceipt = {
+  id?: string;
+  status: PaymentReceiptStatus;
+  rejectionReason?: string | null;
+  reviewedAt?: string | null;
+  createdAt?: string | null;
+  originalFilename?: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  downloadUrl?: string | null;
+};
+
 export type BookingSource = "HOSTED" | "EMBED" | "API" | "DASHBOARD";
 
 export type Customer = {
@@ -191,7 +206,8 @@ export type Booking = {
   updatedAt: string;
   eventType?: Pick<EventType, "id" | "title" | "slug" | "durationMinutes">;
   customer?: Pick<Customer, "id" | "name" | "email" | "phone">;
-  checkoutUrl?: string | null;
+  holdExpiresAt?: string | null;
+  paymentReceipt?: BookingPaymentReceipt | null;
 };
 
 export type Slot = {
@@ -235,6 +251,8 @@ export type PublicEventType = {
   locationValue: string | null;
   questions: Question[];
   requiresConfirmation: boolean;
+  requiresPaymentReceipt?: boolean;
+  paymentInstructions?: string | null;
   price: { amountMinor: number; currency: string } | null;
 };
 

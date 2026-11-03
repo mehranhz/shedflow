@@ -46,5 +46,10 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "mobile-portal",
+      testMatch: /portal\.spec\.ts/,
+      use: { ...devices["Pixel 5"] },
+    },
   ],
 });

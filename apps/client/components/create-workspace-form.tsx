@@ -22,12 +22,13 @@ import { guessTimeZone } from "@/lib/timezones";
 import type { Organization } from "@/lib/types";
 import { randomUUID } from "@/lib/uuid";
 
-export function CreateWorkspaceForm({ phone }: { phone: string }) {
+export function CreateWorkspaceForm({ identity }: { identity?: string }) {
   const router = useRouter();
   const { update } = useSession();
   const [name, setName] = useState("");
   const [timezone, setTimezone] = useState(guessTimeZone());
   const [pending, setPending] = useState(false);
+  const signedInAs = identity ?? "";
 
   return (
     <Card className="w-full max-w-md shadow-sm">
@@ -35,7 +36,9 @@ export function CreateWorkspaceForm({ phone }: { phone: string }) {
         <Logo className="mb-4" />
         <CardTitle>Create your workspace</CardTitle>
         <CardDescription>
-          Signed in as {phone}. Name the business your invitees will see.
+          {signedInAs
+            ? `Signed in as ${signedInAs}. Name the business your invitees will see.`
+            : "Name the business your invitees will see."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -45,13 +48,13 @@ export function CreateWorkspaceForm({ phone }: { phone: string }) {
             event.preventDefault();
             setPending(true);
             try {
-              const org = await apiBff<Organization>("v1/organizations", {
+              const org = await apiBff<Organization>("organizations", {
                 method: "POST",
                 body: JSON.stringify({ name, timezone }),
                 idempotencyKey: randomUUID(),
               });
               const switched = await apiBff<{ accessToken: string }>(
-                `v1/sorganizations/${org.id}/switch`,
+                `organizations/${org.id}/switch`,
                 { method: "POST" },
               );
               await update({ accessToken: switched.accessToken });

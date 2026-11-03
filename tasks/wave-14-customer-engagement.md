@@ -2,7 +2,7 @@
 
 **Design:** `full-scale/03-scheduling-at-scale.md` §7 (waitlist), `full-scale/05-integrations-notifications-webhooks.md` §2, `00-product-scope.md` Phase-2 cuts  
 **Goal:** Sticky engagement features mature scheduling SaaS customers expect: favorites, dependents, waitlist/alerts, light messaging, reviews, referrals.  
-**Does not duplicate:** T-031 staff CRM; guest booking questions.
+**Backend:** `shedflow-back` (Laravel). **Does not duplicate:** T-031 staff CRM; guest booking questions.
 
 ---
 
@@ -10,7 +10,7 @@
 
 **Status:** TODO  
 **Depends on:** T-042, T-046  
-**Apps:** `packages/db`, `apps/api`, `apps/client`
+**Apps:** `shedflow-back`, `apps/client`
 
 ### Implementation
 
@@ -131,20 +131,21 @@
 ## T-071 — Referral & loyalty (product-light)
 
 **Status:** TODO  
-**Depends on:** T-063, T-057  
-**Apps:** `apps/api`, `apps/billing`, `apps/client`  
-**Flag:** `customer_referrals`
+**Depends on:** T-057 (T-063 credits **CANCELLED** — do not block on ledger)  
+**Apps:** `shedflow-back`, `apps/client`  
+**Flag:** `customer_referrals`  
+**Note:** Credit/ledger rewards deferred with Stripe; prefer non-monetary reward or soft “thank you” until gateway returns.
 
 ### Implementation
 
-- Per-customer referral code; attribute new customer first paid booking; grant credit or coupon via ledger.
-- Loyalty points optional stretch — prefer **referral credits** only for DoD.
+- Per-customer referral code; attribute new customer first **confirmed** booking (receipt-approved or free).
+- Ledger/coupon grants **deferred** with Stripe; DoD can be attribution + status UI only.
 - Portal: share link + status of referrals (no PII of referees beyond count).
 
 ### Acceptance
 
 - [ ] Flag off → disabled.
-- [ ] Flag on → self-referral rejected; double-award prevented (idempotent).
+- [ ] Flag on → self-referral rejected; double-award prevented (idempotent) when rewards exist.
 
 ### Tests
 
@@ -156,13 +157,13 @@
 
 **Status:** TODO  
 **Depends on:** T-057, T-046  
-**Apps:** `packages/db`, `apps/api`, `apps/client`
+**Apps:** `shedflow-back`, `apps/client`
 
 ### Implementation
 
 - `UserNotification` inbox: type, title, body, href, readAt, organizationId?.
 - Bell icon on portal shell with unread badge; mark read / mark all.
-- Fan-in from waitlist, messages, payment failed, reminder (optional mirror).
+- Fan-in from waitlist, messages, **receipt rejected / approved**, reminder (optional mirror).
 - Web Push optional behind flag — document; email remains source of truth.
 
 ### Acceptance

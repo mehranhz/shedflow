@@ -21,8 +21,9 @@ export default function TermsPage() {
       <section className="mt-8 space-y-3 text-sm leading-relaxed">
         <h2 className="text-lg font-medium">Service</h2>
         <p>
-          SchedFlow provides scheduling, booking, and related payment tooling.
-          Features and availability may change during the MVP period.
+          SchedFlow provides scheduling, booking, and tools to collect payment
+          instructions and transfer receipts. Features and availability may
+          change during the MVP period.
         </p>
 
         <h2 className="text-lg font-medium">Accounts</h2>
@@ -34,9 +35,10 @@ export default function TermsPage() {
 
         <h2 className="text-lg font-medium">Payments</h2>
         <p>
-          Card payments are processed by Stripe. SchedFlow does not store
-          primary account numbers. Platform and Connect fees may apply per
-          pricing pages.
+          Paid bookings may require invitees to transfer funds using instructions
+          the host provides and to upload a receipt for review. SchedFlow stores
+          receipt files for hosts to approve or reject. SchedFlow does not process
+          card payments for guest bookings in this release.
         </p>
 
         <h2 className="text-lg font-medium">Acceptable use</h2>

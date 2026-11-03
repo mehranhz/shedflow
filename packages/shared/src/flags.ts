@@ -8,6 +8,8 @@ export const FEATURE_FLAGS = {
   customerReferrals: 'customer_referrals',
   /** Wave 14 T-070 — public review aggregate on org page. */
   publicReviews: 'public_reviews',
+  /** Wave 10 T-048 — customer portal deep links in notifications. */
+  customerPortal: 'customer_portal',
 } as const;
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS];

@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { API_URL, BILLING_URL } from "@/lib/config";
+import { readCustomerOrgCookie } from "@/lib/portal/customer-cookies";
 
 async function forward(
   request: Request,
@@ -44,6 +45,16 @@ function copyForwardHeaders(request: Request, headers: Headers): void {
   }
 }
 
+function isPublicApiPath(path: string[]): boolean {
+  if (path[0] === "public") {
+    return true;
+  }
+  if (path[0] === "customer" && path[1] === "auth") {
+    return true;
+  }
+  return false;
+}
+
 async function proxy(
   request: Request,
   path: string[],
@@ -52,11 +63,12 @@ async function proxy(
   options?: { allowPublicUnauthenticated?: boolean },
 ): Promise<Response> {
   const isPublic =
-    options?.allowPublicUnauthenticated === true && path[0] === "public";
+    options?.allowPublicUnauthenticated === true && isPublicApiPath(path);
 
   if (
     isPublic &&
-    (path.length < 2 || path.some((segment) => segment === ".." || segment.includes("\\")))
+    (path.length < 1 ||
+      path.some((segment) => segment === ".." || segment.includes("\\")))
   ) {
     return Response.json(
       { error: { code: "BAD_REQUEST", message: "Invalid path" } },
@@ -74,9 +86,21 @@ async function proxy(
       );
     }
     headers.set("Authorization", `Bearer ${session.accessToken}`);
-    const orgId = request.headers.get("x-organization-id") ?? session.orgId;
-    if (orgId) {
-      headers.set("X-Organization-Id", orgId);
+
+    const isCustomerRoute = path[0] === "customer";
+    if (isCustomerRoute) {
+      const customerOrg =
+        request.headers.get("x-customer-org-id") ??
+        (await readCustomerOrgCookie()) ??
+        session.customerOrgId;
+      if (customerOrg) {
+        headers.set("X-Customer-Org-Id", customerOrg);
+      }
+    } else {
+      const orgId = request.headers.get("x-organization-id") ?? session.orgId;
+      if (orgId) {
+        headers.set("X-Organization-Id", orgId);
+      }
     }
   }
 
@@ -113,3 +137,4 @@ export async function proxyPublic(
     allowPublicUnauthenticated: true,
   });
 }
+

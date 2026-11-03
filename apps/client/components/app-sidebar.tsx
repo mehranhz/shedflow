@@ -71,7 +71,7 @@ export function AppSidebar() {
   const { update } = useSession();
   const { organization, organizations, profile, role } = useOrg();
   const admin = canManageWorkspace(role);
-  const initials = (profile.name[0] ?? "S").toUpperCase();
+  const initials = (profile.name?.[0] ?? "S").toUpperCase();
 
   const switchOrg = async (orgId: string) => {
     if (orgId === organization.id) {

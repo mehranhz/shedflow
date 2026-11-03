@@ -1,13 +1,18 @@
 # Wave 2 — Scheduling engine (T-010 … T-015)
 
 **Design:** `docs/design/mvp/04-scheduling-engine.md`, `mvp/02-data-model.md`  
-**Clock:** inject `Clock` from T-003. **TZ:** `@date-fns/tz`.
+**Clock:** inject `Clock` from T-003. **TZ:** `@date-fns/tz` (client); Laravel uses Carbon UTC.
+
+### Laravel port (`shedflow-back`) — **DONE** for T-010…T-015 core
+
+Verified: schedules/rules/overrides, event types (incl. `requires_confirmation`), public slots, customers (incl. nullable `user_id`), public + org bookings, cancel/reschedule/confirm/no-show, signed action tokens, `GET/POST /v1/me/bookings`.  
+**Not in scope here:** Stripe `priceId` / `PENDING_PAYMENT` checkout — replaced by Wave 4 receipt confirmation. Exclusion-constraint / gist may still differ from Nest raw SQL; concurrency covered by availability checks + locks in `BookingService`.
 
 ---
 
 ## T-010 — Schedules, weekly rules, date overrides
 
-**Status:** DONE  
+**Status:** DONE (Laravel ported)  
 **Depends on:** T-006, T-001  
 **Apps:** `apps/api`
 
@@ -29,16 +34,16 @@
 
 ## T-011 — Event types
 
-**Status:** DONE  
+**Status:** DONE (Laravel ported)  
 **Depends on:** T-010  
 **Design:** `02` EventType, `03` feature gate (limit 3 on FREE)
 
 ### Implementation
 
-- Prisma `EventType`. Validate questions zod. `slug` unique per org.
-- Location types enum. `priceId` / `subscriptionProductId` accepted as UUIDs but **not verified against Stripe until T-020** (store, ignore).
+- Prisma `EventType` historically; Laravel `EventType` model + CRUD. Validate questions. `slug` unique per org.
+- Location types enum. **Do not require Stripe `priceId` / `subscriptionProductId`.** Receipt requirement lands in Wave 4 (`requiresPaymentReceipt`). `requiresConfirmation` already exists.
 - Soft delete: `isActive=false`.
-- FREE plan: max 3 active event types (`FEATURE_GATED`).
+- FREE plan: max 3 active event types (`FEATURE_GATED`) — enforce in Laravel if/when `platform_plan` gates matter.
 - `GET /v1/public/orgs/:orgSlug/event-types` lists `isActive && !isHidden`.
 
 ### Acceptance
@@ -51,7 +56,7 @@
 
 ## T-012 — Slot generation
 
-**Status:** DONE  
+**Status:** DONE (Laravel ported)  
 **Depends on:** T-011  
 **Design:** `04` §2 and §10 (every edge case)
 
@@ -74,9 +79,9 @@
 
 ## T-013 — Customers
 
-**Status:** DONE  
+**Status:** DONE (Laravel ported; `user_id` nullable ready for Wave 9)  
 **Depends on:** T-006  
-**Apps:** `apps/api`
+**Apps:** `shedflow-back` (was `apps/api`)
 
 ### Implementation
 
@@ -93,21 +98,18 @@
 
 ## T-014 — Bookings create + exclusion constraint
 
-**Status:** DONE  
+**Status:** DONE (Laravel ported)  
 **Depends on:** T-012, T-013, T-008  
 **Design:** `04` §3, `02` §3 SQL exclusion
 
 ### Implementation
 
-- Prisma `Booking` + **raw SQL migration** for `btree_gist` and `bookings_host_occupied_excl`. Document in `packages/db/README.md`.
-- Copy buffers onto the row. `uid` nanoid 21.
-- `POST /v1/public/bookings` + host `POST /v1/organizations/:orgId/bookings`.
-- Idempotency **required** on public POST; write key in same transaction as booking when possible.
-- Status: free+auto → `CONFIRMED`; `requiresConfirmation` → `PENDING_CONFIRMATION`; paid (`priceId` set) → `PENDING_PAYMENT` + `holdExpiresAt=now+15m` even before Stripe (T-021 wires checkout). If priceId set but billing down, still insert hold.
-- Map gist violation → 409 `SLOT_UNAVAILABLE`.
-- Outbox `booking.created` / `booking.confirmed`.
+- Laravel `Booking` + create via `BookingService` (availability assert + transaction). Nest had gist exclusion; Laravel relies on slot checks — strengthen with DB constraint later if needed.
+- Copy buffers onto the row. Public `uid` generated server-side.
+- `POST /v1/public/bookings` + host `POST /v1/organizations/:orgId/bookings` + `GET /v1/me/bookings`.
+- Idempotency on public POST: Nest had it; Laravel may still need T-008 port for hard guarantees.
+- Status: free+auto → `CONFIRMED`; `requiresConfirmation` → `PENDING_CONFIRMATION`. **Paid Stripe/`priceId` → `PENDING_PAYMENT` path is OBSOLETE** — use Wave 4 receipt upload + confirmation instead.
 - Authenticated list/get with filters `status`, `from`, `to`, `eventTypeId`.
-- E2e: **two concurrent public POSTs** same slot (use `Promise.all`).
 
 ### Acceptance
 
@@ -120,17 +122,17 @@
 
 ## T-015 — Cancel, reschedule, confirm, signed links
 
-**Status:** DONE  
+**Status:** DONE (Laravel ported)  
 **Depends on:** T-014  
 **Design:** `04` §4–§7
 
 ### Implementation
 
-- Prisma `SignedActionToken`. Issue on create/confirm.
+- Laravel `SignedActionToken`. Issue on create.
 - Public cancel/reschedule with token. Host confirm/cancel/reschedule/no-show.
 - Reschedule = insert new + old `RESCHEDULED` (do not mutate start_at).
 - Policy hours on event type.
-- Internal routes stub for worker: `POST /internal/bookings/:id/confirm|expire` with HMAC (T-003/T-009 helper). Expire: CAS `PENDING_PAYMENT` → `EXPIRED`.
+- Nest internal expire for `PENDING_PAYMENT` holds is **OBSOLETE** with Stripe deferral; if receipt holds need expiry later, implement as Laravel job.
 
 ### Acceptance
 

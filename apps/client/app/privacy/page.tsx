@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       <h1 className="text-3xl font-semibold tracking-tight">Privacy Policy</h1>
       <p className="mt-4 text-sm text-muted-foreground">
         Last updated: draft. This page describes how SchedFlow processes personal
-        data for scheduling and payments.
+        data for scheduling and payment receipt uploads.
       </p>
 
       <section className="mt-8 space-y-3 text-sm leading-relaxed">
@@ -33,7 +33,10 @@ export default function PrivacyPage() {
             timezone, and related metadata (including privacy consent timestamp
             when collected).
           </li>
-          <li>Payment references via Stripe (no card PAN stored by SchedFlow).</li>
+          <li>
+            Payment receipt uploads (images or PDF) when an event type requires
+            transfer confirmation.
+          </li>
           <li>Technical logs for security and abuse prevention.</li>
         </ul>
 
@@ -53,7 +56,6 @@ export default function PrivacyPage() {
 
         <h2 className="text-lg font-medium">Subprocessors</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Stripe — payments and Connect</li>
           <li>Resend — transactional email</li>
           <li>Neon / Supabase — database hosting</li>
           <li>Vercel — application hosting</li>

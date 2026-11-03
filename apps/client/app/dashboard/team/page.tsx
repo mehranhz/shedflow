@@ -37,7 +37,7 @@ export default function TeamPage() {
   const { organization, profile, role } = useOrg();
   const queryClient = useQueryClient();
   const canManage = canManageWorkspace(role);
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [inviteRole, setInviteRole] = useState<"ADMIN" | "MEMBER">("MEMBER");
 
   const members = useQuery({
@@ -50,11 +50,11 @@ export default function TeamPage() {
   });
 
   const invite = useMutation({
-    mutationFn: () => orgsApi.invite(organization.id, { email, role: inviteRole }),
+    mutationFn: () => orgsApi.invite(organization.id, { phone, role: inviteRole }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["invitations", organization.id] });
-      toast.success(t("invited", { email }));
-      setEmail("");
+      toast.success(t("invited", { email: phone }));
+      setPhone("");
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : t("inviteFailed"));
@@ -124,17 +124,18 @@ export default function TeamPage() {
               }}
             >
               <div className="grid flex-1 gap-2">
-                <Label htmlFor="invite-email" className="sr-only">
-                  {t("email")}
+                <Label htmlFor="invite-phone" className="sr-only">
+                  Phone
                 </Label>
                 <Input
-                  id="invite-email"
-                  type="email"
+                  id="invite-phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
                   required
-                  placeholder={t("emailPlaceholder")}
-                  value={email}
+                  value={phone}
                   onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setEmail(event.target.value)
+                    setPhone(event.target.value)
                   }
                 />
               </div>
@@ -152,11 +153,10 @@ export default function TeamPage() {
                   <SelectItem value="ADMIN">{t("admin")}</SelectItem>
                 </SelectContent>
               </Select>
-              <Button type="submit" disabled={invite.isPending || !email.trim()}>
+              <Button type="submit" disabled={invite.isPending || !phone.trim()}>
                 {invite.isPending ? t("sending") : t("sendInvite")}
               </Button>
             </form>
-            <p className="mt-2 text-xs text-muted-foreground">{t("inviteHint")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -194,7 +194,7 @@ export default function TeamPage() {
               <TableBody>
                 {(members.data ?? []).map((member) => (
                   <TableRow key={member.id}>
-                    <TableCell>{member.email}</TableCell>
+                    <TableCell>{member.phone}</TableCell>
                     <TableCell>
                       {canEditMember(member) ? (
                         <Select
@@ -227,7 +227,7 @@ export default function TeamPage() {
                             variant="ghost"
                             disabled={remove.isPending}
                             onClick={() => {
-                              if (window.confirm(t("removeConfirm", { email: member.email }))) {
+                              if (window.confirm(t("removeConfirm", { email: member.phone }))) {
                                 remove.mutate(member.userId);
                               }
                             }}
@@ -269,7 +269,7 @@ export default function TeamPage() {
               <TableBody>
                 {invitations.data?.map((invitation) => (
                   <TableRow key={invitation.id}>
-                    <TableCell>{invitation.email}</TableCell>
+                    <TableCell>{invitation.phone}</TableCell>
                     <TableCell>{invitation.role}</TableCell>
                     <TableCell>
                       {new Date(invitation.expiresAt).toLocaleDateString()}

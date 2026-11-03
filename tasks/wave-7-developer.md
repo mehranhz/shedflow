@@ -1,13 +1,17 @@
 # Wave 7 — Developer platform (T-033)
 
+### Laravel port (`shedflow-back`)
+
+Nest T-033 is **DONE historically** (API keys, webhooks, OpenAPI). **Not ported** to Laravel — no `ApiKey` / webhook models or routes. Client developer page may still assume Nest billing Pro gate. Reopen as Laravel TODO when third-party integrations are prioritized (after receipts + portal). Pro gate no longer depends on Stripe T-024.
+
 ---
 
 ## T-033 — API keys, webhooks, OpenAPI
 
-**Status:** DONE  
-**Depends on:** T-014, T-024 (Pro gate), T-009, T-008  
+**Status:** DONE (Nest) / **NOT PORTED to Laravel**  
+**Depends on:** T-014, T-008; soft plan gate optional  
 **Design:** `docs/design/mvp/09-developer-api-and-webhooks.md`  
-**Apps:** `apps/api`, `apps/worker`, `apps/client` developer page, `packages/shared/openapi/v1.yaml`
+**Apps:** was `apps/api`, `apps/worker` → future `shedflow-back`; `apps/client` developer page; OpenAPI as needed
 
 ### Implementation
 

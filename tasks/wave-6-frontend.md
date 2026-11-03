@@ -5,12 +5,14 @@
 
 TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 
+**API target:** Laravel `shedflow-back`. Stripe Checkout / billing BFF paths are **deferred** — Wave 4 adds receipt upload on booking + event-type toggles; remove or inert `checkoutUrl` / pay-page as primary UX.
+
 ---
 
 ## T-027 — Hosted booking page
 
-**Status:** DONE  
-**Depends on:** T-011, T-012, T-014, T-015, T-021 (paid redirect; can stub if billing missing)  
+**Status:** DONE (extend in Wave 4 T-020 for receipt upload)  
+**Depends on:** T-011, T-012, T-014, T-015; receipt UX → T-020  
 **Apps:** `apps/client`
 
 ### Implementation
@@ -19,7 +21,7 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 - SSR event type + org branding (`--brand`).
 - Client `SlotPicker`: timezone Command, Calendar, time buttons, form, Idempotency-Key uuid.
 - Calls `NEXT_PUBLIC_API_URL/v1/public/*` from the browser for slots/book (documented exception).
-- Paid: redirect `checkoutUrl`. Success page confirms status (poll GET public booking).
+- **Payments now:** when `requiresPaymentReceipt`, show upload step (T-020) — **do not** redirect Stripe `checkoutUrl`. Existing pay-booking page is deferred/legacy.
 - Manage page: token query param, cancel/reschedule forms (`AlertDialog`).
 - Metadata title `{event} · {org}`.
 - Loading skeletons, empty month, SLOT_UNAVAILABLE toast (`sonner`).
@@ -86,12 +88,13 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 
 ## T-030 — Event types and availability UI
 
-**Status:** DONE  
+**Status:** DONE (receipt toggle → Wave 4 T-018)  
 **Depends on:** T-029, T-010, T-011
 
 ### Implementation
 
-- Event types table, create/edit form (all fields in `02` EventType except Stripe ids if FREE). Copy public link + embed snippet.
+- Event types table, create/edit form. `requiresConfirmation` switch exists. Add `requiresPaymentReceipt` in T-018; hide/disable Stripe `priceId` / credit-cost as primary path.
+- Copy public link + embed snippet.
 - Availability weekly editor + date overrides + timezone Command.
 - Toasts on save. Zod schemas from `@shedflow/shared`.
 
@@ -100,12 +103,13 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 - [x] Create event type, see it on public booking page.
 - [x] Change Friday hours, slots on booking page reflect after refresh.
 - [x] FREE fourth event type shows upgrade Alert.
+- [ ] Receipt requirement toggle (tracked under T-018).
 
 ---
 
 ## T-031 — Bookings and customers UI
 
-**Status:** DONE  
+**Status:** DONE (receipt preview → Wave 4 T-021)  
 **Depends on:** T-029, T-014, T-015, T-013
 
 ### Implementation
@@ -113,30 +117,31 @@ TanStack Query, react-hook-form, zod resolvers — add to `apps/client`.
 - Bookings table + filters + detail sheet (actions cancel/reschedule/confirm/no-show).
 - Poll 30s (`refetchInterval`).
 - Customers table + detail + booking history.
-- Refund button only if T-023 and OWNER/ADMIN (calls billing BFF).
+- **Refund / Stripe billing BFF:** deferred (old T-023 OBSOLETE). Show payment **receipt** attachment for staff review in T-021.
 
 ### Acceptance
 
 - [x] Host-created booking appears in table.
 - [x] Cancel from sheet updates status without full reload (invalidate query).
+- [ ] Staff can view uploaded receipt (T-021).
 
 ---
 
 ## T-032 — Billing, team, settings, developer UI
 
-**Status:** DONE  
-**Depends on:** T-029, T-019, T-020, T-024, T-006  
-**Developer keys UI can land with T-033** — settings/team/billing first; developer tab empty state until T-033.
+**Status:** DONE (team/settings); **Billing Stripe UI = DEFERRED / hide**  
+**Depends on:** T-029, T-006  
+**Developer keys UI can land with T-033** — settings/team first; developer tab empty until Laravel T-033.
 
 ### Implementation
 
-- Billing: Connect status, onboard button, products/prices, payments table, upgrade to Pro (redirect Checkout), tax switch.
+- **Billing page:** Nest-era Stripe Connect/catalog/Pro Checkout is **out of scope**. Replace with short “Payment receipts are configured per event type” copy (link to event types) or hide nav item for MEMBER/non-owners until gateway returns.
 - Team: members, invite, pending, role change.
 - Settings: name, slug (OWNER), timezone, currency, brand color, logo URL, danger delete.
-- Empty Developer page with “upgrade” if FREE.
+- Empty Developer page until Laravel API keys exist.
 
 ### Acceptance
 
-- [x] Invite flow: send invite (email logged), second user accepts, appears in members.
+- [x] Invite flow: send invite, second user accepts, appears in members.
 - [x] Brand color appears on hosted booking page.
-- [x] Pro upgrade button hits billing BFF (fake URL ok in test env).
+- [ ] Stripe Connect/Pro Checkout not required; billing nav does not imply live gateway.

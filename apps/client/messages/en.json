@@ -36,7 +36,7 @@
       "fullComparison": "Full comparison",
       "comparePlans": "Compare Free and Pro",
       "startFreeUpgradeLater": "Start free, upgrade later",
-      "upgradeInBilling": "Upgrade in billing"
+      "upgradeInBilling": "View billing"
     },
     "footer": {
       "blurb": "Scheduling for people who get paid. Publish the offer, share a page or embed, get booked — and paid — in one flow.",
@@ -44,7 +44,7 @@
       "account": "Account",
       "builtFor": "Built for",
       "copyright": "© {year} SchedFlow",
-      "meta": "Cards stay on Stripe. Time stays in UTC. Money is integer cents.",
+      "meta": "Bank transfer + receipt upload. Time in UTC. Amounts in minor currency units.",
       "audiences": {
         "coaches": "Coaches",
         "clinics": "Clinics",
@@ -58,24 +58,24 @@
       "heroTitle": "Book the hour.",
       "heroAccent": " Get paid for it.",
       "heroLead": "Publish event types, share a hosted page or embed, and take free sessions, paid bookings, or memberships — without the email tennis.",
-      "heroNote": "Free forever for unpaid bookings. Pro is $29/mo the day you attach a price. Cards stay on Stripe.",
-      "heroVisualSr": "Animated preview of a hosted booking page: a client picks Thursday the 24th at 10:30 am and pays $120 through Stripe Checkout. Card data never touches SchedFlow.",
+      "heroNote": "Free forever for unpaid bookings. Pro unlocks memberships, branding, and the API when self-serve billing launches.",
+      "heroVisualSr": "Animated preview of a hosted booking page: a client picks Thursday the 24th at 10:30 am, transfers $120 using the host's instructions, and uploads a receipt. SchedFlow does not process card payments.",
       "personasAria": "Who SchedFlow is for",
       "statsAria": "Product facts",
       "productKicker": "The product",
       "productTitle": "A booking page that can settle up, not just find a time.",
-      "productLead": "Calendly-shaped scheduling with Stripe Connect in the same motion — for practices that charge for the hour.",
+      "productLead": "Calendly-shaped scheduling with bank-transfer proof in the same flow — for practices that charge for the hour.",
       "howKicker": "How it works",
       "howTitle": "Five moves from empty calendar to paid session.",
       "paymentsKicker": "Payments + scheduling",
-      "paymentsTitle": "The slot is not yours until Checkout completes.",
-      "paymentsLead": "Connect Express for payouts. A 15-minute hold so two people cannot buy the same hour. A 2% application fee on connected charges — not on your Pro subscription.",
+      "paymentsTitle": "The slot is not confirmed until you approve the receipt.",
+      "paymentsLead": "Invitees transfer using your instructions, upload a photo or PDF, and you approve from the booking. A 30-minute hold keeps two people from claiming the same hour.",
       "plansKicker": "Plans",
       "plansTitle": "Free until you charge. Pro the day you do.",
       "plansLead": "No trial. Stay on Free indefinitely. Upgrade self-serve when a paid event type or membership is the next step.",
       "faqKicker": "FAQ",
       "faqTitle": "Straight answers, MVP-honest.",
-      "faqLead": "No trial. No enterprise invoice. Self-serve Free or Pro, and a 2% fee only on money that runs through Connect."
+      "faqLead": "No trial. Self-serve Free or Pro when billing opens. Guest payments stay off-card — transfer plus receipt upload on every plan."
     },
     "personas": {
       "coach": {
@@ -111,16 +111,16 @@
     },
     "stats": {
       "hold": {
-        "value": "15 min",
-        "label": "hold on a paid slot"
+        "value": "30 min",
+        "label": "hold while receipt uploads"
       },
-      "fee": {
-        "value": "2%",
-        "label": "Connect application fee"
+      "transfer": {
+        "value": "Bank",
+        "label": "transfer, not card checkout"
       },
-      "pci": {
-        "value": "SAQ A",
-        "label": "cards never touch us"
+      "review": {
+        "value": "You",
+        "label": "approve or reject receipts"
       },
       "start": {
         "value": "$0",
@@ -129,8 +129,8 @@
     },
     "bento": {
       "paid": {
-        "title": "Price the slot. Hold it. Checkout.",
-        "body": "Paid event types lock the interval for 15 minutes while the invitee finishes Stripe Checkout. Abandoned payments expire. The hour goes back on the board."
+        "title": "Price the slot. Hold it. Collect proof.",
+        "body": "Paid event types can require a transfer receipt. The slot stays held for 30 minutes while the invitee uploads. If nothing arrives, the hold expires and the hour goes back on the board."
       },
       "credits": {
         "title": "Memberships, not just one-offs",
@@ -142,7 +142,7 @@
       },
       "page": {
         "title": "A hosted page. Your URL.",
-        "body": "schedflow.com/{org}/{event} — timezone picker, month grid, questions, then confirm or pay. Pro can hide the badge."
+        "body": "schedflow.com/'{'org'}'/'{'event'}' — timezone picker, month grid, questions, then confirm or pay. Pro can hide the badge."
       },
       "embed": {
         "title": "Or drop it on the site you already have",
@@ -163,8 +163,8 @@
         "body": "Slots are computed in UTC, shown in the invitee’s IANA timezone, DST-safe. Days without openings stay disabled."
       },
       "4": {
-        "title": "Collect payment in the same motion",
-        "body": "If the event is priced, we hold the slot and send them to Stripe Checkout on your Connect account. No PAN on our servers."
+        "title": "Collect payment proof in the same motion",
+        "body": "Turn on payment instructions and optional receipt upload. Invitees transfer using your details, upload proof, and you confirm from the dashboard."
       },
       "5": {
         "title": "Calendar and email take it from there",
@@ -174,24 +174,24 @@
     "paymentRows": {
       "1": {
         "title": "Hold the interval",
-        "body": "A paid slot is reserved for 15 minutes so two people cannot checkout for the same hour."
+        "body": "A receipt-required slot stays reserved for 30 minutes so two invitees cannot book the same hour."
       },
       "2": {
-        "title": "Checkout on Stripe",
-        "body": "Invitees pay through Stripe Checkout on your connected Express account. SchedFlow never sees the card number."
+        "title": "Transfer per your instructions",
+        "body": "Your event type shows bank details, amount, and how to pay. SchedFlow never runs card checkout for guests."
       },
       "3": {
-        "title": "Confirm — or release",
-        "body": "Payment success confirms the booking. If Checkout is abandoned, the hold expires and the time is bookable again."
+        "title": "Upload receipt",
+        "body": "Invitees attach a photo or PDF from the booking page. You get a notification when review is needed."
       },
       "4": {
-        "title": "Payouts on Connect",
-        "body": "Express onboarding. Funds land on your connected account. SchedFlow takes a 2% application fee on those charges, not on your Pro subscription."
+        "title": "Approve to confirm",
+        "body": "Approve the receipt to confirm the booking, or reject with a reason so they can upload again."
       }
     },
     "featuresPage": {
       "metaTitle": "Features",
-      "metaDescription": "Event types, availability, hosted booking, Stripe payments, memberships, embeds, notifications, and a developer API.",
+      "metaDescription": "Event types, availability, hosted booking, transfer receipts, memberships, embeds, notifications, and a developer API.",
       "title": "Everything required to get booked and paid.",
       "lead": "Not a kitchen sink. The MVP is the loop independents actually run: publish hours, take the booking, collect the fee, send the invite, let people move it."
     },
@@ -208,12 +208,12 @@
       },
       "payments": {
         "kicker": "Payments",
-        "title": "The booking is not done until the money is",
-        "body": "Attach a catalog price to an event type and the public flow changes: hold, Checkout, confirm. Cards stay on Stripe so we remain PCI SAQ A. Refunds and receipts live next to the booking, not in a second tool.",
+        "title": "The booking is not done until you confirm payment",
+        "body": "Add payment instructions and optionally require a receipt upload. The public flow becomes hold, transfer, upload, host review. Receipt files live next to the booking — not in a second tool.",
         "points": [
-          "Stripe Connect Express payouts",
-          "15-minute hold, then auto-release",
-          "Pay-per-booking or membership credits"
+          "Instructions on the booking page and pay link",
+          "30-minute hold, then auto-release",
+          "Pay-per-booking proof or membership credits (Pro)"
         ]
       },
       "memberships": {
@@ -222,7 +222,7 @@
         "body": "Tutors, trainers, and clinics sell a recurring plan. The customer gets N session credits per period, books credit-consuming event types without paying each time, and stops accruing when they cancel.",
         "points": [
           "Period entitlement, not a punch card PDF",
-          "Dunning follows Stripe if a renewal fails",
+          "Renewals and credits tracked in the product catalog (Pro)",
           "Dashboard balance next to booking history"
         ]
       },
@@ -232,7 +232,7 @@
         "body": "The public booking UI is server-rendered with the org’s brand color and logo. Embed mode strips the chrome so it sits inside an existing site. Pro can hide “Powered by SchedFlow”.",
         "points": [
           "Inline embed or popup button",
-          "Guest checkout — no customer accounts in MVP",
+          "Guest booking — no customer accounts in MVP",
           "Signed links to manage, reschedule, cancel, pay"
         ]
       },
@@ -249,13 +249,13 @@
     },
     "pricingPage": {
       "metaTitle": "Pricing",
-      "metaDescription": "Free scheduling for a solo practice. Pro is $29/month or $290/year for paid bookings, memberships, branding, and the API.",
+      "metaDescription": "Free scheduling for a solo practice. Pro adds memberships, branding, and the API when billing is available.",
       "title": "Two plans. Upgrade the day you start charging.",
-      "lead": "Free is real scheduling for a solo practice. Pro unlocks Stripe Connect, memberships, branding, and the API. Self-serve only — no sales call, no trial, cancel at period end.",
+      "lead": "Free is real scheduling for a solo practice. Pro unlocks memberships, branding, and the API. Self-serve Pro checkout is not in the app yet.",
       "billingKicker": "Billing, plainly",
       "billingTitle": "What you pay us vs. what your clients pay you.",
-      "billingLead": "Platform billing is Free or Pro on our Stripe account. Commerce billing is your clients paying you on Connect. Those rails never mix.",
-      "intervalNote": "No trial. Stay on Free until you need payments, then upgrade self-serve. Annual is two months free versus monthly.",
+      "billingLead": "Your SchedFlow subscription (Free or Pro) is separate from how invitees pay you. Guest payments are always bank transfer plus receipt upload — never card checkout in the app.",
+      "intervalNote": "No trial. Stay on Free until you need Pro features. Self-serve upgrade will appear in Billing when ready. Annual pricing is two months free versus monthly.",
       "monthly": "Monthly",
       "yearly": "Yearly",
       "twoMonthsFree": "2 mo free",
@@ -284,7 +284,6 @@
           "Email confirmations, 24h/1h reminders, .ics"
         ],
         "limits": [
-          "Paid bookings & Stripe Connect",
           "Memberships / session credits",
           "Custom branding / hide badge",
           "API & webhooks",
@@ -293,17 +292,16 @@
       },
       "pro": {
         "name": "Pro",
-        "blurb": "Collect payment with the booking. Unlimited workspace.",
+        "blurb": "Unlimited workspace plus memberships, branding, and API when Pro billing opens.",
         "yearlyNote": "${yearly} / year — two months free versus monthly",
         "orYearly": "Or ${yearly}/year",
         "cadenceYearly": "/mo, billed yearly",
         "cadenceMonthly": "/month",
-        "fee": "2% application fee on Connect charges (bookings and memberships). Not on your Pro subscription.",
+        "fee": "",
         "features": [
           "Unlimited event types and members",
-          "Paid bookings via Stripe Checkout",
+          "Payment instructions + receipt upload on every plan",
           "Memberships with period credits",
-          "Stripe Connect Express payouts",
           "Custom branding, hide “Powered by SchedFlow”",
           "API keys and signed webhooks",
           "Google Calendar — Outlook behind a flag"
@@ -323,12 +321,11 @@
         "googleCalendar": "Google Calendar",
         "outlookCalendar": "Outlook calendar",
         "freeBookings": "Free bookings",
-        "paidConnect": "Paid bookings & Connect",
         "memberships": "Memberships & credits",
-        "applicationFee": "Application fee",
         "hostedEmbed": "Hosted page + embed",
         "hideBadge": "Hide “Powered by”",
-        "apiWebhooks": "API + webhooks"
+        "apiWebhooks": "API + webhooks",
+        "paidReceipt": "Transfer receipt collection"
       },
       "values": {
         "three": "3",
@@ -337,22 +334,21 @@
         "no": "No",
         "flag": "Flag",
         "dash": "—",
-        "fee2": "2% on Connect",
         "unlimited": "Unlimited"
       }
     },
     "homeFaqs": [
       {
-        "q": "Can I take paid bookings on the free plan?",
-        "a": "No. Free is for scheduling: three event types, one member, Google Calendar, and unpaid bookings. Pro unlocks Stripe Connect, pay-per-booking, memberships, branding, and the API."
+        "q": "Can I collect payment proof on the free plan?",
+        "a": "Yes. Payment instructions and receipt upload work on Free. Pro adds memberships, branding, and the API."
       },
       {
-        "q": "Do you ever store card numbers?",
-        "a": "Never. Invitees pay through Stripe Checkout on your connected account. SchedFlow stays in PCI SAQ A — no PAN on our servers."
+        "q": "Do you process card payments for my clients?",
+        "a": "No. Invitees pay you by bank transfer using instructions you provide, then upload a receipt. SchedFlow stores the file for your review — we do not run guest card checkout."
       },
       {
-        "q": "What if someone doesn’t finish paying?",
-        "a": "A paid slot is held for 15 minutes. If Checkout doesn’t complete, the hold expires and the time is bookable again."
+        "q": "What if someone does not upload a receipt?",
+        "a": "A receipt-required slot is held for 30 minutes. If no upload arrives, the hold expires and the time is bookable again."
       },
       {
         "q": "Do my clients need an account?",
@@ -363,36 +359,36 @@
         "a": "Yes. Inline embed or a popup button, same booking flow as the hosted page. Pro can hide the SchedFlow badge."
       },
       {
-        "q": "Is there a Pro trial?",
-        "a": "Not in the MVP. You can stay on Free indefinitely, upgrade self-serve when you need payments, and cancel in the Stripe customer portal. You remain Pro until the period ends."
+        "q": "Is there a Pro trial or in-app upgrade?",
+        "a": "Not yet. Stay on Free indefinitely. Pro self-serve billing and subscription management will appear in Dashboard → Billing when available."
       }
     ],
     "pricingFaqs": [
       {
         "q": "Why is yearly $290 instead of $348?",
-        "a": "The annual Stripe price is two months free versus paying monthly. Prices live in Stripe — we can change them without a code deploy."
+        "a": "Annual pricing is two months free versus paying monthly. Pro checkout is not wired in the app yet — pricing may change before launch."
       },
       {
-        "q": "What is the 2% application fee?",
-        "a": "On payments your clients make through Stripe Connect (one-off sessions and memberships), SchedFlow takes 200 basis points. Your Pro subscription is billed separately on our platform account and does not take that fee."
+        "q": "Is there a platform fee on transfers?",
+        "a": "No. Invitees pay you directly by transfer. SchedFlow does not take a cut of guest transfer payments in this release."
       },
       {
         "q": "What happens if I cancel Pro?",
-        "a": "You keep Pro until the period ends, then return to Free. Over-limit event types remain visible but you cannot create new ones. Paid event types stop accepting paid bookings."
+        "a": "When billing is available, you keep Pro until the period ends, then return to Free. Over-limit event types remain visible but you cannot create new ones."
       },
       {
         "q": "Can I invoice enterprise or sign an annual contract?",
-        "a": "Not yet. MVP is 100% self-serve: Free or Pro, monthly or yearly, via Stripe Checkout."
+        "a": "Not yet. MVP is self-serve Free or Pro when billing launches — no sales-led checkout in the app today."
       },
       {
-        "q": "Which countries can receive payouts?",
-        "a": "Connect onboarding starts with US, CA, GB, AU, IE, DE, FR, NL, ES, and IT. We expand from there."
+        "q": "Which countries are supported?",
+        "a": "Scheduling works globally. Receipt upload is currency-agnostic — you set instructions in your workspace language and currency."
       }
     ],
     "finalCta": {
       "kicker": "Open the books",
-      "title": "Publish the offer this afternoon. Take payment on the next one.",
-      "lead": "Free covers scheduling for a solo practice. Pro is waiting when the first paid session is."
+      "title": "Publish the offer this afternoon. Confirm the next one from a receipt.",
+      "lead": "Free covers scheduling for a solo practice. Pro is waiting when memberships and API matter."
     }
   },
   "auth": {
@@ -508,7 +504,7 @@
         "eventType": "Create an event type",
         "copyLink": "Copy your booking link",
         "calendar": "Connect Google Calendar",
-        "stripe": "Connect Stripe (Pro)"
+        "paymentReceipt": "Add payment instructions (optional)"
       },
       "shareTitle": "Share your link",
       "shareBody": "Send this to invitees or add it to your site.",
@@ -594,29 +590,34 @@
         "cancelNotice": "Cancel notice (hours)",
         "rescheduleNotice": "Reschedule notice (hours)",
         "requireConfirmation": "Require confirmation",
+        "requirePaymentReceipt": "Require payment receipt",
         "onOff": "On / Off",
         "hideFromProfile": "Hide from org profile",
-        "paymentsTitle": "Payments",
+        "paymentsTitle": "Payment receipt",
+        "paymentInstructions": "Payment instructions",
+        "paymentInstructionsPlaceholder": "Bank details, amount, and how invitees should pay…",
         "creditCost": "Credit cost",
         "priceId": "Price id",
         "pricePlaceholder": "Set in Billing",
         "paidProTitle": "Paid bookings are Pro",
-        "paidProBody": "Connect Stripe and upgrade to attach prices to event types.",
+        "paidProBody": "Upgrade to Pro for membership credits and advanced options.",
         "questionsTitle": "Invitee questions",
         "questionsLabel": "JSON (validated with shared Zod schema)",
         "durationRange": "Duration must be between 1 and 1440 minutes",
         "nameRequired": "Event name is required",
         "questionsInvalid": "Questions must be a valid JSON array of invitee questions",
         "cancel": "Cancel",
-        "freeLimitAlert": "The Free plan includes 3 event types. Upgrade to publish a fourth (and unlimited) event types, paid bookings, and memberships.",
+        "freeLimitAlert": "The Free plan includes 3 event types. Upgrade to publish a fourth (and unlimited) event types.",
         "namePlaceholder": "30 Minute Meeting",
         "minutesShort": "{count} min",
         "addWindow": "Add window",
         "requireConfirmationHint": "Hold the time until you approve the booking.",
+        "requirePaymentReceiptHint": "Invitees upload a payment receipt; you approve before the booking is confirmed.",
         "onOffHint": "Turn off to hide this event type from your public page.",
         "hideFromProfileHint": "Keep the direct link working without listing it on /{slug}.",
-        "paymentsHint": "Attach catalog prices in Billing. Credit cost lets membership bookings consume session credits.",
-        "paidProAlert": "Free event types stay unpaid. Upgrade to attach Stripe prices and membership credits.",
+        "paymentsHint": "Collect payment by bank transfer. Guests see your instructions and upload a receipt.",
+        "paymentsDeferred": "Use “Require payment receipt” above to collect transfer proof from invitees.",
+        "paidProAlert": "Membership credits and catalog pricing are Pro features. Receipt upload works on every plan.",
         "viewBilling": "View billing"
       },
       "share": {
@@ -704,7 +705,7 @@
         "all": "All statuses",
         "CONFIRMED": "Confirmed",
         "PENDING_CONFIRMATION": "Pending confirmation",
-        "PENDING_PAYMENT": "Pending payment",
+        "PENDING_PAYMENT": "Awaiting receipt",
         "CANCELLED": "Canceled",
         "NO_SHOW": "No-show"
       },
@@ -752,14 +753,28 @@
         "rescheduleFailed": "Could not reschedule",
         "refundSoon": "Refunds land with T-023",
         "refundTitle": "Refund",
-        "refundBody": "Issues a full Stripe refund for this booking’s payment. Does not cancel the meeting — cancel separately if needed.",
+        "refundBody": "Legacy card refunds are not available. Handle transfer reversals outside SchedFlow if needed.",
         "refundCta": "Refund payment",
         "refundReasonLabel": "Refund reason (optional)",
         "refundReasonPlaceholder": "requested_by_customer",
         "refunding": "Refunding…",
         "refunded": "Payment refunded",
         "refundFailed": "Could not refund payment",
-        "refundUnavailable": "This booking has no payment to refund"
+        "refundUnavailable": "This booking has no payment to refund",
+        "receiptTitle": "Payment receipt",
+        "receiptView": "View receipt",
+        "receiptApprove": "Approve receipt",
+        "receiptApproving": "Approving…",
+        "receiptApproved": "Receipt approved — booking confirmed",
+        "receiptApproveFailed": "Could not approve receipt",
+        "receiptReject": "Reject receipt",
+        "receiptRejecting": "Rejecting…",
+        "receiptRejected": "Receipt rejected — invitee can re-upload",
+        "receiptRejectFailed": "Could not reject receipt",
+        "receiptRejectReasonLabel": "Rejection reason (required)",
+        "receiptRejectReasonPlaceholder": "Amount does not match…",
+        "receiptRejectReasonRequired": "Enter a rejection reason",
+        "receiptAwaitingUpload": "Waiting for the invitee to upload a payment receipt."
       }
     },
     "customers": {
@@ -793,12 +808,10 @@
     },
     "billing": {
       "title": "Billing",
-      "description": "Plan, Stripe Connect, and catalog prices.",
+      "description": "SchedFlow plan and membership catalog. Guest payments use bank transfer and receipt upload on each event type.",
       "upgradeUnavailable": "Upgrade unavailable",
       "portalUnavailable": "Portal unavailable",
-      "portalSoon": "Customer portal is not available yet (T-024).",
-      "onboardFailed": "Could not start onboarding",
-      "stripeFailed": "Could not open Stripe",
+      "portalSoon": "Subscription management is not available in the app yet.",
       "productCreated": "Product created",
       "productFailed": "Could not create product",
       "priceCreated": "Price created",
@@ -810,34 +823,15 @@
       "planBody": "Free includes 3 event types. Pro unlocks paid bookings, branding, and the API.",
       "priceMonth": "$29 / month",
       "priceYear": "$290 / year",
-      "upgrading": "Redirecting…",
-      "upgradeCta": "Upgrade to Pro",
-      "upgradeHint": "Hits the billing BFF checkout route. If T-024 is not deployed yet, you are sent to a Stripe preview URL.",
       "onPro": "You’re on Pro.",
-      "manageSubscription": "Manage subscription",
-      "connectTitle": "Stripe Connect",
-      "connectBody": "Connect an Express account so invitees can pay at checkout. Card numbers never touch SchedFlow.",
-      "connectLoadFailed": "Could not load Connect status",
-      "chargesEnabled": "Charges enabled",
-      "chargesPending": "Charges pending",
-      "payoutsEnabled": "Payouts enabled",
-      "payoutsPending": "Payouts pending",
-      "detailsSubmitted": "Details submitted",
-      "detailsIncomplete": "Details incomplete",
-      "billingOfflineTitle": "Billing service not connected",
-      "billingOfflineBody": "Start the billing API to load Connect status. Onboarding still attempts the BFF route.",
-      "opening": "Opening…",
-      "connectStripe": "Connect Stripe",
-      "openExpress": "Open Stripe Express",
-      "taxTitle": "Stripe Tax",
-      "taxBody": "When enabled, Checkout uses Stripe automatic tax (`org.settings.stripeTax`).",
-      "taxToggle": "Automatic tax on Checkout",
-      "taxHint": "Pro + Connect recommended.",
+      "guestPaymentsTitle": "Guest payments",
+      "guestPaymentsBody": "Invitees transfer funds using instructions you set on each event type, then upload a receipt photo or PDF. You approve or reject from the booking detail in your dashboard.",
+      "guestPaymentsCta": "Edit event types",
       "catalogTitle": "Products & prices",
-      "catalogBody": "One-time session fees and memberships. Requires Pro and a connected Express account.",
+      "catalogBody": "Optional catalog for membership credits (Pro). Display amounts in instructions; guests still pay by transfer and upload receipts.",
       "catalogUpgrade": "Upgrade to Pro to create catalog products.",
       "catalogOfflineTitle": "Catalog API not available",
-      "catalogOfflineBody": "Products will appear here when the billing catalog routes respond. Create forms stay ready below once Connect is live.",
+      "catalogOfflineBody": "Products will appear here when the billing catalog routes respond.",
       "colProduct": "Product",
       "colType": "Type",
       "colPrices": "Prices",
@@ -852,12 +846,14 @@
       "monthly": "Monthly",
       "yearly": "Yearly",
       "addPrice": "Add price",
-      "paymentsTitle": "Payments",
-      "paymentsBody": "Connected Checkout charges and refunds will list here after billing webhooks (T-021 / T-023).",
+      "paymentsTitle": "Payment activity",
+      "paymentsBody": "Guest bookings use bank transfer and receipt upload — not card checkout.",
+      "receiptPaymentsNote": "Review uploaded receipts on each booking in Dashboard → Bookings. Approve to confirm or reject with a reason so the guest can upload again.",
       "colWhen": "When",
       "colAmount": "Amount",
       "colStatus": "Status",
-      "noPayments": "No payments yet."
+      "noPayments": "No payments yet.",
+      "upgradeSoon": "Pro self-serve billing is not available in the app yet. Receipt upload works on every plan today."
     },
     "team": {
       "title": "Team",
@@ -963,11 +959,27 @@
       "enterDetails": "Enter details",
       "back": "Back",
       "name": "Name *",
-      "email": "Email *",
-      "phoneOptional": "Phone (optional)",
+      "email": "Email",
+      "phone": "Phone *",
+      "sendCode": "Send verification code",
+      "sendingCode": "Sending code…",
+      "verificationCode": "Verification code",
+      "verificationHint": "Enter the code sent to {phone}.",
+      "otpFailed": "Could not send a verification code.",
+      "verifyFailed": "Could not verify that code.",
+      "verifyAndSchedule": "Verify & schedule",
+      "verifyAndContinueReceipt": "Verify & continue",
+      "verifying": "Verifying…",
+      "resendCode": "Resend code",
+      "changePhone": "Change phone number",
+      "phoneRequired": "Phone is required.",
+      "signInFailed": "Could not sign in.",
       "selectOption": "Select an option",
       "schedule": "Schedule event",
       "continuePayment": "Continue to payment",
+      "continueReceipt": "Continue to upload receipt",
+      "paymentInstructionsTitle": "Payment instructions",
+      "phoneOptional": "Phone (optional)",
       "scheduling": "Scheduling…",
       "slotUnavailable": "That time is no longer available.",
       "bookFailed": "Could not book",
@@ -994,7 +1006,13 @@
       "cancelMeeting": "Cancel meeting",
       "canceling": "Canceling…",
       "canceledToast": "Meeting canceled",
-      "cancelFailed": "Could not cancel"
+      "cancelFailed": "Could not cancel",
+      "myBookings": "Your bookings",
+      "pendingReview": "Your receipt is with the host for review.",
+      "portalAccountTitle": "See all your appointments",
+      "portalAccountBody": "Create a free SchedFlow account to manage every booking in one place.",
+      "portalAccountCta": "Create free account",
+      "portalAccountClaim": "Claim guest history"
     },
     "reschedule": {
       "title": "Reschedule",
@@ -1010,16 +1028,31 @@
       "notFoundBody": "This manage link may have expired."
     },
     "pay": {
-      "title": "Complete payment",
-      "metaTitle": "Complete payment",
+      "title": "Confirm your transfer",
+      "metaTitle": "Upload payment receipt",
+      "intro": "Transfer using the instructions below, then upload a photo or PDF of your receipt.",
       "meetingFallback": "Meeting",
-      "holdNote": "Your slot is on hold. You’ll be sent to Stripe Checkout when it’s ready.",
-      "retry": "Retry checkout",
-      "checking": "Checking…",
-      "notReady": "Checkout URL not ready yet.",
-      "startFailed": "Could not start checkout",
+      "holdNote": "Your slot is held for 30 minutes. Transfer as instructed below, then upload your receipt.",
+      "awaitingReview": "Receipt uploaded — waiting for host review.",
       "notFound": "Booking not found.",
       "viewBooking": "View booking"
+    },
+    "receipt": {
+      "instructionsTitle": "Transfer instructions",
+      "instructionsMissing": "The host has not added transfer details yet. Contact them if you need account information.",
+      "chooseFile": "Choose file",
+      "noFileChosen": "No file selected",
+      "fileLabel": "Receipt photo or PDF",
+      "fileHint": "JPEG, PNG, WebP, or PDF — max 5 MB.",
+      "submit": "Upload receipt",
+      "uploading": "Uploading…",
+      "uploadSuccess": "Receipt uploaded",
+      "uploadFailed": "Could not upload receipt",
+      "fileTooLarge": "File must be 5 MB or smaller.",
+      "missingToken": "Open this page from your booking link to upload.",
+      "statusUploaded": "Receipt uploaded — pending host review.",
+      "statusRejected": "Receipt rejected",
+      "statusApproved": "Payment receipt approved."
     },
     "result": {
       "success": {
@@ -1033,12 +1066,38 @@
         "description": "This time is now available for others."
       },
       "meetingFallback": "Meeting",
-      "waitingPayment": "Waiting for payment confirmation…",
-      "manage": "Manage booking"
+      "waitingPayment": "Upload your transfer receipt to keep this slot.",
+      "pendingReview": "Your receipt is with the host for review.",
+      "receiptPending": {
+        "title": "One more step",
+        "description": "Transfer payment using the instructions below, then upload your receipt so the host can confirm your booking.",
+        "openPayPage": "Open full upload page"
+      },
+      "manage": "Manage booking",
+      "myBookings": "Your bookings"
+    },
+    "client": {
+      "title": "Your bookings",
+      "description": "Meetings booked with your phone number.",
+      "emptyTitle": "No bookings yet",
+      "emptyBody": "When you book a time, it shows up here.",
+      "meetingFallback": "Meeting",
+      "cancel": "Cancel",
+      "cancelDialogTitle": "Cancel this meeting?",
+      "cancelDialogBody": "The time will be released for others to book.",
+      "reasonPlaceholder": "Reason (optional)",
+      "keepMeeting": "Keep meeting",
+      "cancelMeeting": "Cancel meeting",
+      "canceling": "Canceling…",
+      "canceledToast": "Meeting canceled",
+      "cancelFailed": "Could not cancel",
+      "loadFailed": "Could not load bookings.",
+      "retry": "Retry",
+      "signOut": "Sign out"
     },
     "status": {
       "CONFIRMED": "Confirmed",
-      "PENDING_PAYMENT": "Pending payment",
+      "PENDING_PAYMENT": "Awaiting receipt",
       "PENDING_CONFIRMATION": "Pending",
       "CANCELLED": "Canceled",
       "RESCHEDULED": "Rescheduled",
@@ -1048,6 +1107,139 @@
     "timezone": {
       "search": "Search time zones...",
       "empty": "No time zone found."
+    }
+  },
+  "portal": {
+    "nav": {
+      "primary": "Portal navigation",
+      "home": "Home",
+      "appointments": "Appointments",
+      "payments": "Payments",
+      "account": "Account"
+    },
+    "shell": {
+      "menu": "Menu",
+      "desktopHint": "Use the sidebar on larger screens.",
+      "defaultBusiness": "Your business",
+      "switchBusiness": "Switch business",
+      "switchBusinessHint": "Appointments and receipts are scoped to the active business."
+    },
+    "login": {
+      "title": "Customer sign in",
+      "subtitle": "See appointments across every business you book with.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Log in",
+      "submitting": "Signing in…",
+      "invalidCredentials": "Email or password is incorrect.",
+      "failedTitle": "Sign in failed",
+      "noAccount": "New here?",
+      "signUp": "Create account",
+      "claimPrompt": "Booked as a guest?",
+      "claimLink": "Claim your history"
+    },
+    "register": {
+      "title": "Create portal account",
+      "subtitle": "Free — manage bookings from any linked business.",
+      "name": "Name (optional)",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Create account",
+      "submitting": "Creating…",
+      "failedTitle": "Registration failed",
+      "failedFallback": "Could not create account. Try again or sign in.",
+      "haveAccount": "Already have an account?",
+      "signIn": "Log in"
+    },
+    "claim": {
+      "title": "Claim guest bookings",
+      "subtitle": "We email a secure link when we find bookings for this address.",
+      "requestTitle": "Request a claim link",
+      "requestBody": "Enter the email you used as a guest invitee. We never reveal whether an address exists.",
+      "email": "Email used when booking",
+      "sendLink": "Send claim link",
+      "checkEmail": "If we find bookings for that email, you'll receive a link shortly.",
+      "sentTitle": "Check your inbox",
+      "requestFailed": "Could not start claim. Try again later.",
+      "confirmTitle": "Confirm with token",
+      "token": "Claim token",
+      "confirm": "Confirm and sign in",
+      "confirmFailed": "Invalid or expired token.",
+      "backToLogin": "Back to sign in"
+    },
+    "choose": {
+      "title": "Where to go?",
+      "subtitle": "This account has both a business dashboard and a customer portal.",
+      "portal": "Customer portal",
+      "dashboard": "Business dashboard"
+    },
+    "staff": {
+      "title": "Business account detected",
+      "subtitle": "You're signed in as staff.",
+      "body": "Open your dashboard to manage the workspace, or sign in with a customer email to use the portal.",
+      "dashboard": "Business dashboard",
+      "customerLogin": "Customer sign in"
+    },
+    "states": {
+      "errorTitle": "Something went wrong",
+      "retry": "Try again",
+      "emptyTitle": "Nothing here yet",
+      "emptyBody": "When data is available it will show in this area.",
+      "sampleError": "Example error — tap retry to return to loading."
+    },
+    "home": {
+      "title": "Home",
+      "heading": "Upcoming",
+      "subtitle": "Appointments at your active and linked businesses.",
+      "emptyTitle": "No upcoming appointments",
+      "emptyBody": "Book from a public scheduling page — they'll show up here.",
+      "stubNote": "Preview data until your session loads live bookings.",
+      "meetingFallback": "Appointment",
+      "loadFailed": "Could not load appointments.",
+      "businessFallback": "Business",
+      "appointmentFallback": "Appointment"
+    },
+    "appointments": {
+      "title": "Appointments",
+      "subtitle": "Upcoming and past visits for the active business.",
+      "upcoming": "Upcoming",
+      "emptyTitle": "Nothing scheduled",
+      "emptyBody": "When you book with a business, appointments appear here.",
+      "loadFailed": "Could not load appointments.",
+      "appointmentFallback": "Appointment",
+      "detailTitle": "Appointment",
+      "detailStub": "Full detail, cancel, and reschedule land in the next wave."
+    },
+    "payments": {
+      "title": "Payments",
+      "subtitle": "Receipt and transfer confirmations — not card checkout.",
+      "emptyTitle": "No receipts yet",
+      "emptyBody": "Upload transfer receipts from booking pages — status lists appear here (Wave 13)."
+    },
+    "account": {
+      "title": "Account",
+      "subtitle": "Profile and sign-in for the customer portal.",
+      "signedInAs": "Signed in as",
+      "activeBusiness": "Active business",
+      "linkedBusinesses": "Linked businesses",
+      "none": "None selected",
+      "unknownUser": "Unknown",
+      "signOut": "Sign out of portal"
+    },
+    "offline": {
+      "title": "You're offline",
+      "body": "The portal shell works offline. Reconnect to load live appointments — we never show stale times as truth."
+    },
+    "fixtures": {
+      "title": "Portal UI states",
+      "subtitle": "Loading, empty, and error patterns for Wave 10 acceptance.",
+      "loading": "Loading",
+      "empty": "Empty",
+      "error": "Error"
+    },
+    "errors": {
+      "loadBusinesses": "Failed to load businesses.",
+      "switchBusiness": "Could not switch business."
     }
   },
   "localeSwitcher": {

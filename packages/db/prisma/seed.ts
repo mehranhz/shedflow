@@ -22,6 +22,7 @@ config({ path: resolve(__dirname, '../../../.env') });
 config({ path: resolve(__dirname, '../.env') });
 
 const DEMO_EMAIL = 'owner@shedflow.dev';
+const CUSTOMER_EMAIL = 'customer@shedflow.dev';
 const DEMO_PASSWORD = 'Password123!';
 const DEMO_ORG_SLUG = 'acme';
 
@@ -226,11 +227,51 @@ async function main(): Promise<void> {
     },
   });
 
+  const customerUser = await prisma.user.upsert({
+    where: { email: CUSTOMER_EMAIL },
+    create: {
+      email: CUSTOMER_EMAIL,
+      passwordHash,
+      name: 'Demo Customer',
+      timezone: 'America/New_York',
+      locale: 'en',
+      emailVerifiedAt: new Date(),
+    },
+    update: {
+      passwordHash,
+      name: 'Demo Customer',
+      timezone: 'America/New_York',
+      deletedAt: null,
+    },
+  });
+
+  await prisma.customer.upsert({
+    where: {
+      organizationId_email: {
+        organizationId: organization.id,
+        email: CUSTOMER_EMAIL,
+      },
+    },
+    create: {
+      organizationId: organization.id,
+      userId: customerUser.id,
+      email: CUSTOMER_EMAIL,
+      name: 'Demo Customer',
+      timezone: 'America/New_York',
+    },
+    update: {
+      userId: customerUser.id,
+      name: 'Demo Customer',
+      timezone: 'America/New_York',
+    },
+  });
+
   // eslint-disable-next-line no-console
   console.log(
     [
       'Seed OK',
-      `  user: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`,
+      `  owner:    ${DEMO_EMAIL} / ${DEMO_PASSWORD}`,
+      `  customer: ${CUSTOMER_EMAIL} / ${DEMO_PASSWORD}`,
       `  org:  /${DEMO_ORG_SLUG}`,
       `  events: intro (free), coaching ($150 seed price)`,
     ].join('\n'),

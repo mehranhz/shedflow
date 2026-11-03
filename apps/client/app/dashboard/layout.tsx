@@ -9,7 +9,7 @@ import {
 
 import { auth } from "@/auth";
 import { apiFetch } from "@/lib/api";
-import type { APIResponse, AuthMembership, AuthProfile, Organization } from "@/lib/types";
+import type { APIResponse, AuthMembership, AuthProfile } from "@/lib/types";
 import { AppSidebar } from "@/components/app-sidebar";
 import { OrgProvider } from "@/components/org-provider";
 import { SkipLink } from "@/components/skip-link";
@@ -23,38 +23,36 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-  console.log(session);
-  if (!session) {
-    console.log("big error")
-    // redirect("/login");
+  if (!session?.accessToken) {
+    redirect("/login");
   }
 
   let profile: AuthProfile | null = null;
   try {
-    profile = (await apiFetch<APIResponse<AuthProfile>>("/auth/me",{accessToken: session?.accessToken})).data!;
-    console.log(profile)
-  } catch (error){
-
-    console.log(error)
-    // redirect("/login");
+    profile = (
+      await apiFetch<APIResponse<AuthProfile>>("/v1/auth/me", {
+        accessToken: session.accessToken,
+      })
+    ).data!;
+  } catch {
+    redirect("/api/auth/logout")
+    
   }
 
-  if (profile?.activeOrganization == null) {
+  if (!profile) {
+    redirect("/login");
+  }
+
+  if (profile.activeOrganization == null) {
+    const identity = profile.phone || profile.phone || session.user?.email || "";
     return (
       <div className="flex min-h-svh items-center justify-center bg-[#f6f7f9] px-4">
-        <CreateWorkspaceForm phone={profile!.phone} />
+        <CreateWorkspaceForm identity={identity} />
       </div>
     );
   }
 
-  let organizations: AuthMembership[] = profile.memberships;
-  try {
-    organizations = profile.memberships;
-  } catch {
-    organizations = profile.memberships;
-  }
-
-  
+  const organizations: AuthMembership[] = profile.memberships ?? [];
 
   return (
     <OrgProvider profile={profile} organizations={organizations}>
@@ -66,13 +64,13 @@ export default async function DashboardLayout({
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <span className="text-sm text-muted-foreground">
-              {profile?.activeOrganization?.name}
-              {profile?.impersonatingOrgId ? " · impersonating" : ""}
+              {profile.activeOrganization.name}
+              {profile.impersonatingOrgId ? " · impersonating" : ""}
             </span>
           </header>
           <div id="main" className="flex-1 px-6 py-6 lg:px-8" tabIndex={-1}>
             <ImpersonationBanner />
-            {!profile.phoneVerifiedAt ? (
+            {!profile.phoneVerifiedAt && !profile.phone ? (
               <div className="mb-6">
                 <VerificationBanner />
               </div>

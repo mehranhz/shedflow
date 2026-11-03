@@ -3,12 +3,30 @@ import { NextResponse } from "next/server";
 import { apiFetch, ApiError } from "@/lib/api";
 
 type RegisterBody = {
-  email?: unknown;
+  phone?: unknown;
+  username?: unknown;
   password?: unknown;
   name?: unknown;
   organizationName?: unknown;
   timezone?: unknown;
 };
+
+type RegisterEnvelope = {
+  success: boolean;
+  data: {
+    accessToken: string;
+    refreshToken: string;
+    user: unknown;
+  };
+};
+
+function readPhone(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const phone = value.trim();
+  return phone.length > 0 ? phone : undefined;
+}
 
 export async function POST(request: Request) {
   let body: RegisterBody;
@@ -18,28 +36,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid request body" }, { status: 400 });
   }
 
-  const { email, password, name, organizationName, timezone } = body;
-  if (typeof email !== "string" || typeof password !== "string") {
+  const phone = readPhone(body.phone) ?? readPhone(body.username);
+  const { password, name, organizationName, timezone } = body;
+  if (!phone || typeof password !== "string" || typeof name !== "string") {
     return NextResponse.json(
-      { message: "Email and password are required" },
+      { message: "Phone, name, and password are required" },
       { status: 400 },
     );
   }
 
+  const payload: {
+    username: string;
+    name: string;
+    password: string;
+    organizationName?: string;
+    timezone?: string;
+  } = {
+    username: phone,
+    name,
+    password,
+  };
+  if (typeof organizationName === "string") {
+    payload.organizationName = organizationName;
+  }
+  if (typeof timezone === "string") {
+    payload.timezone = timezone;
+  }
+
   try {
-    // Forward to the API's public registration endpoint. We only surface success
-    // here; the browser then establishes a session via the credentials sign-in.
-    await apiFetch("/auth/register", {
+    const envelope = await apiFetch<RegisterEnvelope>("/auth/register", {
       method: "POST",
-      body: JSON.stringify({
-        email,
-        password,
-        ...(typeof name === "string" ? { name } : {}),
-        ...(typeof organizationName === "string" ? { organizationName } : {}),
-        ...(typeof timezone === "string" ? { timezone } : {}),
-      }),
+      body: JSON.stringify(payload),
     });
-    return NextResponse.json({ ok: true }, { status: 201 });
+    return NextResponse.json(envelope, { status: 201 });
   } catch (error) {
     if (error instanceof ApiError) {
       return NextResponse.json({ message: error.message }, { status: error.status });

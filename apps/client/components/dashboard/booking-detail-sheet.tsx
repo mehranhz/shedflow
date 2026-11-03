@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ChangeEvent } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import {
   Button,
@@ -17,8 +17,8 @@ import {
 import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/status-badge";
-import { canManageWorkspace, useOrg } from "@/components/org-provider";
-import { billingApi, schedulingApi } from "@/lib/scheduling";
+import { useOrg } from "@/components/org-provider";
+import { schedulingApi } from "@/lib/scheduling";
 import type { Booking } from "@/lib/types";
 
 function toLocalInput(iso: string): string {
@@ -40,19 +40,28 @@ export function BookingDetailSheet({
 }) {
   const t = useTranslations("dashboard.bookings.detail");
   const tc = useTranslations("dashboard.common");
-  const { organization, profile, role } = useOrg();
+  const { organization, profile } = useOrg();
   const queryClient = useQueryClient();
-  const canRefund = canManageWorkspace(role);
   const [rescheduleLocal, setRescheduleLocal] = useState("");
   const [reason, setReason] = useState("");
   const [showReschedule, setShowReschedule] = useState(false);
-  const [refundReason, setRefundReason] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
+
+  const receiptQuery = useQuery({
+    queryKey: ["booking-payment-receipt", organization.id, booking?.id],
+    enabled: open && Boolean(booking?.id) && booking?.status === "PENDING_CONFIRMATION",
+    queryFn: () =>
+      schedulingApi.getBookingPaymentReceipt(organization, profile.id, booking!.id),
+  });
+  const receipt = receiptQuery.data?.data;
+  const receiptReview =
+    booking?.status === "PENDING_CONFIRMATION" && receipt?.status === "UPLOADED";
 
   useEffect(() => {
     if (booking) {
       setRescheduleLocal(toLocalInput(booking.startAt));
       setReason("");
-      setRefundReason("");
+      setRejectReason("");
       setShowReschedule(false);
     }
   }, [booking]);
@@ -127,23 +136,40 @@ export function BookingDetailSheet({
     },
   });
 
-  const refund = useMutation({
-    mutationFn: () => {
-      const paymentId = booking?.paymentId;
-      if (!paymentId) {
-        throw new Error(t("refundUnavailable"));
-      }
-      return billingApi.refundPayment(organization.id, paymentId, {
-        reason: refundReason.trim() || undefined,
-      });
-    },
-    onSuccess: async () => {
-      toast.success(t("refunded"));
-      setRefundReason("");
-      await invalidate(booking);
+  const approveReceipt = useMutation({
+    mutationFn: () =>
+      schedulingApi.approvePaymentReceipt(organization, profile.id, booking!.id),
+    onSuccess: async (result) => {
+      toast.success(t("receiptApproved"));
+      await invalidate(result.data);
+      await receiptQuery.refetch();
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : t("refundFailed"));
+      toast.error(error instanceof Error ? error.message : t("receiptApproveFailed"));
+    },
+  });
+
+  const rejectReceipt = useMutation({
+    mutationFn: () => {
+      const trimmed = rejectReason.trim();
+      if (!trimmed) {
+        throw new Error(t("receiptRejectReasonRequired"));
+      }
+      return schedulingApi.rejectPaymentReceipt(
+        organization,
+        profile.id,
+        booking!.id,
+        trimmed,
+      );
+    },
+    onSuccess: async (result) => {
+      toast.success(t("receiptRejected"));
+      setRejectReason("");
+      await invalidate(result.data);
+      await receiptQuery.refetch();
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : t("receiptRejectFailed"));
     },
   });
 
@@ -152,11 +178,6 @@ export function BookingDetailSheet({
     (booking.status === "CONFIRMED" ||
       booking.status === "PENDING_CONFIRMATION" ||
       booking.status === "PENDING_PAYMENT");
-
-  const showRefund =
-    canRefund &&
-    Boolean(booking?.paymentId) &&
-    (booking?.status === "CONFIRMED" || booking?.status === "NO_SHOW");
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -247,6 +268,52 @@ export function BookingDetailSheet({
                 </p>
               ) : null}
 
+              {receiptReview && receipt ? (
+                <div className="rounded-lg border p-3 space-y-3">
+                  <p className="font-medium">{t("receiptTitle")}</p>
+                  {receipt.originalFilename ? (
+                    <p className="text-muted-foreground">{receipt.originalFilename}</p>
+                  ) : null}
+                  {receipt.downloadUrl ? (
+                    <Button asChild size="sm" variant="outline">
+                      <a href={receipt.downloadUrl} target="_blank" rel="noopener noreferrer">
+                        {t("receiptView")}
+                      </a>
+                    </Button>
+                  ) : null}
+                  <div className="grid gap-2">
+                    <Label htmlFor="reject-receipt-reason">{t("receiptRejectReasonLabel")}</Label>
+                    <Input
+                      id="reject-receipt-reason"
+                      value={rejectReason}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                        setRejectReason(event.target.value)
+                      }
+                      placeholder={t("receiptRejectReasonPlaceholder")}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => approveReceipt.mutate()}
+                      disabled={approveReceipt.isPending}
+                    >
+                      {approveReceipt.isPending ? t("receiptApproving") : t("receiptApprove")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => rejectReceipt.mutate()}
+                      disabled={rejectReceipt.isPending || !rejectReason.trim()}
+                    >
+                      {rejectReceipt.isPending ? t("receiptRejecting") : t("receiptReject")}
+                    </Button>
+                  </div>
+                </div>
+              ) : booking.status === "PENDING_PAYMENT" ? (
+                <p className="text-sm text-muted-foreground">{t("receiptAwaitingUpload")}</p>
+              ) : null}
+
               {showReschedule ? (
                 <div className="grid gap-2 rounded-lg border p-3">
                   <Label htmlFor="reschedule-at">{t("newStart")}</Label>
@@ -296,7 +363,7 @@ export function BookingDetailSheet({
                   ) : null}
 
                   <div className="flex flex-wrap gap-2">
-                    {booking.status === "PENDING_CONFIRMATION" ? (
+                    {booking.status === "PENDING_CONFIRMATION" && !receiptReview ? (
                       <Button
                         onClick={() => confirm.mutate()}
                         disabled={confirm.isPending}
@@ -337,31 +404,6 @@ export function BookingDetailSheet({
                 </div>
               ) : null}
 
-              {showRefund ? (
-                <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground">{t("refundTitle")}</p>
-                  <p className="mt-1">{t("refundBody")}</p>
-                  <div className="mt-3 grid gap-2">
-                    <Label htmlFor="refund-reason">{t("refundReasonLabel")}</Label>
-                    <Input
-                      id="refund-reason"
-                      value={refundReason}
-                      onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                        setRefundReason(event.target.value)
-                      }
-                      placeholder={t("refundReasonPlaceholder")}
-                    />
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => refund.mutate()}
-                      disabled={refund.isPending}
-                    >
-                      {refund.isPending ? t("refunding") : t("refundCta")}
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
             </div>
           </>
         ) : null}

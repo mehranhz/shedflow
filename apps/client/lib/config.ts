@@ -5,6 +5,6 @@ import "server-only";
  * `authorize`, route handlers, server components), so this never needs a
  * `NEXT_PUBLIC_` prefix and the browser never talks to the API directly.
  */
-export const API_URL = "http://localhost:8000/api/v1";
+export const API_URL = "http://localhost:8000/api";
 // process.env.API_URL ?? "http://localhost:8000/api/v1";
 export const BILLING_URL = process.env.BILLING_URL ?? "http://localhost:3002";

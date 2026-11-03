@@ -5,6 +5,7 @@ import { ClientApiError, readError } from "@/lib/http";
 type BffOptions = RequestInit & {
   idempotencyKey?: string;
   orgId?: string;
+  customerOrgId?: string;
 };
 
 async function bffFetch<T>(
@@ -12,14 +13,17 @@ async function bffFetch<T>(
   path: string,
   options: BffOptions = {},
 ): Promise<T> {
-  const { idempotencyKey, orgId, headers, ...rest } = options;
+  const { idempotencyKey, orgId, customerOrgId, headers, ...rest } = options;
   const normalized = path.startsWith("/") ? path.slice(1) : path;
+  const isFormData =
+    typeof FormData !== "undefined" && rest.body instanceof FormData;
   const response = await fetch(`/api/bff/${prefix}/${normalized}`, {
     ...rest,
     headers: {
-      ...(rest.body ? { "Content-Type": "application/json" } : {}),
+      ...(rest.body && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
       ...(orgId ? { "X-Organization-Id": orgId } : {}),
+      ...(customerOrgId ? { "X-Customer-Org-Id": customerOrgId } : {}),
       ...headers,
     },
   });

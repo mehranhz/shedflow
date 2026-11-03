@@ -2,6 +2,7 @@
 
 **Design:** `mvp/10-security-and-privacy.md`, `mvp/15-i18n-a11y-compliance.md`, `full-scale/06-security-compliance.md` §1  
 **Goal:** Enterprise-grade **account settings** for end customers: identity, preferences, security, privacy, sessions.  
+**Backend:** Laravel `shedflow-back` (not Nest `apps/api`). No Stripe billing/settings surfaces here — receipt prefs category only (Wave 4 / T-061).  
 **Does not duplicate:** T-032 org settings (staff), T-034 `/v1/me` staff export/erase (extend carefully for customer-only users).
 
 ---
@@ -10,7 +11,7 @@
 
 **Status:** TODO  
 **Depends on:** T-042, T-046  
-**Apps:** `apps/api`, `apps/client`
+**Apps:** `shedflow-back`, `apps/client`
 
 ### Implementation
 
@@ -35,7 +36,7 @@
 
 **Status:** TODO  
 **Depends on:** T-055, T-047  
-**Apps:** `apps/client`, `apps/api`
+**Apps:** `apps/client`, `shedflow-back`
 
 ### Implementation
 
@@ -61,15 +62,15 @@
 
 **Status:** TODO  
 **Depends on:** T-055, T-025  
-**Apps:** `apps/api`, `apps/worker`, `apps/client`
+**Apps:** `shedflow-back`, `apps/client`
 
 ### Implementation
 
 - Model `NotificationPreference` (user-scoped, optional per-organization overrides):
   - channels: email (default on), SMS (off until Twilio enabled), push (off until T-072)
-  - categories: booking reminders, marketing, receipts, waitlist alerts, messages
+  - categories: booking reminders, marketing, **payment-receipt** decisions, waitlist alerts, messages (not Stripe invoice emails)
   - quiet hours in user TZ
-- Worker checks preferences before send; transactional **security** emails (reset password, claim) never suppressed.
+- Laravel notification/queue layer checks preferences before send; transactional **security** emails (reset password, claim) never suppressed.
 - UI `/portal/account/notifications` with clear “required for account security” labels.
 
 ### Acceptance
@@ -80,7 +81,7 @@
 
 ### Tests
 
-- Worker unit: preference gate; API PATCH e2e.
+- PHPUnit: preference gate before send; API PATCH e2e.
 
 ---
 
@@ -88,7 +89,7 @@
 
 **Status:** TODO  
 **Depends on:** T-055, T-004  
-**Apps:** `apps/api`, `apps/client`
+**Apps:** `shedflow-back`, `apps/client`
 
 ### Implementation
 
@@ -114,7 +115,7 @@
 
 **Status:** TODO  
 **Depends on:** T-055, T-034  
-**Apps:** `apps/api`, `apps/client`
+**Apps:** `shedflow-back`, `apps/client`
 
 ### Implementation
 

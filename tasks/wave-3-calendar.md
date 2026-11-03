@@ -2,13 +2,17 @@
 
 **Design:** `docs/design/mvp/06-calendar-integration.md`
 
+### Laravel port (`shedflow-back`)
+
+Nest Wave 3 is **DONE historically** but **not ported** to Laravel (no calendar models/routes/OAuth). Treat Nest calendar code as reference only. New implementation target: `shedflow-back` + client Settings UI. Status below remains DONE for Nest; reopen as Laravel TODO when calendar is prioritized (after receipts + portal).
+
 ---
 
 ## T-016 — Google Calendar OAuth, sync, conflict, write
 
-**Status:** DONE  
+**Status:** DONE (Nest) / **NOT PORTED to Laravel**  
 **Depends on:** T-009, T-014, T-015  
-**Apps:** `apps/api`, `apps/worker`
+**Apps:** was `apps/api`, `apps/worker` → future `shedflow-back`
 
 ### Implementation
 
@@ -38,11 +42,11 @@ CI must not call real Google. Use fixtures.
 
 ## T-017 — Microsoft 365 calendar (launch-optional)
 
-**Status:** DONE  
+**Status:** DONE (Nest) / **NOT PORTED to Laravel**  
 **Depends on:** T-016  
 **Feature flag:** `outlook_calendar` + Pro plan
 
-Same port, `MicrosoftCalendarProvider`, Graph APIs per `06` §6. Skip if flag off. Acceptance: analogous unit tests + OAuth start URL generated. Do not block MVP launch.
+Same provider port, `MicrosoftCalendarProvider`, Graph APIs per `06` §6. Skip if flag off. Do not block launch. Implement on Laravel only after T-016 Laravel port.
 
 ### Flag behaviour (T-038 lite)
 

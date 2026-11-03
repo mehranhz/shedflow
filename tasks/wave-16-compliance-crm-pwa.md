@@ -2,22 +2,23 @@
 
 **Design:** `mvp/10-security-and-privacy.md`, `mvp/15-i18n-a11y-compliance.md`, `full-scale/06-security-compliance.md`  
 **Goal:** Close enterprise gaps: multi-business UX, GDPR DSR from the portal, offline/PWA, a11y/analytics hardening, and **staff CRM** views needed so portal mutations are operable by the business.  
+**Backend:** re-port / finish on Laravel `shedflow-back` (Nest portal GDPR notes below are historical).  
 **Does not duplicate:** T-034 staff/user GDPR endpoints (extend), T-037 Playwright baseline (add portal suites), T-039 a11y polish (portal-specific).
 
 ---
 
 ## T-077 — GDPR: customer data export, delete account, marketing consent enforcement
 
-**Status:** IN PROGRESS  
+**Status:** TODO (Nest had IN PROGRESS — **re-implement on Laravel**)  
 **Depends on:** T-059, T-034, T-043  
-**Apps:** `apps/api`, `apps/worker`, `apps/client`
+**Apps:** `shedflow-back`, `apps/client`
 
-**Notes (2026-09-21):** Additive `/v1/customer/export` + `DELETE /v1/customer/account`, `dsr_requests` migration, portal Privacy UI, worker `assertMarketingConsent`. Full e2e export/delete + host anonymize assertion blocked until T-044 seed customer + T-041 login. Does not alter staff `/v1/me`.
+**Notes:** Nest-era `/v1/customer/export` + delete may exist only in legacy `apps/api`. Target Laravel. Full e2e blocked until T-044 seed + T-041 login.
 
 ### Implementation
 
 - Portal UI wired to:
-  - `GET /v1/customer/export` — all linked Customer rows, bookings summaries, consents, payments metadata (no staff notes unless policy says copy).
+  - `GET /v1/customer/export` — linked Customer rows, bookings summaries, consents, **payment-receipt metadata** (paths/status — not Stripe invoice mirrors).
   - `DELETE /v1/customer/account` — revoke sessions, anonymize User, unlink; **host** bookings remain with anonymized invitee per T-034 rules.
 - Async export for large accounts via outbox + email download link (short TTL).
 - Marketing sends require consent check in worker.

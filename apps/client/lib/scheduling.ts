@@ -14,6 +14,7 @@ import { randomUUID } from "@/lib/uuid";
 import type {
   AvailabilityRule,
   Booking,
+  BookingPaymentReceipt,
   Customer,
   DataSource,
   DateOverride,
@@ -210,6 +211,8 @@ export const schedulingApi = {
       slotIntervalMinutes: input.slotIntervalMinutes ?? 0,
       dailyCap: input.dailyCap ?? null,
       requiresConfirmation: input.requiresConfirmation ?? false,
+      requiresPaymentReceipt: input.requiresPaymentReceipt ?? false,
+      paymentInstructions: input.paymentInstructions ?? null,
       cancellationNoticeHours: input.cancellationNoticeHours ?? 24,
       rescheduleNoticeHours: input.rescheduleNoticeHours ?? 24,
       questions: input.questions ?? defaultQuestions(),
@@ -622,6 +625,81 @@ export const schedulingApi = {
     return { data: previewStore.saveBooking(org.id, updated), source: "preview" };
   },
 
+  async getBookingPaymentReceipt(
+    org: Organization,
+    hostUserId: string,
+    bookingId: string,
+  ): Promise<Result<BookingPaymentReceipt>> {
+    previewStore.ensure(org, hostUserId);
+    const api = await tryApi(() =>
+      apiBff<BookingPaymentReceipt>(
+        `organizations/${org.id}/bookings/${bookingId}/payment-receipt`,
+      ),
+    );
+    if (api) {
+      return api;
+    }
+    throw new ClientApiError("Payment receipt not found", 404, "NOT_FOUND");
+  },
+
+  async approvePaymentReceipt(
+    org: Organization,
+    hostUserId: string,
+    bookingId: string,
+  ): Promise<Result<Booking>> {
+    previewStore.ensure(org, hostUserId);
+    const api = await tryApi(() =>
+      apiBff<Booking>(
+        `organizations/${org.id}/bookings/${bookingId}/payment-receipt/approve`,
+        { method: "POST" },
+      ),
+    );
+    if (api) {
+      return api;
+    }
+    const booking = previewStore.listBookings(org.id).find((item) => item.id === bookingId);
+    if (!booking) {
+      throw new ClientApiError("Booking not found", 404, "NOT_FOUND");
+    }
+    const updated = {
+      ...booking,
+      status: "CONFIRMED" as const,
+      updatedAt: new Date().toISOString(),
+    };
+    return { data: previewStore.saveBooking(org.id, updated), source: "preview" };
+  },
+
+  async rejectPaymentReceipt(
+    org: Organization,
+    hostUserId: string,
+    bookingId: string,
+    reason: string,
+  ): Promise<Result<Booking>> {
+    previewStore.ensure(org, hostUserId);
+    const api = await tryApi(() =>
+      apiBff<Booking>(
+        `organizations/${org.id}/bookings/${bookingId}/payment-receipt/reject`,
+        {
+          method: "POST",
+          body: JSON.stringify({ reason }),
+        },
+      ),
+    );
+    if (api) {
+      return api;
+    }
+    const booking = previewStore.listBookings(org.id).find((item) => item.id === bookingId);
+    if (!booking) {
+      throw new ClientApiError("Booking not found", 404, "NOT_FOUND");
+    }
+    const updated = {
+      ...booking,
+      status: "PENDING_PAYMENT" as const,
+      updatedAt: new Date().toISOString(),
+    };
+    return { data: previewStore.saveBooking(org.id, updated), source: "preview" };
+  },
+
   async listCustomers(org: Organization, hostUserId: string): Promise<Result<Page<Customer>>> {
     previewStore.ensure(org, hostUserId);
     const api = await tryApi(() =>
@@ -796,8 +874,8 @@ export const publicScheduling = {
       updatedAt: now,
     });
     const start = new Date(body.startAt);
-    const paid = Boolean(eventType.priceId);
-    const status = paid
+    const receiptRequired = Boolean(eventType.requiresPaymentReceipt);
+    const status = receiptRequired
       ? "PENDING_PAYMENT"
       : eventType.requiresConfirmation
         ? "PENDING_CONFIRMATION"
@@ -822,8 +900,9 @@ export const publicScheduling = {
       createdAt: now,
       updatedAt: now,
       orgSlug: bundle.org.slug,
-      // Stub until billing Checkout (T-021) is wired for public bookings.
-      checkoutUrl: paid ? null : undefined,
+      holdExpiresAt: receiptRequired
+        ? addMinutes(new Date(), 30).toISOString()
+        : null,
       eventType: {
         id: eventType.id,
         title: eventType.title,
@@ -841,16 +920,24 @@ export const publicScheduling = {
     return { data: previewStore.saveBooking(bundle.org.id, booking), source: "preview" };
   },
 
-  async retryCheckout(uid: string): Promise<Result<{ checkoutUrl: string | null }>> {
+  async uploadPaymentReceipt(
+    uid: string,
+    token: string,
+    file: File,
+  ): Promise<Result<PublicBookingResult>> {
+    const form = new FormData();
+    form.append("token", token);
+    form.append("file", file);
     const api = await tryPublicApi(() =>
-      publicApi<{ checkoutUrl?: string | null }>(`/v1/public/bookings/${uid}/checkout`, {
+      publicApi<PublicBookingResult>(`/v1/public/bookings/${uid}/payment-receipt`, {
         method: "POST",
+        body: form,
       }),
     );
     if (api) {
-      return { data: { checkoutUrl: api.data.checkoutUrl ?? null }, source: "api" };
+      return api;
     }
-    return { data: { checkoutUrl: null }, source: "preview" };
+    throw new ClientApiError("Receipt upload unavailable in preview mode", 503, "UNAVAILABLE");
   },
 
   async getBooking(uid: string): Promise<Result<PublicBookingResult>> {
@@ -944,72 +1031,21 @@ export const publicScheduling = {
   },
 };
 
+const PRO_BILLING_UNAVAILABLE = new ClientApiError(
+  "Pro billing is not available in the app yet.",
+  503,
+  "UNAVAILABLE",
+);
+
 export const billingApi = {
-  async connectStatus(orgId: string): Promise<{
-    chargesEnabled: boolean;
-    payoutsEnabled: boolean;
-    detailsSubmitted: boolean;
-  } | null> {
-    try {
-      return await billingBff(`organizations/${orgId}/connect/status`);
-    } catch (error) {
-      if (isMissingRoute(error) || (error instanceof ClientApiError && error.status >= 500)) {
-        return null;
-      }
-      throw error;
-    }
-  },
-  async onboard(orgId: string, country = "US"): Promise<{ url: string }> {
-    return billingBff(`organizations/${orgId}/connect/onboard`, {
-      method: "POST",
-      body: JSON.stringify({ country }),
-    });
-  },
-  async dashboardLink(orgId: string): Promise<{ url: string }> {
-    return billingBff(`organizations/${orgId}/connect/dashboard-link`, {
-      method: "POST",
-    });
-  },
   async upgrade(
-    orgId: string,
-    interval: "month" | "year" = "month",
+    _orgId: string,
+    _interval: "month" | "year" = "month",
   ): Promise<{ url: string }> {
-    try {
-      return await billingBff(`organizations/${orgId}/platform/checkout`, {
-        method: "POST",
-        body: JSON.stringify({ interval }),
-      });
-    } catch (error) {
-      if (isMissingRoute(error)) {
-        return { url: "https://checkout.stripe.com/c/pay/preview" };
-      }
-      throw error;
-    }
+    throw PRO_BILLING_UNAVAILABLE;
   },
-  async portal(orgId: string): Promise<{ url: string } | null> {
-    try {
-      return await billingBff(`organizations/${orgId}/platform/portal`, {
-        method: "POST",
-      });
-    } catch (error) {
-      if (isMissingRoute(error) || (error instanceof ClientApiError && error.status === 404)) {
-        return null;
-      }
-      throw error;
-    }
-  },
-  async refundPayment(
-    orgId: string,
-    paymentId: string,
-    input?: { amountMinor?: number; reason?: string },
-  ): Promise<{
-    refund: { id: string; amountMinor: number };
-    payment: { id: string; status: string };
-  }> {
-    return billingBff(`organizations/${orgId}/payments/${paymentId}/refunds`, {
-      method: "POST",
-      body: JSON.stringify(input ?? {}),
-    });
+  async portal(_orgId: string): Promise<{ url: string } | null> {
+    return null;
   },
   async listProducts(orgId: string): Promise<
     Array<{

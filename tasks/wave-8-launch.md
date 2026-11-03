@@ -1,17 +1,20 @@
 # Wave 8 — Launch hardening (T-034 … T-039)
 
+### Laravel port (`shedflow-back`)
+
+Client legal pages / Playwright / flags work largely stays in the monorepo. **GDPR export/erasure APIs are not on Laravel routes yet** — Nest T-034 DONE historically; port when compliance wave needs them. Observability/CI Dockerfiles for Nest services are historical; Laravel uses its own deploy path.
+
 ---
 
 ## T-034 — GDPR export/erasure + privacy/terms pages
 
-**Status:** DONE  
+**Status:** DONE (Nest + client legal pages) / **TODO Laravel API** for export/erasure  
 **Depends on:** T-006, T-013, T-014  
 **Design:** `mvp/10-security-and-privacy.md` §6, `mvp/15` §6
 
 ### Implementation
 
-- `GET /v1/me/export`, `DELETE /v1/me`.
-- `GET/DELETE /v1/organizations/:orgId/customers/:id` + `…/export`.
+- Nest: `GET /v1/me/export`, `DELETE /v1/me`, customer export — **reimplement on `shedflow-back`** when needed.
 - Anonymize rules in `10`.
 - Booking form stores `metadata.privacyAcceptedAt` (T-027 checkbox — add if missing).
 - Pages `legal/privacy`, `legal/terms` marked DRAFT.
@@ -26,13 +29,13 @@
 
 ## T-035 — Observability: pino, Prometheus, OTel, Sentry, alerts, Grafana port
 
-**Status:** DONE  
-**Depends on:** T-003, T-009, T-018  
+**Status:** DONE (Nest/compose historical); Laravel metrics optional follow-up  
+**Depends on:** T-003  
 **Design:** `mvp/11-observability-and-operations.md`, `mvp/12` Grafana port conflict
 
 ### Implementation
 
-- `nestjs-pino` on api, billing, worker with requestId.
+- Nest `nestjs-pino` on api, billing, worker with requestId (historical; billing obsolete).
 - `prom-client` `/metrics` (protect with no auth on private network; do not expose publicly in Fly without filter).
 - Histogram metrics listed in `11` §3.
 - OTel SDK optional if env set.
@@ -52,18 +55,18 @@
 
 ## T-036 — CI, Dockerfiles, env completeness, seed
 
-**Status:** DONE  
+**Status:** DONE (monorepo Nest-era) / **extend for `shedflow-back`**  
 **Depends on:** T-001  
 **Design:** `mvp/12-infrastructure-cicd-dr.md`
 
 ### Implementation
 
 - `.github/workflows/ci.yml`: lint, test, e2e with Postgres service, build.
-- Dockerfiles for api, billing, worker.
+- Dockerfiles for legacy api/billing/worker; add Laravel image/docs when deploying `shedflow-back`.
 - `engines.node` >= 22.13 in root `package.json`.
-- Seed `packages/db/prisma/seed.ts` (`02` §9).
-- `.env.example` complete (`01` §7).
-- `docs/runbooks/provision.md` click-ops for Fly/Vercel/Neon/Stripe/Google.
+- Seed: Prisma seed historical; prefer Laravel seeders for demo org/user.
+- `.env.example` complete; Stripe keys optional/not required for receipt flow.
+- `docs/runbooks/provision.md` — drop Stripe as launch blocker.
 - `docker-compose.prod.yml` optional.
 
 ### Acceptance
@@ -101,14 +104,14 @@
 
 ## T-038 — Feature flags + platform impersonation
 
-**Status:** DONE  
+**Status:** DONE (Nest) / **NOT PORTED to Laravel**  
 **Depends on:** T-006, T-003  
 **Design:** `mvp/11` §9–§10
 
 ### Implementation
 
-- `isEnabled(flag, org)` from env `FLAGS` + `org.settings.flags`.
-- `POST /v1/platform/impersonate` only if `PLATFORM_ADMINS` contains email. JWT claim `impersonatingOrgId`. Dashboard banner.
+- Nest: `isEnabled(flag, org)` from env `FLAGS` + `org.settings.flags`.
+- `POST /v1/platform/impersonate` only if `PLATFORM_ADMINS` contains email. Port to Laravel when needed.
 - Audit every impersonated request.
 - If `PLATFORM_ADMINS` empty, route 404.
 

@@ -2,11 +2,23 @@
 
 **Design:** `docs/design/mvp/01-architecture.md`, `02-data-model.md`, `03-api-and-auth.md`, `12-infrastructure-cicd-dr.md`
 
+### Laravel port (`shedflow-back`)
+
+| Nest task | Laravel reality |
+| --- | --- |
+| T-001 Prisma `packages/db` | **OBSOLETE** for backend — Eloquent migrations in `shedflow-back/database/migrations` |
+| T-002 `@shedflow/shared` | Still used by **frontend**; API contracts live in Laravel FormRequests/Resources |
+| T-003 API baseline `/v1`, auth paths | **Done** — `/api/auth/*` + `/api/v1/*` (JWT middleware, JSON resources) |
+| T-004 Refresh tokens + short-lived access JWT | **Done** — `RefreshToken` model + `/auth/refresh` / logout |
+| T-005 Email verify / password reset tokens | **Gap** — not exposed on Laravel routes yet (OTP login exists instead/in addition) |
+
+New backend work belongs in Laravel, not Nest `apps/api`.
+
 ---
 
 ## T-001 — Move Prisma to `packages/db` and fix local URLs
 
-**Status:** DONE  
+**Status:** DONE (Nest historical; Laravel uses Eloquent — do not redo Prisma move)  
 **Depends on:** nothing  
 **Apps:** `packages/db` (new), `apps/api`, root compose / env
 
@@ -46,13 +58,13 @@ One Prisma schema + migrations consumed by api (later billing and worker). Fix P
 
 ## T-002 — `@shedflow/shared` contracts
 
-**Status:** DONE  
+**Status:** DONE (client package; billing contracts unused while Stripe deferred)  
 **Depends on:** T-001 (can start in parallel, merge after)  
 **Apps:** `packages/shared`
 
 ### Goal
 
-Runtime-shared types so api, billing, worker, client do not drift.
+Runtime-shared types so api, worker, client do not drift. (Nest `apps/billing` cancelled for current scope.)
 
 ### Implementation
 
@@ -81,9 +93,9 @@ Export from `src/index.ts`. Ensure `pnpm --filter @shedflow/shared build` emits 
 
 ## T-003 — API baseline: `/v1`, errors, CORS, helmet, rate limit, request id
 
-**Status:** DONE  
+**Status:** DONE (Nest historical). **Laravel:** `/api/v1` + `/api/auth` routes exist — treat Nest checklist as reference; harden Laravel envelope/CORS/rate-limit as follow-ups if gaps appear.  
 **Depends on:** T-002  
-**Apps:** `apps/api`  
+**Apps:** `shedflow-back` (active), `apps/api` (legacy)  
 **Design:** `mvp/03-api-and-auth.md`, `mvp/10-security-and-privacy.md`
 
 ### Implementation
@@ -113,7 +125,7 @@ Export from `src/index.ts`. Ensure `pnpm --filter @shedflow/shared build` emits 
 
 ## T-004 — Refresh tokens and 15-minute access JWT
 
-**Status:** DONE  
+**Status:** DONE (Nest + **Laravel ported** — `RefreshToken` model + `/auth/refresh`)  
 **Depends on:** T-001, T-003  
 **Design:** `mvp/02-data-model.md` RefreshToken, `mvp/03` §5.1
 
@@ -142,7 +154,7 @@ Export from `src/index.ts`. Ensure `pnpm --filter @shedflow/shared build` emits 
 
 ## T-005 — Email verification and password reset (tokens; send in T-025)
 
-**Status:** DONE  
+**Status:** DONE (Nest historical). **Laravel:** OTP auth present; re-verify email/password-reset parity if client still needs those routes.  
 **Depends on:** T-001, T-003  
 **Design:** `mvp/02` UserToken, `mvp/03` §5.2
 

@@ -4,7 +4,7 @@ import { useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Alert,
   AlertDescription,
@@ -18,10 +18,13 @@ import { guessTimeZone } from "@/lib/timezones";
 
 export function RegisterForm() {
   const t = useTranslations("auth.register");
+  const locale = useLocale();
+  const phoneLabel = locale.startsWith("fa") ? "موبایل" : "Phone";
+  const submitLabel = locale.startsWith("fa") ? "ثبت‌نام" : "Sign up";
   const router = useRouter();
   const [name, setName] = useState("");
   const [organizationName, setOrganizationName] = useState("");
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -35,9 +38,9 @@ export function RegisterForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
-          password,
+          phone,
           name,
+          password,
           organizationName,
           timezone: guessTimeZone(),
         }),
@@ -52,7 +55,7 @@ export function RegisterForm() {
       }
 
       const result = await signIn("credentials", {
-        email,
+        phone,
         password,
         redirect: false,
       });
@@ -99,15 +102,15 @@ export function RegisterForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="email">{t("email")}</Label>
+        <Label htmlFor="phone">{phoneLabel}</Label>
         <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id="phone"
+          name="phone"
+          type="tel"
+          autoComplete="tel"
           required
-          value={email}
-          onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEmail(event.target.value)}
+          value={phone}
+          onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setPhone(event.target.value)}
         />
       </div>
 
@@ -127,7 +130,7 @@ export function RegisterForm() {
       </div>
 
       <Button type="submit" disabled={isPending}>
-        {isPending ? t("submitting") : t("submit")}
+        {isPending ? t("submitting") : submitLabel}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">

@@ -5,18 +5,31 @@
 | Item | Notes |
 | --- | --- |
 | `API_URL` / `AUTH_SECRET` / `JWT_SECRET` | Required (see `.env.example`) |
-| Stripe test keys | Needed for portal payment visibility (T-061+) |
+| `CUSTOMER_PORTAL` / `NEXT_PUBLIC_CUSTOMER_PORTAL` | Portal deep links in emails (default on in local) |
+| `FRONTEND_APP_URL` | Base for `/portal/appointments/{uid}` and manage links |
 | `E2E_PORTAL=1` | Enables portal Playwright suite in CI/local |
-| Feature flags | Portal engagement (waitlist, reviews, gift cards) may be flag-gated |
+| Feature flags | Portal engagement (waitlist, reviews) may be flag-gated; **no Stripe** guest checkout |
 
 ## Seed users
 
 | Persona | Email | Password | Entry |
 | --- | --- | --- | --- |
 | Business owner | `owner@shedflow.dev` | `Password123!` | `/login` → `/dashboard` (org `acme`) |
-| End customer | `customer@shedflow.dev` | `Password123!` | `/portal/login` (added by **T-044**) |
+| End customer | `customer@shedflow.dev` | `Password123!` | `/portal/login` (T-044) |
 
-Until T-044 lands, portal E2E specs **skip** when the seed customer is missing.
+## Deep-link contract (Wave 10 / T-048)
+
+HTTPS only (future native apps reuse the same paths):
+
+| Intent | URL |
+| --- | --- |
+| Portal appointment | `{FRONTEND_APP_URL}/portal/appointments/{uid}` |
+| Guest manage (signed) | `{FRONTEND_APP_URL}/b/{uid}/manage?token={manage}` |
+| Receipt upload | `{FRONTEND_APP_URL}/b/{uid}/pay?token={manage}` |
+| Claim | `{FRONTEND_APP_URL}/portal/claim?token=` or `?email=` |
+| Register upgrade | `{FRONTEND_APP_URL}/portal/register?email=&next=` |
+
+Confirmed invitee emails use **Manage in SchedFlow** (portal) as primary CTA when `customer_portal` is on, plus secondary signed manage link.
 
 ## Mobile QA matrix
 

@@ -1,127 +1,97 @@
-# Wave 13 — Customer payments, memberships & packages (T-061 … T-065)
+# Wave 13 — Customer payment receipts (T-061 … T-065)
 
-**Design:** `mvp/05-billing-and-payments.md`, `mvp/14-platform-billing-and-lifecycle.md` (contrast: this wave is **invitee** money, not SchedFlow Pro)  
-**Goal:** Let customers see and mutate payment methods, invoices, credits, memberships/packages/punch cards via Stripe Customer Portal / Checkout — never PAN on SchedFlow.  
-**Does not duplicate:** T-018–T-024 staff billing dashboard; T-021 checkout for guest paid book.
+**Design (historical):** `mvp/05-billing-and-payments.md`, `mvp/14-platform-billing-and-lifecycle.md`  
+**Product change (current):** **No Stripe Customer Portal, cards, memberships, packages, or gift cards for now.** Customers see **payment-receipt submissions** tied to their bookings (upload status, staff decision). Staff receipt config/review lives in Wave 4 (`shedflow-back`).  
+**Backend of record:** Laravel `shedflow-back`.  
+**Does not duplicate:** T-018–T-023 staff receipt config/review; T-015 signed manage links.
+
+**Supersedes:** Stripe invoices list, Billing Portal for cards, subscription/credit balances, punch cards, gift cards.
 
 ---
 
-## T-061 — Payments & receipts list (customer API + UI)
+## T-061 — Customer receipt submissions list (API + UI)
 
 **Status:** TODO  
-**Depends on:** T-042, T-021, T-023, T-046  
-**Apps:** `apps/api`, `apps/billing`, `apps/client`
+**Depends on:** T-042, T-020 (receipt upload on book), T-046  
+**Apps:** `shedflow-back`, `apps/client`
 
 ### Implementation
 
-- `GET /v1/customer/payments` / `…/invoices` scoped to linked Customer ids (all businesses or active org).
-- Show amount (minor units + currency), status, booking link, receipt/hosted invoice URL from Stripe mirror.
-- Refunds: **visibility only** (status/amount/date); customers cannot self-refund.
-- UI `/portal/payments` mobile list + detail sheet.
+- `GET /v1/customer/payment-receipts` (or `/v1/customer/bookings?hasReceipt=1`) scoped to linked Customer ids — list booking uid, org, amount/instructions snapshot if stored, receipt status (`UPLOADED` | `APPROVED` | `REJECTED`), timestamps, rejection reason.
+- Detail: link to appointment; optional re-upload CTA when rejected and policy allows (Wave 4).
+- UI `/portal/payments`: mobile list of receipt/payment-confirmation items (**not** Stripe invoices). Empty state explains offline/bank transfer confirmation via receipt.
+- No PAN, no Stripe ids in payloads.
 
 ### Acceptance
 
-- [ ] Paid coaching fixture (or fake gateway) appears for seed customer after payment webhook.
-- [ ] No Stripe secret keys or PAN in client payloads.
+- [ ] Seed/fixture booking with receipt appears for customer after upload.
 - [ ] IDOR across customers blocked.
+- [ ] Approved/rejected statuses visible without staff JWT.
 
 ### Tests
 
-- Billing fake gateway fixture → customer list e2e.
+- Feature list + Playwright portal payments list (or documented until seed T-044).
 
 ---
 
-## T-062 — Payment methods on file (Stripe Customer Portal)
+## T-062 — Payment methods / Stripe Customer Portal — CANCELLED
 
-**Status:** TODO  
-**Depends on:** T-061, T-019  
-**Apps:** `apps/billing`, `apps/api`, `apps/client`
+**Status:** CANCELLED (deferred)  
+**Depends on:** —  
+**Apps:** was `apps/billing`
 
-### Implementation
+### Scope (do not implement now)
 
-- `POST /v1/customer/billing/portal-session` `{ organizationId, returnUrl }` → Stripe Billing Portal / Customer Portal URL for the connected-account `StripeCustomer`.
-- UI button “Manage cards” opens portal; return to `/portal/payments/methods`.
-- If no StripeCustomer yet, start SetupIntent / Checkout setup mode.
-- Feature gate: org must have Connect charges enabled.
+`POST /v1/customer/billing/portal-session`, SetupIntent, “Manage cards”, Connect-gated card vault — **deferred** with full Stripe gateway.
 
 ### Acceptance
 
-- [ ] Fake gateway returns portal URL; client redirects.
-- [ ] `CONNECT_INCOMPLETE` surfaced as friendly empty state.
-- [ ] Idempotent session create with Idempotency-Key.
-
-### Tests
-
-- Unit gateway; client redirect smoke with mocked URL.
+- [x] No customer card-vault routes required in `shedflow-back`.
+- [x] Portal “Manage cards” hidden or shows deferred empty state.
 
 ---
 
-## T-063 — Memberships, subscriptions & credit balances
+## T-063 — Memberships, subscriptions & credit balances — CANCELLED
 
-**Status:** TODO  
-**Depends on:** T-061, T-022  
-**Apps:** `apps/api`, `apps/billing`, `apps/client`
+**Status:** CANCELLED (deferred)  
+**Depends on:** —  
 
-### Implementation
+### Scope (do not implement now)
 
-- `GET /v1/customer/memberships` — status, period, cancel_at_period_end, credit balance, product name.
-- Actions: subscribe (Checkout), cancel at period end, reactivate (via portal or API).
-- UI `/portal/memberships`: balance ring/progress for credits; “Book using credits” CTA to eligible event types.
-- Consume path already in T-022 — portal book must pass subscription context.
+Customer memberships, `credit_balances`, subscribe/cancel via Checkout — **deferred**. Portal `/portal/memberships` hidden or “Coming later”.
 
 ### Acceptance
 
-- [ ] Customer sees credit balance matching `credit_balances`.
-- [ ] Cancel at period end reflects on next GET after webhook.
-- [ ] Concurrent credit consume still safe (reuse T-022 tests from portal auth).
-
-### Tests
-
-- E2e subscription fake + portal list.
+- [x] No credit ledger APIs required for current MVP.
+- [ ] (Future) Reintroduce without removing receipt confirmation.
 
 ---
 
-## T-064 — Packages / punch cards
+## T-064 — Packages / punch cards — CANCELLED
 
-**Status:** TODO  
-**Depends on:** T-063  
-**Apps:** `packages/db`, `apps/billing`, `apps/api`, `apps/client`
+**Status:** CANCELLED (deferred)  
+**Depends on:** —  
 
-### Implementation
+### Scope (do not implement now)
 
-- Product type or metadata for **prepaid package** (N credits, non-recurring) distinct from membership period reset.
-- Purchase via Checkout; grant ledger entries; expiry optional.
-- Portal UI: punch card progress (“3 of 10 remaining”).
-- Staff catalog UI may be minimal API-only if dashboard already has products (T-032) — add type field if missing.
+Prepaid packages / punch cards via Checkout — **deferred**.
 
 ### Acceptance
 
-- [ ] Buying package increases balance by N; booking decrements; no period auto-reset.
-- [ ] Expired package cannot be consumed (`PACKAGE_EXPIRED`).
-
-### Tests
-
-- Ledger unit tests; e2e purchase→book.
+- [x] Out of scope for receipt-confirmation MVP.
 
 ---
 
-## T-065 — Gift cards & store credit (optional scope gate)
+## T-065 — Gift cards & store credit — CANCELLED
 
-**Status:** TODO  
-**Depends on:** T-064  
-**Apps:** `apps/billing`, `apps/api`, `apps/client`  
-**Flag:** `customer_gift_cards`
+**Status:** CANCELLED (deferred)  
+**Depends on:** —  
+**Flag (historical):** `customer_gift_cards`
 
-### Implementation
+### Scope (do not implement now)
 
-- If flag off: task documents out-of-scope UI hidden; mark acceptance as N/A for runtime.
-- If flag on: gift card codes redeem → store credit ledger; customer redeem UI; abuse rate limits.
+Gift card redeem → store credit — **deferred**. Flag stays off; no routes.
 
 ### Acceptance
 
-- [ ] Flag off → no routes registered or 404.
-- [ ] Flag on → redeem happy path + double-redeem rejected.
-
-### Tests
-
-- Flag matrix unit tests.
+- [x] Flag off / no gift-card routes in `shedflow-back`.

@@ -13,11 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@shedflow/ui/components";
-import { toast } from "sonner";
-
 import { PageHeader } from "@/components/page-header";
 import { useOrg } from "@/components/org-provider";
-import { billingApi } from "@/lib/scheduling";
 
 export default function DeveloperPage() {
   const t = useTranslations("dashboard.developer");
@@ -33,21 +30,8 @@ export default function DeveloperPage() {
           <AlertTitle>{t("upgradeTitle")}</AlertTitle>
           <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span>{t("upgradeBody")}</span>
-            <Button
-              size="sm"
-              className="shrink-0"
-              onClick={async () => {
-                try {
-                  const result = await billingApi.upgrade(organization.id);
-                  window.location.href = result.url;
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error ? error.message : t("upgradeFailed"),
-                  );
-                }
-              }}
-            >
-              {t("upgradeCta")}
+            <Button size="sm" className="shrink-0" asChild>
+              <Link href="/dashboard/billing">{t("viewBilling")}</Link>
             </Button>
           </AlertDescription>
         </Alert>

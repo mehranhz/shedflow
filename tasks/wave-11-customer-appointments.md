@@ -2,7 +2,8 @@
 
 **Design:** `mvp/04-scheduling-engine.md`, `mvp/08-frontend.md` §4 (booking primitives), Phase-2 notes in `full-scale/03-scheduling-at-scale.md` for recurring/waitlist **hooks only**  
 **Goal:** Give customers a home surface to see upcoming appointments, act on them, book again, and view history — mobile-first, enterprise conflict handling.  
-**Does not duplicate:** T-027/T-015 guest SlotPicker + signed cancel/reschedule; T-031 staff bookings table.
+**Backend:** `shedflow-back` (Laravel). **Does not duplicate:** T-027/T-015 guest SlotPicker + signed cancel/reschedule; T-031 staff bookings table.  
+**Payments:** no Stripe — “actions needed” / pending money = **receipt under review** (Wave 4 / T-061), not Checkout.
 
 ---
 
@@ -10,15 +11,15 @@
 
 **Status:** TODO  
 **Depends on:** T-046, T-043  
-**Apps:** `apps/client`, `apps/api` (aggregates if needed)
+**Apps:** `apps/client`, `shedflow-back` (aggregates if needed)
 
 ### Implementation
 
 - `/portal` home cards (not a staff KPI dashboard):
   1. **Next appointment** (primary CTA: Join / Directions / Manage)
-  2. **Actions needed** (PENDING_CONFIRMATION, PENDING_PAYMENT, incomplete forms — forms wave may stub)
-  3. **Payments due** count (link to Wave 13)
-  4. **Waitlist** count (empty until T-065; show empty state)
+  2. **Actions needed** (`PENDING_CONFIRMATION`, `PENDING_PAYMENT` receipt review, incomplete forms — forms wave may stub)
+  3. **Receipts pending** count (link to Wave 13 `/portal/payments` — not Stripe dues)
+  4. **Waitlist** count (empty until waitlist lands; show empty state)
 - Pull from `GET /v1/customer/home` aggregate (preferred) or parallel client queries.
 - Empty state: “Book with {business}” → public `/[orgSlug]` or in-portal book (T-051).
 - Poll/refetch on focus; no websocket required.
@@ -44,8 +45,8 @@
 ### Implementation
 
 - `/portal/appointments` — tabs: Upcoming | Past | Cancelled; filters by business when multi-org.
-- Detail `/portal/appointments/[uid]`: status badge, when/where, host display name, answers, policy summary (cancel/reschedule windows), payment status, notes/attachments placeholders.
-- Actions: Cancel, Reschedule, Book again, Add to calendar (ICS download from existing notification assets or public endpoint), Pay now if `PENDING_PAYMENT`.
+- Detail `/portal/appointments/[uid]`: status badge, when/where, host display name, answers, policy summary (cancel/reschedule windows), **receipt status** (uploaded / under review / rejected), notes/attachments placeholders.
+- Actions: Cancel, Reschedule, Book again, Add to calendar (ICS). **No “Pay now” Stripe CTA** — if receipt rejected and re-upload allowed, link to upload (Wave 4); else show status only.
 - Conflict toasts: `SLOT_UNAVAILABLE`, `OUTSIDE_POLICY`, `409 CONFLICT`.
 
 ### Acceptance
@@ -71,7 +72,7 @@
 - `/portal/book` and `/portal/book/[eventSlug]` within active business; reuse `SlotPicker` with prefilled profile name/email/phone (locked email).
 - Submit via authenticated `POST /v1/customer/bookings` + Idempotency-Key.
 - Multi-service / add-ons: if EventType supports add-on metadata in schema, collect; else ship **single service** + documented follow-up task hook for add-ons (do not block).
-- After book → detail page; paid → checkout redirect (existing billing).
+- After book → detail page; if `requiresPaymentReceipt` → receipt upload / pending-review UX (Wave 4), **not** Stripe checkout.
 
 ### Acceptance
 
@@ -89,7 +90,7 @@
 
 **Status:** TODO  
 **Depends on:** T-050, T-015  
-**Apps:** `apps/client`, `apps/api` (policy payload)
+**Apps:** `apps/client`, `shedflow-back` (policy payload)
 
 ### Implementation
 

@@ -2,11 +2,20 @@
 
 **Design:** `mvp/02-data-model.md`, `mvp/03-api-and-auth.md`, `mvp/01-architecture.md` §3/§6, `mvp/07-notifications.md` pipeline
 
+### Laravel port (`shedflow-back`)
+
+| Nest task | Laravel reality |
+| --- | --- |
+| T-006 Orgs, memberships, invitations, RBAC | **Done** — org CRUD, members, invitations, policies/roles |
+| T-007 Register creates workspace; JWT org claim; switch | **Done** — register + `initializeAccount` + org switch |
+| T-008 Idempotency, outbox, audit log | **Not ported** — no idempotency/outbox/audit tables in Laravel yet |
+| T-009 `apps/worker` + pg-boss | **OBSOLETE** as Nest app — use Laravel queues/scheduler when async is needed |
+
 ---
 
 ## T-006 — Organizations, memberships, invitations, RBAC
 
-**Status:** DONE  
+**Status:** DONE (Laravel ported)  
 **Depends on:** T-001, T-003  
 **Apps:** `apps/api`
 
@@ -37,7 +46,7 @@ Multi-tenant core. Every subsequent module depends on this.
 
 ## T-007 — Register creates workspace; JWT carries `orgId` + `role`
 
-**Status:** DONE  
+**Status:** DONE (Laravel ported)  
 **Depends on:** T-006, T-004  
 **Design:** `mvp/03` §5.3, `mvp/04` §9
 
@@ -59,13 +68,14 @@ Multi-tenant core. Every subsequent module depends on this.
 
 ## T-008 — Idempotency, outbox, audit log
 
-**Status:** DONE  
+**Status:** DONE (Nest historical) / **TODO on Laravel** if booking idempotency or domain events are required before launch  
 **Depends on:** T-001, T-003, T-006 (orgId on audit)  
-**Design:** `mvp/02` IdempotencyKey, DomainEvent, AuditLog; `mvp/03` §7; `mvp/10` §7
+**Design:** `mvp/02` IdempotencyKey, DomainEvent, AuditLog; `mvp/03` §7; `mvp/10` §7  
+**Apps:** `shedflow-back` (Laravel queues / DB tables — not Nest)
 
 ### Implementation
 
-- Prisma tables.
+- Nest Prisma tables historically done. Laravel: add equivalent tables/middleware only when a consumer needs them.
 - `@Idempotent()` interceptor: see `03` §7. Persist 2xx/4xx; do not persist 5xx unless booking committed (document; booking uses same txn in T-014).
 - `Outbox` helper: `emit(type, payload, organizationId)` **must** be called inside `TransactionManager.runInTransaction`.
 - `AuditService.record(...)`.
@@ -82,14 +92,14 @@ Multi-tenant core. Every subsequent module depends on this.
 
 ## T-009 — `apps/worker` + pg-boss + outbox relay
 
-**Status:** DONE  
+**Status:** DONE (Nest historical) / **OBSOLETE** as target architecture — prefer Laravel queue workers  
 **Depends on:** T-008  
-**Apps:** `apps/worker` (new)  
+**Apps:** was `apps/worker`; new work → `shedflow-back` queues  
 **Design:** `mvp/01` worker, `mvp/07` §1
 
 ### Implementation
 
-- Nest standalone app, port 3003, `/health`, `/metrics` stub.
+- Nest standalone app historically done. Do not extend pg-boss worker for new features.
 - Dependency `@shedflow/db`, env `DATABASE_URL`, `INTERNAL_API_SECRET`.
 - pg-boss: start on boot, schema `pgboss`.
 - Job `outbox.relay`: every 1s, `SELECT … FROM domain_events WHERE status='PENDING' AND available_at <= now() FOR UPDATE SKIP LOCKED LIMIT 50`, enqueue job `event:{type}`, mark PROCESSED. On handler throw: attempts++, backoff, FAILED at 10.

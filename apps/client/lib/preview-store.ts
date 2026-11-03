@@ -24,7 +24,7 @@ type OrgBundle = {
   invitations: Array<{
     id: string;
     organizationId: string;
-    email: string;
+    phone: string;
     role: "ADMIN" | "MEMBER";
     expiresAt: string;
     createdAt: string;
@@ -292,6 +292,8 @@ export const previewStore = {
       locationValue: eventType.locationValue,
       questions: eventType.questions,
       requiresConfirmation: eventType.requiresConfirmation,
+      requiresPaymentReceipt: eventType.requiresPaymentReceipt,
+      paymentInstructions: eventType.paymentInstructions,
       price: null,
     };
   },

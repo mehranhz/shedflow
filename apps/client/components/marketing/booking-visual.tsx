@@ -1,4 +1,4 @@
-import { Clock, CreditCard, Video } from "lucide-react";
+import { Clock, FileUp, Video } from "lucide-react";
 
 import { cn } from "@shedflow/ui/lib/utils";
 
@@ -126,8 +126,8 @@ export function BookingVisual({ className }: { className?: string }) {
       <div className="mkt-ledger-hold">
         <span>Hold · 14:32</span>
         <span className="inline-flex items-center gap-1">
-          <CreditCard className="size-3" />
-          Checkout $120
+          <FileUp className="size-3" />
+          Receipt uploaded
         </span>
       </div>
       <div className="mkt-ledger-stamp">Booked</div>

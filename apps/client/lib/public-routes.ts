@@ -9,4 +9,5 @@ export const RESERVED_PUBLIC_SLUGS = new Set([
   "b",
   "embed",
   "app",
+  "portal",
 ]);

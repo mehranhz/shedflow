@@ -6,17 +6,20 @@
 
 **Principle:** Staff dashboard stays under `/dashboard/*`. Customer portal lives under `/portal/*` (or `/account/*` — pick one prefix and reserve it before `[orgSlug]`). Signed manage links remain valid for guests.
 
+**Backend:** implement on Laravel `shedflow-back` (not Nest `apps/api`). `customers.user_id` + unique `(organization_id, user_id)` **already exist** in Laravel migrations — T-040 is mostly wiring claims/guards + APIs.
+
 ---
 
 ## T-040 — CustomerUser link model + actor claims
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-006, T-013, T-007  
-**Apps:** `packages/db`, `apps/api`
+**Apps:** `shedflow-back` (schema largely ready), `apps/client` later
 
 ### Implementation
 
-- Prisma: optional `Customer.userId` (nullable FK to `User`) + unique `(organizationId, userId)` when set. Index for “all Customer rows for this user”.
+- Laravel: optional `Customer.user_id` already migrated. Ensure unique `(organization_id, user_id)` when set. Index for “all Customer rows for this user” exists.
+- Nest Prisma note below is historical reference only.
 - JWT / session claims: `actorType: 'staff' | 'customer'` (or derive: staff if any active `Membership`, else customer). Never grant org RBAC scopes to pure customer sessions.
 - `RequestContext` already has `actorType` — wire customer paths to set `actorType: 'customer'` and **no** `organizationId` from membership; active business context is a separate `activeCustomerOrgId` / `X-Customer-Org-Id` header.
 - Migration backfill: leave existing customers unlinked (`userId` null).
@@ -24,9 +27,9 @@
 
 ### Acceptance
 
-- [ ] A user with only Customer links cannot call `GET /v1/organizations/:orgId/bookings` (404/403 as IDOR rules require).
-- [ ] A staff user who also booked as a customer can hold both membership and customer links without conflating roles.
-- [ ] Tenant finds on Customer still always require `organizationId`.
+- [x] A user with only Customer links cannot call `GET /v1/organizations/:orgId/bookings` (404/403 as IDOR rules require).
+- [x] A staff user who also booked as a customer can hold both membership and customer links without conflating roles.
+- [x] Tenant finds on Customer still always require `organizationId`.
 
 ### Tests
 
@@ -36,9 +39,9 @@
 
 ## T-041 — Customer register / login / magic-link claim
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-040, T-004, T-005  
-**Apps:** `apps/api`, `apps/worker`, `packages/emails`
+**Apps:** `shedflow-back`, `apps/client`, Laravel notifications / mail
 
 ### Implementation
 
@@ -55,10 +58,10 @@
 
 ### Acceptance
 
-- [ ] Guest who booked as `ada@…` can claim and see that booking in customer APIs (T-043).
-- [ ] Claim email enumeration-safe (identical response whether or not email exists).
-- [ ] Password login works for customer-only users; refresh rotation + family revoke still apply.
-- [ ] Staff seed user unchanged; new seed customer documented in T-044.
+- [x] Guest who booked as `ada@…` can claim and see that booking in customer APIs (T-043).
+- [x] Claim email enumeration-safe (identical response whether or not email exists).
+- [x] Password login works for customer-only users; refresh rotation + family revoke still apply.
+- [x] Staff seed user unchanged; new seed customer documented in T-044.
 
 ### Tests
 
@@ -68,9 +71,9 @@
 
 ## T-042 — Customer session context & org switcher API
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-041  
-**Apps:** `apps/api`
+**Apps:** `shedflow-back`
 
 ### Implementation
 
@@ -82,9 +85,9 @@
 
 ### Acceptance
 
-- [ ] User with bookings in two orgs sees both; switch changes subsequent scoped lists.
-- [ ] Switching to an org without a Customer link → 404.
-- [ ] Cross-business IDOR: booking ids from org A never returned under org B context.
+- [x] User with bookings in two orgs sees both; switch changes subsequent scoped lists.
+- [x] Switching to an org without a Customer link → 404.
+- [x] Cross-business IDOR: booking ids from org A never returned under org B context.
 
 ### Tests
 
@@ -94,9 +97,9 @@
 
 ## T-043 — Customer bookings & profile read/write API foundation
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-042, T-014, T-015  
-**Apps:** `apps/api`
+**Apps:** `shedflow-back`
 
 ### Implementation
 
@@ -117,9 +120,9 @@ Minimum portal API surface (expand in later waves):
 
 ### Acceptance
 
-- [ ] Authenticated cancel inside policy succeeds; outside → `OUTSIDE_POLICY`.
-- [ ] Concurrent reschedule to same slot: one 200, one 409.
-- [ ] Guest token still works without login.
+- [x] Authenticated cancel inside policy succeeds; outside → `OUTSIDE_POLICY`.
+- [x] Concurrent reschedule to same slot: one 200, one 409.
+- [x] Guest token still works without login.
 
 ### Tests
 
@@ -129,13 +132,13 @@ Minimum portal API surface (expand in later waves):
 
 ## T-044 — Seed + fixtures for customer persona
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-041, T-043  
-**Apps:** `packages/db`, `apps/client/e2e`, docs
+**Apps:** `shedflow-back` seeders, `apps/client/e2e`, docs
 
 ### Implementation
 
-- Extend `packages/db/prisma/seed.ts`:
+- Prefer Laravel seeders (Prisma `packages/db/prisma/seed.ts` is legacy):
   - Customer user: `customer@shedflow.dev` / same password convention as owner (`Password123!`).
   - Link to Acme `Customer` row; optional second demo booking.
   - Document in `apps/client/README.md` and `.env.example` comments (no new secrets).
@@ -144,8 +147,8 @@ Minimum portal API surface (expand in later waves):
 
 ### Acceptance
 
-- [ ] `pnpm --filter @shedflow/db seed` prints customer login alongside owner.
-- [ ] E2e can authenticate both personas against local stack.
+- [x] `pnpm --filter @shedflow/db seed` prints customer login alongside owner.
+- [x] E2e can authenticate both personas against local stack.
 
 ### Tests
 

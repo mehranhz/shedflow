@@ -4,7 +4,7 @@ import { useState, useTransition, type ChangeEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Alert,
   AlertDescription,
@@ -16,6 +16,7 @@ import {
 
 export function LoginForm() {
   const t = useTranslations("auth.login");
+  const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
@@ -31,14 +32,17 @@ export function LoginForm() {
 
     startTransition(async () => {
       const result = await signIn("credentials", {
-        email: phone,
+        phone,
         password,
         redirect: false,
       });
 
       if (!result || result.error) {
-        console.log(result);
-        setError(t("invalidCredentials"));
+        setError(
+          locale.startsWith("fa")
+            ? "شماره موبایل یا رمز عبور نادرست است."
+            : "Invalid phone or password.",
+        );
         return;
       }
 
@@ -61,8 +65,8 @@ export function LoginForm() {
         <Input
           id="phone"
           name="phone"
-          type="phone"
-          autoComplete="phone"
+          type="tel"
+          autoComplete="tel"
           required
           value={phone}
           onChange={(
@@ -90,15 +94,6 @@ export function LoginForm() {
       <Button type="submit" disabled={isPending}>
         {isPending ? t("submitting") : t("submit")}
       </Button>
-
-      <p className="text-center text-sm text-muted-foreground">
-        <Link
-          href="/reset-password"
-          className="font-medium text-foreground underline"
-        >
-          {t("forgotPassword")}
-        </Link>
-      </p>
 
       <p className="text-center text-sm text-muted-foreground">
         {t("noAccount")}{" "}

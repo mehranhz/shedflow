@@ -2,7 +2,7 @@
 
 **Design:** `mvp/06-calendar-integration.md` (host-centric today), `mvp/07-notifications.md`, `full-scale/05-integrations-notifications-webhooks.md`  
 **Goal:** Intake forms/waivers, customer-side calendar sync, and a coherent reminder experience tied to the portal.  
-**Does not duplicate:** T-016/T-017 **host** Google/Outlook busy sync; T-025/T-026 email reminders (extend, don’t rebuild).
+**Backend:** `shedflow-back` (Laravel). **Does not duplicate:** T-016/T-017 **host** Google/Outlook busy sync; T-025/T-026 email reminders (extend, don’t rebuild).
 
 ---
 
@@ -10,7 +10,7 @@
 
 **Status:** TODO  
 **Depends on:** T-043, T-011  
-**Apps:** `packages/db`, `apps/api`, `apps/client`
+**Apps:** `shedflow-back`, `apps/client`
 
 ### Implementation
 
@@ -36,11 +36,11 @@
 
 **Status:** TODO  
 **Depends on:** T-043, T-016 patterns  
-**Apps:** `apps/api`, `apps/worker`, `apps/client`
+**Apps:** `shedflow-back`, `apps/client`
 
 ### Implementation
 
-- Customer OAuth connections **separate** from host `CalendarConnection` (new table `customer_calendar_connections`).
+- Customer OAuth connections **separate** from host calendar connections (new table `customer_calendar_connections`).
 - On booking confirmed/rescheduled/cancelled: write/update/delete event on customer calendar (attendee copy).
 - Always offer **ICS download** and `webcal://` feed token (read-only personal feed of future bookings) as baseline even without OAuth.
 - Disconnect revokes tokens; encrypt at rest like T-016.
@@ -62,14 +62,14 @@
 
 **Status:** TODO  
 **Depends on:** T-057, T-026, T-072  
-**Apps:** `apps/worker`, `apps/client`, `apps/api`
+**Apps:** `shedflow-back`, `apps/client`
 
 ### Implementation
 
 - Portal copy explains 24h/1h email reminders; link to notification prefs.
 - SMS channel: store opt-in consent (TCPA-style timestamp); only send if org SMS enabled **and** customer opted in **and** phone present.
 - Push: Web Push keys env-gated; subscribe from portal; respect quiet hours.
-- Failed payment reminder deep-links to `/portal/payments`.
+- Receipt-rejected / still-pending reminder deep-links to `/portal/payments` or appointment detail (not Stripe pay).
 
 ### Acceptance
 
@@ -87,11 +87,11 @@
 
 **Status:** TODO  
 **Depends on:** T-073, T-061  
-**Apps:** `apps/api`, `apps/client`
+**Apps:** `shedflow-back`, `apps/client`
 
 ### Implementation
 
-- `/portal/documents`: submitted forms, receipts PDFs (links), waivers, org-shared files (policies).
+- `/portal/documents`: submitted forms, **uploaded payment receipts** (links to own files from Wave 4), waivers, org-shared files (policies). No Stripe invoice PDFs.
 - Search + filter by business; download audit log.
 - Retention: honor org retention + user delete (T-077).
 

@@ -56,7 +56,11 @@ export function OverviewPage() {
     { key: "eventType" as const, done: eventCount > 0, href: "/dashboard/event-types/new" },
     { key: "copyLink" as const, done: Boolean(flags.copyLink), href: "/dashboard/event-types" },
     { key: "calendar" as const, done: Boolean(flags.calendar), href: "/dashboard/settings" },
-    { key: "stripe" as const, done: Boolean(flags.stripe) || organization.platformPlan === "PRO", href: "/dashboard/billing" },
+    {
+      key: "paymentReceipt" as const,
+      done: eventCount > 0 && events.data?.data.some((et) => et.requiresPaymentReceipt) === true,
+      href: "/dashboard/event-types",
+    },
   ];
 
   return (

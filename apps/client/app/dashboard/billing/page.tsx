@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -20,7 +21,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Switch,
   Table,
   TableBody,
   TableCell,
@@ -31,9 +31,8 @@ import {
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
-import { QueryError } from "@/components/query-state";
 import { useOrg } from "@/components/org-provider";
-import { billingApi, orgsApi } from "@/lib/scheduling";
+import { billingApi } from "@/lib/scheduling";
 
 function formatMoney(amountMinor: number, currency: string): string {
   try {
@@ -50,69 +49,16 @@ export default function BillingPage() {
   const t = useTranslations("dashboard.billing");
   const { organization } = useOrg();
   const queryClient = useQueryClient();
-  const [interval, setInterval] = useState<"month" | "year">("month");
   const [productName, setProductName] = useState("");
   const [productType, setProductType] = useState<"ONE_TIME" | "RECURRING">("ONE_TIME");
   const [priceAmount, setPriceAmount] = useState("120");
   const [priceProductId, setPriceProductId] = useState("");
   const [priceInterval, setPriceInterval] = useState<"month" | "year">("month");
-  const stripeTax = Boolean(
-    (organization.settings as { stripeTax?: boolean } | undefined)?.stripeTax,
-  );
-
-  const status = useQuery({
-    queryKey: ["connect-status", organization.id],
-    queryFn: () => billingApi.connectStatus(organization.id),
-  });
 
   const products = useQuery({
     queryKey: ["billing-products", organization.id],
     queryFn: () => billingApi.listProducts(organization.id),
     enabled: organization.platformPlan === "PRO",
-  });
-
-  const upgrade = useMutation({
-    mutationFn: () => billingApi.upgrade(organization.id, interval),
-    onSuccess: (result) => {
-      window.location.href = result.url;
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : t("upgradeUnavailable"));
-    },
-  });
-
-  const portal = useMutation({
-    mutationFn: () => billingApi.portal(organization.id),
-    onSuccess: (result) => {
-      if (!result?.url) {
-        toast.message(t("portalSoon"));
-        return;
-      }
-      window.location.href = result.url;
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : t("portalUnavailable"));
-    },
-  });
-
-  const onboard = useMutation({
-    mutationFn: () => billingApi.onboard(organization.id),
-    onSuccess: (result) => {
-      window.location.href = result.url;
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : t("onboardFailed"));
-    },
-  });
-
-  const dashboard = useMutation({
-    mutationFn: () => billingApi.dashboardLink(organization.id),
-    onSuccess: (result) => {
-      window.location.href = result.url;
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : t("stripeFailed"));
-    },
   });
 
   const createProduct = useMutation({
@@ -159,25 +105,6 @@ export default function BillingPage() {
     },
   });
 
-  const toggleTax = useMutation({
-    mutationFn: async (enabled: boolean) => {
-      await orgsApi.update(organization.id, {
-        settings: {
-          ...organization.settings,
-          stripeTax: enabled,
-        },
-      });
-    },
-    onSuccess: () => {
-      toast.success(t("taxSaved"));
-      // Soft refresh so activeOrganization picks up settings.
-      window.location.reload();
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : t("taxFailed"));
-    },
-  });
-
   const productRows = products.data ?? [];
   const productsUnavailable = products.data === null && !products.isLoading && !products.isError;
 
@@ -195,115 +122,22 @@ export default function BillingPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {organization.platformPlan === "FREE" ? (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <Select
-                  value={interval}
-                  onValueChange={(value: string) =>
-                    setInterval(value as "month" | "year")
-                  }
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="month">{t("priceMonth")}</SelectItem>
-                    <SelectItem value="year">{t("priceYear")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={() => upgrade.mutate()} disabled={upgrade.isPending}>
-                  {upgrade.isPending ? t("upgrading") : t("upgradeCta")}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">{t("upgradeHint")}</p>
-            </>
+            <p className="text-sm text-muted-foreground">{t("upgradeSoon")}</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
-              <p className="w-full text-sm text-muted-foreground">{t("onPro")}</p>
-              <Button
-                variant="outline"
-                onClick={() => portal.mutate()}
-                disabled={portal.isPending}
-              >
-                {t("manageSubscription")}
-              </Button>
-            </div>
+            <p className="text-sm text-muted-foreground">{t("onPro")}</p>
           )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t("connectTitle")}</CardTitle>
-          <CardDescription>{t("connectBody")}</CardDescription>
+          <CardTitle className="text-base">{t("guestPaymentsTitle")}</CardTitle>
+          <CardDescription>{t("guestPaymentsBody")}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {status.isError ? (
-            <QueryError
-              message={
-                status.error instanceof Error
-                  ? status.error.message
-                  : t("connectLoadFailed")
-              }
-              onRetry={() => void status.refetch()}
-            />
-          ) : null}
-          {status.data ? (
-            <div className="flex flex-wrap gap-2 text-sm">
-              <Badge variant={status.data.chargesEnabled ? "default" : "secondary"}>
-                {status.data.chargesEnabled ? t("chargesEnabled") : t("chargesPending")}
-              </Badge>
-              <Badge variant={status.data.payoutsEnabled ? "default" : "secondary"}>
-                {status.data.payoutsEnabled ? t("payoutsEnabled") : t("payoutsPending")}
-              </Badge>
-              <Badge variant={status.data.detailsSubmitted ? "default" : "secondary"}>
-                {status.data.detailsSubmitted
-                  ? t("detailsSubmitted")
-                  : t("detailsIncomplete")}
-              </Badge>
-            </div>
-          ) : !status.isLoading && !status.isError ? (
-            <Alert>
-              <AlertTitle>{t("billingOfflineTitle")}</AlertTitle>
-              <AlertDescription>{t("billingOfflineBody")}</AlertDescription>
-            </Alert>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={() => onboard.mutate()}
-              disabled={onboard.isPending}
-            >
-              {onboard.isPending ? t("opening") : t("connectStripe")}
-            </Button>
-            {status.data?.detailsSubmitted ? (
-              <Button
-                variant="ghost"
-                onClick={() => dashboard.mutate()}
-                disabled={dashboard.isPending}
-              >
-                {t("openExpress")}
-              </Button>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("taxTitle")}</CardTitle>
-          <CardDescription>{t("taxBody")}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium">{t("taxToggle")}</p>
-            <p className="text-xs text-muted-foreground">{t("taxHint")}</p>
-          </div>
-          <Switch
-            checked={stripeTax}
-            disabled={toggleTax.isPending}
-            onCheckedChange={(checked: boolean) => toggleTax.mutate(checked)}
-          />
+        <CardContent>
+          <Button asChild variant="outline">
+            <Link href="/dashboard/event-types">{t("guestPaymentsCta")}</Link>
+          </Button>
         </CardContent>
       </Card>
 
@@ -445,24 +279,7 @@ export default function BillingPage() {
           <CardDescription>{t("paymentsBody")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-hidden rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("colWhen")}</TableHead>
-                  <TableHead>{t("colAmount")}</TableHead>
-                  <TableHead>{t("colStatus")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell colSpan={3} className="text-sm text-muted-foreground">
-                    {t("noPayments")}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
+          <p className="text-sm text-muted-foreground">{t("receiptPaymentsNote")}</p>
         </CardContent>
       </Card>
     </div>

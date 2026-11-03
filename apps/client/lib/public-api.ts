@@ -14,13 +14,15 @@ export async function publicApi<T>(
   options: PublicOptions = {},
 ): Promise<T> {
   const { idempotencyKey, headers, ...rest } = options;
+  const isFormData =
+    typeof FormData !== "undefined" && rest.body instanceof FormData;
   const normalized = path.startsWith("/") ? path : `/${path}`;
   // `/v1/public/orgs/...` → `/api/bff/api/public/orgs/...` → Nest `/v1/public/orgs/...`
   const afterV1 = normalized.replace(/^\/v1(?=\/|$)/, "") || "/";
   const response = await fetch(`/api/bff/api${afterV1}`, {
     ...rest,
     headers: {
-      ...(rest.body ? { "Content-Type": "application/json" } : {}),
+      ...(rest.body && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
       ...headers,
     },

@@ -20,7 +20,9 @@ import {
 import { ArrowLeft, Clock, Globe, MapPin, Video } from "lucide-react";
 import { toast } from "sonner";
 
+import { PaymentInstructions } from "@/components/booking/payment-receipt-upload";
 import { TimezoneCombobox } from "@/components/timezone-combobox";
+import { requestBookingOtp, verifyBookingOtp } from "@/lib/booking-otp";
 import { saveBookingSession } from "@/lib/booking-session";
 import {
   coerceIanaTimeZone,
@@ -30,9 +32,12 @@ import {
 } from "@/lib/booking-time";
 import { postEmbedBooked } from "@/lib/embed-messages";
 import { ClientApiError } from "@/lib/http";
+import { trackPortalEvent } from "@/lib/portal/analytics";
 import { publicScheduling } from "@/lib/scheduling";
 import type { PublicEventType, PublicOrg, Question, Slot } from "@/lib/types";
 import { randomUUID } from "@/lib/uuid";
+
+type BookingStep = "details" | "otp";
 
 function locationIcon(type: PublicEventType["locationType"]) {
   if (type === "GOOGLE_MEET" || type === "LINK") {
@@ -80,6 +85,8 @@ export function SlotPicker({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [step, setStep] = useState<BookingStep>("details");
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -113,62 +120,124 @@ export function SlotPicker({
 
   const emptyMonth = !slotsQuery.isLoading && !slotsQuery.isError && daysWithSlots.size === 0;
   const LocationIcon = locationIcon(eventType.locationType);
-  const paid = Boolean(eventType.price && eventType.price.amountMinor > 0);
-  const canSubmit =
+  const receiptRequired = Boolean(eventType.requiresPaymentReceipt);
+  const detailsReady =
     Boolean(slot) &&
     name.trim().length > 0 &&
     email.trim().length > 0 &&
+    phone.trim().length > 0 &&
     privacyAccepted &&
     !requiredAnswersMissing(eventType.questions, answers);
 
-  const onBook = async (event: FormEvent) => {
+  const completeBooking = async (verifiedPhone: string) => {
+    if (!slot) {
+      return;
+    }
+    const result = await publicScheduling.book(
+      {
+        orgSlug,
+        eventTypeSlug: eventSlug,
+        startAt: slot.startAt,
+        timezone: timeZone,
+        invitee: {
+          name: name.trim(),
+          email: email.trim(),
+          phone: verifiedPhone,
+        },
+        answers,
+        metadata: { privacyAcceptedAt: new Date().toISOString() },
+        source: embed ? "EMBED" : "HOSTED",
+      },
+      randomUUID(),
+    );
+    saveBookingSession(result.data.uid, {
+      orgSlug,
+      eventSlug,
+      tokens: result.data.actionTokens ?? {},
+    });
+    trackPortalEvent("portal_book_start", {
+      organization_slug: orgSlug,
+      event_slug: eventSlug,
+      booking_uid: result.data.uid,
+      source: embed ? "EMBED" : "HOSTED",
+    });
+    const token = result.data.actionTokens?.manage ?? "";
+    const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : "";
+    if (result.data.status === "PENDING_PAYMENT" || receiptRequired) {
+      postEmbedBooked(result.data.uid);
+      window.location.assign(`/b/${result.data.uid}/pay${tokenQuery}`);
+      return;
+    }
+    postEmbedBooked(result.data.uid);
+    window.location.assign(`/b/${result.data.uid}/manage${tokenQuery}`);
+  };
+
+  const onSendCode = async (event: FormEvent) => {
     event.preventDefault();
-    if (!slot || submitting || !canSubmit) {
+    if (!slot || submitting || !detailsReady) {
+      return;
+    }
+    if (!phone.trim()) {
+      toast.error(t("phoneRequired"));
       return;
     }
     setSubmitting(true);
     try {
-      const result = await publicScheduling.book(
-        {
-          orgSlug,
-          eventTypeSlug: eventSlug,
-          startAt: slot.startAt,
-          timezone: timeZone,
-          invitee: { name: name.trim(), email: email.trim(), phone: phone.trim() || undefined },
-          answers,
-          metadata: { privacyAcceptedAt: new Date().toISOString() },
-          source: embed ? "EMBED" : "HOSTED",
-        },
-        randomUUID(),
-      );
-      saveBookingSession(result.data.uid, {
-        orgSlug,
-        eventSlug,
-        tokens: result.data.actionTokens ?? {},
-      });
-      const token = result.data.actionTokens?.manage ?? "";
-      const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : "";
-      if (result.data.checkoutUrl) {
-        postEmbedBooked(result.data.uid);
-        const target = window.top && window.top !== window ? window.top : window;
-        target.location.assign(result.data.checkoutUrl);
+      const sent = await requestBookingOtp(phone.trim());
+      if (!sent.ok && !sent.alreadySent) {
+        toast.error(sent.message || t("otpFailed"));
         return;
       }
-      if (result.data.status === "PENDING_PAYMENT" || paid) {
-        postEmbedBooked(result.data.uid);
-        window.location.assign(`/b/${result.data.uid}/pay${tokenQuery}`);
+      setOtpCode("");
+      setStep("otp");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("otpFailed"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onVerifyAndBook = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!slot || submitting || otpCode.trim().length === 0) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const verified = await verifyBookingOtp(phone.trim(), otpCode.trim());
+      if (!verified.ok) {
+        toast.error(verified.message || t("verifyFailed"));
         return;
       }
-      postEmbedBooked(result.data.uid);
-      window.location.assign(`/b/${result.data.uid}/manage${tokenQuery}`);
+      await completeBooking(verified.phone);
     } catch (error) {
       if (error instanceof ClientApiError && error.code === "SLOT_UNAVAILABLE") {
         toast.error(t("slotUnavailable"));
+        setStep("details");
         setSlot(null);
         await slotsQuery.refetch();
         return;
       }
       toast.error(error instanceof Error ? error.message : t("bookFailed"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onResendCode = async () => {
+    if (submitting || !phone.trim()) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const sent = await requestBookingOtp(phone.trim());
+      if (!sent.ok && !sent.alreadySent) {
+        toast.error(sent.message || t("otpFailed"));
+        return;
+      }
+      toast.success(t("sendCode"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("otpFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -208,12 +277,80 @@ export function SlotPicker({
         {eventType.description ? (
           <p className="mt-6 text-sm leading-6 text-muted-foreground">{eventType.description}</p>
         ) : null}
+        {receiptRequired ? (
+          <div className="mt-6">
+            <PaymentInstructions
+              instructions={eventType.paymentInstructions}
+              emptyHint
+            />
+          </div>
+        ) : null}
       </aside>
 
       <section className="min-h-[480px] flex-1 p-6">
-        {slot ? (
-          <form className="mx-auto max-w-md space-y-4" onSubmit={(event) => void onBook(event)}>
-            <Button type="button" variant="ghost" className="-ms-2" onClick={() => setSlot(null)}>
+        {slot && step === "otp" ? (
+          <form className="mx-auto max-w-md space-y-4" onSubmit={(event) => void onVerifyAndBook(event)}>
+            <Button
+              type="button"
+              variant="ghost"
+              className="-ms-2"
+              onClick={() => {
+                setStep("details");
+                setOtpCode("");
+              }}
+            >
+              <ArrowLeft className="size-4" />
+              {t("changePhone")}
+            </Button>
+            <h2 className="text-xl font-semibold">{t("verificationCode")}</h2>
+            <p className="text-sm text-muted-foreground">
+              {t("verificationHint", { phone: phone.trim() })}
+            </p>
+            <div className="grid gap-2">
+              <Label htmlFor="invitee-otp">{t("verificationCode")}</Label>
+              <Input
+                id="invitee-otp"
+                name="otp"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                value={otpCode}
+                onChange={(event) => setOtpCode(event.target.value)}
+              />
+            </div>
+            <Button
+              className="w-full"
+              type="submit"
+              disabled={submitting || otpCode.trim().length === 0}
+            >
+              {submitting
+                ? t("verifying")
+                : receiptRequired
+                  ? t("verifyAndContinueReceipt")
+                  : t("verifyAndSchedule")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={submitting}
+              onClick={() => void onResendCode()}
+            >
+              {t("resendCode")}
+            </Button>
+          </form>
+        ) : slot ? (
+          <form className="mx-auto max-w-md space-y-4" onSubmit={(event) => void onSendCode(event)}>
+            <Button
+              type="button"
+              variant="ghost"
+              className="-ms-2"
+              onClick={() => {
+                setSlot(null);
+                setStep("details");
+                setOtpCode("");
+              }}
+            >
               <ArrowLeft className="size-4" />
               {t("back")}
             </Button>
@@ -242,12 +379,13 @@ export function SlotPicker({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="invitee-phone">{t("phoneOptional")}</Label>
+              <Label htmlFor="invitee-phone">{t("phone")}</Label>
               <Input
                 id="invitee-phone"
                 name="phone"
                 type="tel"
                 autoComplete="tel"
+                required
                 value={phone}
                 onChange={(event) => setPhone(event.target.value)}
               />
@@ -284,12 +422,8 @@ export function SlotPicker({
                 })}
               </Label>
             </div>
-            <Button className="w-full" type="submit" disabled={submitting || !canSubmit}>
-              {submitting
-                ? t("scheduling")
-                : paid
-                  ? t("continuePayment")
-                  : t("schedule")}
+            <Button className="w-full" type="submit" disabled={submitting || !detailsReady}>
+              {submitting ? t("sendingCode") : t("sendCode")}
             </Button>
           </form>
         ) : (

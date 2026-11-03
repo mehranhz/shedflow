@@ -7,12 +7,33 @@ export const DEMO = {
   introSlug: "intro",
 } as const;
 
-export const apiUrl = () => process.env.E2E_API_URL ?? "http://localhost:3001";
+export const CUSTOMER_DEMO = {
+  email: "customer@shedflow.dev",
+  password: "Password123!",
+} as const;
+
+export const apiUrl = () => process.env.E2E_API_URL ?? "http://localhost:8000/api";
+
+function apiOrigin(): string {
+  return apiUrl().replace(/\/api\/?$/, "");
+}
 
 /** Return true when the API is healthy. When false, suites skip unless E2E_REQUIRE_STACK=1. */
 export async function requireStack(request: APIRequestContext): Promise<boolean> {
   if (process.env.E2E_SKIP_STACK === "1") {
     return false;
+  }
+  const origin = apiOrigin();
+  for (const path of ["/up", "/health", `${apiUrl()}/health`]) {
+    try {
+      const url = path.startsWith("http") ? path : `${origin}${path}`;
+      const res = await request.get(url, { timeout: 5_000 });
+      if (res.ok()) {
+        return true;
+      }
+    } catch {
+      // try next probe
+    }
   }
   try {
     const res = await request.get(`${apiUrl()}/health`, { timeout: 5_000 });
@@ -36,6 +57,14 @@ export async function loginAsDemo(page: Page): Promise<void> {
   await page.getByLabel(/^password$/i).fill(DEMO.password);
   await page.getByRole("button", { name: /log in/i }).click();
   await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
+}
+
+export async function loginAsCustomer(page: Page): Promise<void> {
+  await page.goto("/portal/login");
+  await page.getByLabel(/email/i).fill(CUSTOMER_DEMO.email);
+  await page.getByLabel(/^password$/i).fill(CUSTOMER_DEMO.password);
+  await page.getByRole("button", { name: /log in/i }).click();
+  await expect(page).toHaveURL(/\/portal/, { timeout: 30_000 });
 }
 
 /** Pick the first enabled calendar day, then the first slot button. */

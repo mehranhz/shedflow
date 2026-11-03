@@ -15,6 +15,7 @@ export function PricingPlans({ signedIn }: { signedIn: boolean }) {
   const tFree = useTranslations("marketing.plans.free");
   const tPro = useTranslations("marketing.plans.pro");
   const tCta = useTranslations("marketing.cta");
+  const tBilling = useTranslations("dashboard.billing");
   const tCompare = useTranslations("marketing.compare");
   const [interval, setInterval] = useState<"month" | "year">("year");
 
@@ -116,15 +117,17 @@ export function PricingPlans({ signedIn }: { signedIn: boolean }) {
               </li>
             ))}
           </ul>
-          <p className="mkt-plan-fee">{tPro("fee")}</p>
+          {tPro("fee") ? <p className="mkt-plan-fee">{tPro("fee")}</p> : null}
           <div className="mt-5">
-            <Button size="lg" className="w-full min-h-11" asChild>
-              <Link href={signedIn ? "/dashboard/billing" : "/register"}>
-                {signedIn
-                  ? tCta("upgradeInBilling")
-                  : tCta("startFreeUpgradeLater")}
-              </Link>
-            </Button>
+            {signedIn ? (
+              <Button size="lg" className="w-full min-h-11" variant="outline" disabled>
+                {tBilling("upgradeSoon")}
+              </Button>
+            ) : (
+              <Button size="lg" className="w-full min-h-11" asChild>
+                <Link href="/register">{tCta("startFreeUpgradeLater")}</Link>
+              </Button>
+            )}
           </div>
         </article>
       </div>

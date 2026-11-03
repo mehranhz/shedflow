@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { devices, expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 import { apiUrl, requireStack } from "./helpers";
@@ -10,7 +10,7 @@ const CUSTOMER = {
 
 async function seedCustomerAvailable(request: import("@playwright/test").APIRequestContext): Promise<boolean> {
   try {
-    const res = await request.post(`${apiUrl()}/auth/login`, {
+    const res = await request.post(`${apiUrl()}/v1/customer/auth/login`, {
       data: { email: CUSTOMER.email, password: CUSTOMER.password },
       timeout: 8_000,
     });
@@ -19,6 +19,24 @@ async function seedCustomerAvailable(request: import("@playwright/test").APIRequ
     return false;
   }
 }
+
+test.describe("portal routes (T-045)", () => {
+  test.beforeEach(async ({ request }) => {
+    test.skip(!(await requireStack(request)), "Stack not up");
+  });
+
+  test("/portal is not treated as a public org slug", async ({ page }) => {
+    await page.goto("/portal");
+    await expect(page).toHaveURL(/\/portal\/login/);
+    await expect(page.getByRole("heading", { name: /customer sign in|sign in/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^portal$/i })).toHaveCount(0);
+  });
+
+  test("unauthenticated appointments redirect to login with next", async ({ page }) => {
+    await page.goto("/portal/appointments");
+    await expect(page).toHaveURL(/\/portal\/login\?next=%2Fportal%2Fappointments/);
+  });
+});
 
 test.describe("portal smoke (T-082)", () => {
   test.beforeEach(async ({ request }, testInfo) => {
@@ -75,4 +93,31 @@ test.describe("portal a11y (T-082)", () => {
       expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
     });
   }
+});
+
+test.describe("portal mobile shell (T-046)", () => {
+  test.use({ ...devices["Pixel 5"] });
+
+  test.beforeEach(async ({ request }) => {
+    test.skip(!(await requireStack(request)), "Stack not up");
+  });
+
+  test("bottom nav tabs are reachable", async ({ page, request }) => {
+    test.skip(
+      !(await seedCustomerAvailable(request)),
+      "Seed customer (T-044) missing — skip mobile shell",
+    );
+    await page.goto("/portal/login");
+    await page.getByLabel(/email/i).fill(CUSTOMER.email);
+    await page.getByLabel(/^password$/i).fill(CUSTOMER.password);
+    await page.getByRole("button", { name: /log in|sign in/i }).click();
+    await expect(page).toHaveURL(/\/portal\/?$/, { timeout: 45_000 });
+
+    const nav = page.getByRole("navigation", { name: /portal navigation/i });
+    await expect(nav).toBeVisible();
+    await nav.getByRole("link", { name: /appointments/i }).click();
+    await expect(page).toHaveURL(/\/portal\/appointments/);
+    await nav.getByRole("link", { name: /account/i }).click();
+    await expect(page).toHaveURL(/\/portal\/account/);
+  });
 });

@@ -12,7 +12,7 @@ export const personaIds = [
   "trainer",
 ] as const;
 
-export const statIds = ["hold", "fee", "pci", "start"] as const;
+export const statIds = ["hold", "transfer", "review", "start"] as const;
 
 export const bentoMeta = [
   {
@@ -65,9 +65,8 @@ export const compareRowMeta = [
   { group: "workspace", row: "googleCalendar", free: "yes", pro: "yes" },
   { group: "workspace", row: "outlookCalendar", free: "no", pro: "flag" },
   { group: "commerce", row: "freeBookings", free: "yes", pro: "yes" },
-  { group: "commerce", row: "paidConnect", free: "no", pro: "yes" },
+  { group: "commerce", row: "paidReceipt", free: "yes", pro: "yes" },
   { group: "commerce", row: "memberships", free: "no", pro: "yes" },
-  { group: "commerce", row: "applicationFee", free: "dash", pro: "fee2" },
   { group: "brand", row: "hostedEmbed", free: "yes", pro: "yes" },
   { group: "brand", row: "hideBadge", free: "no", pro: "yes" },
   { group: "developers", row: "apiWebhooks", free: "no", pro: "yes" },

@@ -104,6 +104,12 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
   const [requiresConfirmation, setRequiresConfirmation] = useState(
     seed?.requiresConfirmation ?? false,
   );
+  const [requiresPaymentReceipt, setRequiresPaymentReceipt] = useState(
+    seed?.requiresPaymentReceipt ?? false,
+  );
+  const [paymentInstructions, setPaymentInstructions] = useState(
+    seed?.paymentInstructions ?? "",
+  );
   const [isActive, setIsActive] = useState(seed?.isActive ?? true);
   const [isHidden, setIsHidden] = useState(seed?.isHidden ?? false);
   const [questionsJson, setQuestionsJson] = useState(
@@ -132,6 +138,8 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
     setRescheduleNotice(seed.rescheduleNoticeHours);
     setCreditCost(seed.creditCost);
     setRequiresConfirmation(seed.requiresConfirmation);
+    setRequiresPaymentReceipt(seed.requiresPaymentReceipt ?? false);
+    setPaymentInstructions(seed.paymentInstructions ?? "");
     setIsActive(seed.isActive);
     setIsHidden(seed.isHidden);
     setQuestionsJson(JSON.stringify(seed.questions ?? defaultQuestions(), null, 2));
@@ -182,11 +190,12 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
         cancellationNoticeHours: cancellationNotice,
         rescheduleNoticeHours: rescheduleNotice,
         requiresConfirmation,
+        requiresPaymentReceipt,
+        paymentInstructions: paymentInstructions.trim() || null,
         isActive,
         isHidden,
         questions,
         creditCost: isPro ? creditCost : 0,
-        // Stripe catalog ids stay unset on Free; Pro attaches them in Billing (T-032).
         priceId: isPro ? seed?.priceId ?? null : null,
         subscriptionProductId: isPro ? seed?.subscriptionProductId ?? null : null,
       };
@@ -488,6 +497,32 @@ export function EventTypeForm({ eventTypeId }: { eventTypeId?: string }) {
               onCheckedChange={setRequiresConfirmation}
             />
           </div>
+          <div className="flex items-center justify-between rounded-lg border px-3 py-2 sm:col-span-2">
+            <div>
+              <p className="text-sm font-medium">{tf("requirePaymentReceipt")}</p>
+              <p className="text-xs text-muted-foreground">
+                {tf("requirePaymentReceiptHint")}
+              </p>
+            </div>
+            <Switch
+              checked={requiresPaymentReceipt}
+              onCheckedChange={setRequiresPaymentReceipt}
+            />
+          </div>
+          {requiresPaymentReceipt ? (
+            <div className="grid gap-2 sm:col-span-2">
+              <Label htmlFor="payment-instructions">{tf("paymentInstructions")}</Label>
+              <Textarea
+                id="payment-instructions"
+                rows={4}
+                value={paymentInstructions}
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                  setPaymentInstructions(event.target.value)
+                }
+                placeholder={tf("paymentInstructionsPlaceholder")}
+              />
+            </div>
+          ) : null}
           <div className="flex items-center justify-between rounded-lg border px-3 py-2 sm:col-span-2">
             <div>
               <p className="text-sm font-medium">{tf("onOff")}</p>

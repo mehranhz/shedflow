@@ -69,7 +69,8 @@ export function AvailabilityEditor() {
     queryKey: ["schedules", organization.id],
     queryFn: () => schedulingApi.listSchedules(organization, profile.id),
   });
-  const schedule = query.data?.data.find((item) => item.isDefault) ?? query.data?.data[0];
+  const schedule =  query.data?.data?.find((item) => item.isDefault) ?? query?.data?.data[0];
+  console.log("schedule is", schedule);
   const [rows, setRows] = useState<DayRow[] | null>(null);
   const [timezone, setTimezone] = useState(organization.timezone);
   const [overrideDate, setOverrideDate] = useState<Date | undefined>();
@@ -78,8 +79,8 @@ export function AvailabilityEditor() {
 
   useEffect(() => {
     if (schedule && !rows) {
-      setRows(rulesToRows(schedule.rules ?? []));
-      setTimezone(schedule.timezone);
+      setRows(rulesToRows(schedule?.rules ?? []));
+      setTimezone(schedule?.timezone ?? "");
     }
   }, [schedule, rows]);
 

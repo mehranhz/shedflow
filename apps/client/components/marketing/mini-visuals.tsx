@@ -18,7 +18,7 @@ export function HoldMini() {
         </span>
         <span>
           <b>Hold 14:32</b>
-          <em className="mkt-mono not-italic">Checkout $120</em>
+          <em className="mkt-mono not-italic">Receipt $120</em>
         </span>
         <span>
           <b>Confirmed</b>
@@ -91,8 +91,8 @@ export function ReceiptMini() {
     <div className="mkt-receipt-stack">
       <article className="mkt-receipt" aria-hidden="true">
         <header>
-          <span>Stripe Checkout</span>
-          <span>no PAN</span>
+          <span>Transfer receipt</span>
+          <span>host review</span>
         </header>
         <h3>45-minute strategy</h3>
         <dl>
@@ -101,12 +101,12 @@ export function ReceiptMini() {
             <dd>$120.00</dd>
           </div>
           <div>
-            <dt>Application fee</dt>
-            <dd>2%</dd>
+            <dt>Method</dt>
+            <dd>Bank transfer</dd>
           </div>
           <div>
-            <dt>Payout</dt>
-            <dd>Connect Express</dd>
+            <dt>Status</dt>
+            <dd>Host review</dd>
           </div>
         </dl>
       </article>

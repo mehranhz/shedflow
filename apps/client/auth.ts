@@ -4,20 +4,23 @@ import Credentials from "next-auth/providers/credentials";
 import type { JWT } from "next-auth/jwt";
 
 import { API_URL } from "@/lib/config";
+import { persistCustomerOrgCookie } from "@/lib/portal/customer-cookies";
+import { readAccessTokenClaims } from "@/lib/portal/jwt-claims";
 import { refreshSessionTokens } from "@/lib/refresh-session";
 
-type ApiUser = { id: string; email: string; createdAt: string };
-type AuthResponse = {
-  accessToken: string;
-  refreshToken: string;
-  user: ApiUser;
+type ApiUser = {
+  id: string;
+  phone: string | null;
+  email?: string | null;
+  createdAt: string;
 };
-
-type AccessTokenClaims = {
-  exp?: number;
-  orgId?: string;
-  role?: "OWNER" | "ADMIN" | "MEMBER";
-  impersonatingOrgId?: string;
+type AuthEnvelope = {
+  success: boolean;
+  data: {
+    accessToken: string;
+    refreshToken: string;
+    user: ApiUser;
+  };
 };
 
 const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
@@ -36,34 +39,135 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        email: { label: "Email", type: "email" },
+        phone: { label: "Phone", type: "text" },
         password: { label: "Password", type: "password" },
+        accessToken: { label: "Access token", type: "text" },
+        refreshToken: { label: "Refresh token", type: "text" },
       },
       authorize: async (credentials) => {
-        const email = credentials?.email;
+        const accessToken = credentials?.accessToken;
+        const refreshToken = credentials?.refreshToken;
+        if (
+          typeof accessToken === "string" &&
+          accessToken.length > 0 &&
+          typeof refreshToken === "string" &&
+          refreshToken.length > 0
+        ) {
+          const claims = readAccessTokenClaims(accessToken);
+          if (!claims.id) {
+            return null;
+          }
+          const phone =
+            claims.phone ??
+            (typeof credentials?.phone === "string" ? credentials.phone : undefined);
+          return {
+            id: claims.id,
+            phone,
+            accessToken,
+            refreshToken,
+          };
+        }
+
+        const phone = credentials?.phone;
         const password = credentials?.password;
-        if (typeof email !== "string" || typeof password !== "string") {
+        if (typeof phone !== "string" || typeof password !== "string") {
           return null;
         }
 
         const response = await fetch(`${API_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ "username":email, password }),
-        }); 
+          body: JSON.stringify({ username: phone, password }),
+        });
 
-        // The API returns 401 for bad credentials; anything non-2xx means "no user".
         if (!response.ok) {
           return null;
         }
 
-        const { accessToken, refreshToken, user } = (await response.json()).data as AuthResponse;
+        const envelope = (await response.json()) as AuthEnvelope;
+        if (!envelope.success || !envelope.data) {
+          return null;
+        }
+
+        const session = envelope.data;
         return {
-          id: user.id,
-          email: user.email,
-          accessToken,
-          refreshToken,
+          id: session.user.id,
+          phone: session.user.phone ?? phone,
+          email: session.user.email,
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
         };
+      },
+    }),
+    Credentials({
+      id: "customer-portal",
+      name: "Customer portal",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
+        accessToken: { label: "Access token", type: "text" },
+        refreshToken: { label: "Refresh token", type: "text" },
+      },
+      authorize: async (credentials) => {
+        const accessToken = credentials?.accessToken;
+        const refreshToken = credentials?.refreshToken;
+        if (
+          typeof accessToken === "string" &&
+          accessToken.length > 0 &&
+          typeof refreshToken === "string" &&
+          refreshToken.length > 0
+        ) {
+          const claims = readAccessTokenClaims(accessToken);
+          if (!claims.id) {
+            return null;
+          }
+          return {
+            id: claims.id,
+            email: typeof credentials?.email === "string" ? credentials.email : undefined,
+            accessToken,
+            refreshToken,
+          };
+        }
+
+        const email = credentials?.email;
+        const password = credentials?.password;
+        if (typeof email !== "string" || typeof password !== "string") {
+          return null;
+        }
+
+        try {
+          const response = await fetch(`${API_URL}/v1/customer/auth/login`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+            cache: "no-store",
+          });
+          if (!response.ok) {
+            return null;
+          }
+          const envelope = (await response.json()) as {
+            success?: boolean;
+            data?: {
+              accessToken: string;
+              refreshToken: string;
+              user: { id: string; email?: string | null };
+            };
+          };
+          if (!envelope.success || !envelope.data) {
+            return null;
+          }
+          return {
+            id: envelope.data.user.id,
+            email: envelope.data.user.email ?? email,
+            accessToken: envelope.data.accessToken,
+            refreshToken: envelope.data.refreshToken,
+          };
+        } catch {
+          return null;
+        }
       },
     }),
   ],
@@ -74,19 +178,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (typeof next.accessToken === "string") {
           applyAccessToken(token, next.accessToken, token.refreshToken);
           await persistOrgCookie(token.orgId);
+          await persistCustomerOrgCookie(token.customerOrgId);
         }
         return token;
       }
 
       if (user) {
         token.id = user.id;
+        if (user.phone) {
+          token.phone = user.phone;
+        }
+        if (user.email) {
+          token.email = user.email;
+        }
         applyAccessToken(token, user.accessToken, user.refreshToken);
 
         await persistOrgCookie(token.orgId);
+        await persistCustomerOrgCookie(token.customerOrgId);
         delete token.error;
         return {
           ...token,
-          "accessToken": user.accessToken
+          accessToken: user.accessToken,
         };
       }
 
@@ -101,33 +213,40 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!token.refreshToken) {
         return {
           ...token,
-          // accessToken: undefined,
           orgId: undefined,
           role: undefined,
           impersonatingOrgId: undefined,
+          actorType: undefined,
+          customerOrgId: undefined,
+          customerId: undefined,
           error: "RefreshTokenError",
         };
       }
 
       try {
+        const refreshScope =
+          token.actorType === "CUSTOMER" ? token.customerOrgId : token.orgId;
         const rotated = await refreshSessionTokens(
           API_URL,
           token.refreshToken,
-          token.orgId,
+          refreshScope,
         );
         applyAccessToken(token, rotated.accessToken, rotated.refreshToken);
         await persistOrgCookie(token.orgId);
+        await persistCustomerOrgCookie(token.customerOrgId);
         token.error = undefined;
         return token;
       } catch {
         return {
           ...token,
-          // accessToken: undefined,
           refreshToken: undefined,
           accessTokenExpires: undefined,
           orgId: undefined,
           role: undefined,
           impersonatingOrgId: undefined,
+          actorType: undefined,
+          customerOrgId: undefined,
+          customerId: undefined,
           error: "RefreshTokenError",
         };
       }
@@ -136,12 +255,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token.id) {
         session.user.id = token.id;
       }
+      if (token.phone) {
+        session.user.phone = token.phone;
+      }
+      if (token.email) {
+        session.user.email = token.email;
+      }
       if (token.accessToken) {
         session.accessToken = token.accessToken;
       }
       session.orgId = token.orgId;
       session.role = token.role;
       session.impersonatingOrgId = token.impersonatingOrgId;
+      session.actorType = token.actorType;
+      session.customerOrgId = token.customerOrgId;
+      session.customerId = token.customerId;
       return session;
     },
   },
@@ -161,6 +289,9 @@ function applyAccessToken(
     token.orgId = undefined;
     token.role = undefined;
     token.impersonatingOrgId = undefined;
+    token.actorType = undefined;
+    token.customerOrgId = undefined;
+    token.customerId = undefined;
     return;
   }
 
@@ -170,39 +301,9 @@ function applyAccessToken(
   token.orgId = claims.orgId;
   token.role = claims.role;
   token.impersonatingOrgId = claims.impersonatingOrgId;
-}
-
-function readAccessTokenClaims(accessToken: string): {
-  expires?: number;
-  orgId?: string;
-  role?: "OWNER" | "ADMIN" | "MEMBER";
-  impersonatingOrgId?: string;
-} {
-  try {
-    const payloadPart = accessToken.split(".")[1];
-    if (!payloadPart) {
-      return {};
-    }
-    const json = Buffer.from(payloadPart, "base64url").toString("utf8");
-    const payload = JSON.parse(json) as AccessTokenClaims;
-    return {
-      expires:
-        typeof payload.exp === "number" ? payload.exp * 1000 : undefined,
-      orgId: typeof payload.orgId === "string" ? payload.orgId : undefined,
-      role:
-        payload.role === "OWNER" ||
-        payload.role === "ADMIN" ||
-        payload.role === "MEMBER"
-          ? payload.role
-          : undefined,
-      impersonatingOrgId:
-        typeof payload.impersonatingOrgId === "string"
-          ? payload.impersonatingOrgId
-          : undefined,
-    };
-  } catch {
-    return {};
-  }
+  token.actorType = claims.actorType;
+  token.customerOrgId = claims.customerOrgId;
+  token.customerId = claims.customerId;
 }
 
 async function persistOrgCookie(orgId?: string): Promise<void> {
