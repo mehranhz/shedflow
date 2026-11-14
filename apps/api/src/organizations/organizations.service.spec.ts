@@ -52,6 +52,8 @@ class InMemoryUserRepository
       timezone: data.timezone ?? 'UTC',
       locale: 'en',
       emailVerifiedAt: null,
+      phone: data.phone ?? null,
+      phoneVerifiedAt: data.phoneVerifiedAt ?? null,
       deletedAt: null,
       createdAt: now,
       updatedAt: now,
@@ -65,6 +67,12 @@ class InMemoryUserRepository
   findByEmail(email: string): Promise<User | null> {
     return this.findOneWhere(
       (user) => user.email === email && user.deletedAt == null,
+    );
+  }
+
+  findByPhone(phone: string): Promise<User | null> {
+    return this.findOneWhere(
+      (user) => user.phone === phone && user.deletedAt == null,
     );
   }
 }
@@ -171,6 +179,14 @@ class InMemoryMembershipRepository
     return Promise.resolve(
       [...this.rows.values()].filter((row) => row.userId === userId),
     );
+  }
+
+  async disableAllForUser(userId: string): Promise<number> {
+    const rows = [...this.rows.values()].filter((row) => row.userId === userId);
+    for (const row of rows) {
+      await this.update(row.id, { status: MembershipStatus.DISABLED });
+    }
+    return rows.length;
   }
 
   async updateInOrganization(
@@ -356,6 +372,9 @@ describe('OrganizationsService', () => {
     await service.acceptInvitation(invitation.token!, {
       id: member.id,
       email: member.email,
+      name: member.name,
+      phone: member.phone ?? null,
+      phoneVerifiedAt: member.phoneVerifiedAt ?? null,
       createdAt: member.createdAt,
       emailVerifiedAt: null,
     });
@@ -381,6 +400,9 @@ describe('OrganizationsService', () => {
     await service.acceptInvitation(invitation.token!, {
       id: admin.id,
       email: admin.email,
+      name: admin.name,
+      phone: admin.phone ?? null,
+      phoneVerifiedAt: admin.phoneVerifiedAt ?? null,
       createdAt: admin.createdAt,
       emailVerifiedAt: null,
     });

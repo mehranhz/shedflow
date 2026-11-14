@@ -5,6 +5,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { AllExceptionsFilter } from './common/http/all-exceptions.filter';
 import { requestIdMiddleware } from './common/http/request-id.middleware';
@@ -13,6 +14,14 @@ import { flattenValidationErrors } from './common/http/validation-errors';
 export function configureApp(app: INestApplication): void {
   const config = app.get(ConfigService);
   const appUrl = config.get<string>('APP_URL') ?? 'http://localhost:3000';
+
+  // Staff dashboard calls `/v1/auth/me` while NextAuth and OTP stay on `/auth/*`.
+  app.use((req: Request, _res: Response, next: NextFunction) => {
+    if (req.url.startsWith('/v1/auth')) {
+      req.url = req.url.replace(/^\/v1\/auth/, '/auth');
+    }
+    next();
+  });
 
   app.setGlobalPrefix('v1', {
     exclude: [

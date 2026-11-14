@@ -115,6 +115,15 @@ export class CreateEventTypeDto {
   requiresConfirmation?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  requiresPaymentReceipt?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  paymentInstructions?: string | null;
+
+  @IsOptional()
   @IsInt()
   @Min(0)
   cancellationNoticeHours?: number;
@@ -229,6 +238,15 @@ export class UpdateEventTypeDto {
   @IsOptional()
   @IsBoolean()
   requiresConfirmation?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  requiresPaymentReceipt?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  paymentInstructions?: string | null;
 
   @IsOptional()
   @IsInt()

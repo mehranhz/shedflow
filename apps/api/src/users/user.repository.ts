@@ -13,4 +13,9 @@ export abstract class UserRepository extends Repository<
 > {
   /** @param email must already be normalised by `UsersService`. */
   abstract findByEmail(email: string): Promise<User | null>;
+
+  /** Phone login. In-memory tests override this; the default is "not found". */
+  findByPhone(_phone: string): Promise<User | null> {
+    return Promise.resolve(null);
+  }
 }

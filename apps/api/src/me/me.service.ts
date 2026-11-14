@@ -77,6 +77,8 @@ export class MeService {
         name: 'Deleted',
         passwordHash: '!', // unusable; login requires bcrypt compare
         emailVerifiedAt: null,
+        phone: null,
+        phoneVerifiedAt: null,
         deletedAt: now,
       });
     });

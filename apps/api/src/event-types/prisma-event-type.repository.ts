@@ -62,6 +62,8 @@ export class PrismaEventTypeRepository
       slotIntervalMinutes: record.slotIntervalMinutes,
       dailyCap: record.dailyCap,
       requiresConfirmation: record.requiresConfirmation,
+      requiresPaymentReceipt: record.requiresPaymentReceipt,
+      paymentInstructions: record.paymentInstructions,
       cancellationNoticeHours: record.cancellationNoticeHours,
       rescheduleNoticeHours: record.rescheduleNoticeHours,
       priceId: record.priceId,

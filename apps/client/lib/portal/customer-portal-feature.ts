@@ -1,6 +1,6 @@
 import { FEATURE_FLAGS, isEnabled } from "@shedflow/shared";
 
-/** Matches Laravel `config/features.php` customer_portal (default on in local dev). */
+/** Customer portal flag. On in local development unless NEXT_PUBLIC_CUSTOMER_PORTAL=0. */
 export function isCustomerPortalEnabled(org?: { settings?: unknown } | null): boolean {
   if (process.env.NEXT_PUBLIC_CUSTOMER_PORTAL === "0") {
     return false;

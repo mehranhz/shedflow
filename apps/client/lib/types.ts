@@ -45,8 +45,10 @@ export type AuthProfile = {
   id: string;
   name: string;
   phone: string;
+  email?: string | null;
   createdAt: string;
   phoneVerifiedAt: string | null;
+  emailVerifiedAt?: string | null;
   memberships: AuthMembership[];
   activeOrganization: Organization | null;
   impersonatingOrgId?: string | null;

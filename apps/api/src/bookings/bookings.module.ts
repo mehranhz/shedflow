@@ -11,6 +11,12 @@ import { BookingsController } from './bookings.controller';
 import { BookingsService } from './bookings.service';
 import { InternalBookingsController } from './internal-bookings.controller';
 import { PrismaBookingRepository } from './prisma-booking.repository';
+import {
+  BookingPaymentReceiptController,
+  PaymentReceiptDownloadController,
+  PublicPaymentReceiptController,
+} from './payment-receipt.controller';
+import { PaymentReceiptService } from './payment-receipt.service';
 import { PublicBookingsController } from './public-bookings.controller';
 import { SignedActionTokenRepository } from './signed-action-token.repository';
 
@@ -26,9 +32,13 @@ import { SignedActionTokenRepository } from './signed-action-token.repository';
     BookingsController,
     PublicBookingsController,
     InternalBookingsController,
+    BookingPaymentReceiptController,
+    PublicPaymentReceiptController,
+    PaymentReceiptDownloadController,
   ],
   providers: [
     BookingsService,
+    PaymentReceiptService,
     BillingCheckoutClient,
     BillingCreditsClient,
     SignedActionTokenRepository,

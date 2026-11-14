@@ -14,6 +14,20 @@ export function configureApp(app: INestApplication): void {
   const config = app.get(ConfigService);
   const appUrl = config.get<string>('APP_URL') ?? 'http://localhost:3000';
 
+  // Staff screens call `/v1/auth/me` while NextAuth and OTP stay on `/auth/*`.
+  app.use(
+    (
+      req: { url?: string },
+      _res: unknown,
+      next: () => void,
+    ) => {
+      if (req.url?.startsWith('/v1/auth')) {
+        req.url = req.url.replace(/^\/v1\/auth/, '/auth');
+      }
+      next();
+    },
+  );
+
   app.setGlobalPrefix(GLOBAL_PREFIX, {
     exclude: [
       { path: 'health', method: RequestMethod.ALL },

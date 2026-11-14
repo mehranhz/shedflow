@@ -12,7 +12,7 @@ export const CUSTOMER_DEMO = {
   password: "Password123!",
 } as const;
 
-export const apiUrl = () => process.env.E2E_API_URL ?? "http://localhost:8000/api";
+export const apiUrl = () => process.env.E2E_API_URL ?? "http://localhost:3001";
 
 function apiOrigin(): string {
   return apiUrl().replace(/\/api\/?$/, "");

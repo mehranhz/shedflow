@@ -228,6 +228,8 @@ export class CustomerGdprService {
           name: 'Deleted',
           passwordHash: '!',
           emailVerifiedAt: null,
+          phone: null,
+          phoneVerifiedAt: null,
           deletedAt: now,
         });
       } else {

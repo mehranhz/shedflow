@@ -4,6 +4,7 @@ import {
   Inject,
   Injectable,
   Logger,
+  Optional,
   UnauthorizedException,
   forwardRef,
 } from '@nestjs/common';
@@ -20,6 +21,7 @@ import { PublicOrganization } from '../organizations/organization';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { AuditService, hashEmail } from '../audit/audit.service';
 import { Outbox } from '../domain-events/outbox';
+import { PrismaService } from '../prisma/prisma.service';
 import { PublicUser } from '../users/user';
 import { UsersService } from '../users/users.service';
 import {
@@ -78,6 +80,11 @@ const ROLE_RANK: Record<Role, number> = {
   [Role.MEMBER]: 2,
 };
 
+export function syntheticEmailForPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '') || 'user';
+  return `phone.${digits}@users.shedflow.invalid`;
+}
+
 export function defaultWorkspaceName(email: string, name?: string): string {
   const trimmed = name?.trim();
   if (trimmed) {
@@ -104,13 +111,24 @@ export class AuthService {
     private readonly memberships: MembershipRepository,
     private readonly outbox: Outbox,
     private readonly audit: AuditService,
+    @Optional()
+    @Inject(PrismaService)
+    private readonly prisma?: PrismaService,
   ) {}
 
   async register(
     dto: RegisterDto,
     meta: RefreshTokenClientMeta = {},
   ): Promise<AuthSession> {
-    const existing = await this.usersService.findByEmail(dto.email);
+    const phone = dto.username?.trim();
+    if (!dto.email?.trim() && phone) {
+      return this.registerWithPhone(phone, dto, meta);
+    }
+    const email = dto.email?.trim() ?? '';
+    if (!email) {
+      throw new BadRequestException('Email or phone is required');
+    }
+    const existing = await this.usersService.findByEmail(email);
     if (existing) {
       throw new ConflictException('Email is already registered');
     }
@@ -120,10 +138,10 @@ export class AuthService {
     const name = dto.name?.trim();
     const organizationName =
       dto.organizationName?.trim() ||
-      defaultWorkspaceName(dto.email, name);
+      defaultWorkspaceName(email, name);
 
     return this.transactions.runInTransaction(async () => {
-      const user = await this.usersService.create(dto.email, passwordHash, {
+      const user = await this.usersService.create(email, passwordHash, {
         name: name || null,
         timezone,
       });
@@ -159,6 +177,53 @@ export class AuthService {
         organizationId: organization.id,
         role: Role.OWNER,
       });
+    });
+  }
+
+  private async registerWithPhone(
+    phone: string,
+    dto: RegisterDto,
+    meta: RefreshTokenClientMeta,
+  ): Promise<AuthSession> {
+    const existing = await this.usersService.findByPhone(phone);
+    if (existing) {
+      throw new ConflictException('Phone is already registered');
+    }
+    const timezone = this.requireTimeZone(dto.timezone);
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const name = dto.name?.trim();
+    const email = syntheticEmailForPhone(phone);
+    const organizationName =
+      dto.organizationName?.trim() || defaultWorkspaceName(phone, name);
+    const now = this.clock.now();
+
+    return this.transactions.runInTransaction(async () => {
+      const user = await this.usersService.create(email, passwordHash, {
+        name: name || null,
+        timezone,
+        phone,
+        phoneVerifiedAt: now,
+      });
+      await this.usersService.markEmailVerified(user.id, now);
+      await this.audit.record({
+        actorUserId: user.id,
+        actorType: 'user',
+        action: 'auth.register',
+        resourceType: 'user',
+        resourceId: user.id,
+        ip: meta.ip,
+        userAgent: meta.userAgent,
+      });
+      const organization = await this.organizations.create(user.id, {
+        name: organizationName,
+        timezone,
+      });
+      const verified = await this.usersService.findById(user.id);
+      return this.issueSession(
+        this.usersService.toPublic(verified ?? user),
+        meta,
+        { organizationId: organization.id, role: Role.OWNER },
+      );
     });
   }
 
@@ -212,11 +277,40 @@ export class AuthService {
         revokedAt: now,
         replacedById: next.id,
       });
-      return this.toSession(
-        this.usersService.toPublic(user),
-        next.raw,
-        organizationId,
-      );
+      const publicUser = this.usersService.toPublic(user);
+      if (organizationId && this.prisma) {
+        const membership = await this.memberships.findByUserInOrganization(
+          organizationId,
+          user.id,
+        );
+        const staff =
+          membership?.status === MembershipStatus.ACTIVE;
+        if (!staff) {
+          const customer = await this.prisma.customer.findFirst({
+            where: { userId: user.id, organizationId },
+          });
+          if (customer) {
+            return {
+              accessToken: await this.signAccessToken(
+                user.id,
+                user.email,
+                undefined,
+                undefined,
+                undefined,
+                {
+                  actorType: 'CUSTOMER',
+                  customerOrgId: customer.organizationId,
+                  customerId: customer.id,
+                  phone: publicUser.phone,
+                },
+              ),
+              refreshToken: next.raw,
+              user: publicUser,
+            };
+          }
+        }
+      }
+      return this.toSession(publicUser, next.raw, organizationId);
     });
   }
 
@@ -330,16 +424,19 @@ export class AuthService {
   }
 
   async validateUser(
-    email: string,
+    identifier: string,
     password: string,
   ): Promise<PublicUser | null> {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) {
+    const value = identifier.trim();
+    const user = value.includes('@')
+      ? await this.usersService.findByEmail(value)
+      : await this.usersService.findByPhone(value);
+    if (!user || (!value.includes('@') && !user.phoneVerifiedAt)) {
       await this.audit.record({
         actorType: 'user',
         action: 'auth.login.failure',
         resourceType: 'user',
-        metadata: { emailHash: hashEmail(email) },
+        metadata: { emailHash: hashEmail(value) },
       });
       return null;
     }
@@ -352,7 +449,7 @@ export class AuthService {
         action: 'auth.login.failure',
         resourceType: 'user',
         resourceId: user.id,
-        metadata: { emailHash: hashEmail(email) },
+        metadata: { emailHash: hashEmail(value) },
       });
       return null;
     }
@@ -404,6 +501,68 @@ export class AuthService {
     };
   }
 
+  /** Dashboard profile: organizations carry `id` and a nested membership. */
+  async getClientProfile(
+    userId: string,
+    activeOrgId?: string,
+    impersonatingOrgId?: string,
+  ) {
+    const profile = await this.getProfile(
+      userId,
+      activeOrgId,
+      impersonatingOrgId,
+    );
+    const orgs = await this.organizations.listForUser(userId);
+    const byOrg = new Map(
+      profile.memberships.map((membership) => [
+        membership.organizationId,
+        membership,
+      ]),
+    );
+    const memberships = orgs.map((org) => {
+      const membership = byOrg.get(org.id);
+      return {
+        ...org,
+        organizationId: org.id,
+        role: membership?.role ?? Role.MEMBER,
+        membership: {
+          user_id: userId,
+          organization_id: org.id,
+          type: membership?.role ?? Role.MEMBER,
+          status: membership?.status ?? MembershipStatus.ACTIVE,
+        },
+      };
+    });
+    if (
+      profile.activeOrganization &&
+      !memberships.some((item) => item.id === profile.activeOrganization!.id)
+    ) {
+      memberships.unshift({
+        ...profile.activeOrganization,
+        organizationId: profile.activeOrganization.id,
+        role: Role.ADMIN,
+        membership: {
+          user_id: userId,
+          organization_id: profile.activeOrganization.id,
+          type: Role.ADMIN,
+          status: MembershipStatus.ACTIVE,
+        },
+      });
+    }
+    return {
+      id: profile.id,
+      email: profile.email,
+      name: profile.name ?? '',
+      phone: profile.phone ?? '',
+      createdAt: profile.createdAt,
+      emailVerifiedAt: profile.emailVerifiedAt,
+      phoneVerifiedAt: profile.phoneVerifiedAt ?? null,
+      memberships,
+      activeOrganization: profile.activeOrganization,
+      impersonatingOrgId: profile.impersonatingOrgId ?? null,
+    };
+  }
+
   issueAccessForOrganization(
     user: PublicUser,
     organizationId: string,
@@ -432,7 +591,42 @@ export class AuthService {
   }
 
   issueAccessWithoutOrg(user: PublicUser): Promise<string> {
-    return this.signAccessToken(user.id, user.email);
+    return this.signAccessToken(user.id, user.email, undefined, undefined, undefined, {
+      phone: user.phone,
+    });
+  }
+
+  /** Customer-portal session: no staff org claim. */
+  async issueCustomerSession(
+    user: PublicUser,
+    meta: RefreshTokenClientMeta,
+    customer?: { organizationId: string; customerId: string } | null,
+  ): Promise<AuthSession> {
+    const issued = await this.createRefreshToken(user.id, meta);
+    return {
+      accessToken: await this.signCustomerAccess(user, customer),
+      refreshToken: issued.raw,
+      user,
+    };
+  }
+
+  signCustomerAccess(
+    user: PublicUser,
+    customer?: { organizationId: string; customerId: string } | null,
+  ): Promise<string> {
+    return this.signAccessToken(
+      user.id,
+      user.email,
+      undefined,
+      undefined,
+      undefined,
+      {
+        actorType: 'CUSTOMER',
+        customerOrgId: customer?.organizationId,
+        customerId: customer?.customerId,
+        phone: user.phone,
+      },
+    );
   }
 
   private async issueSession(
@@ -458,6 +652,8 @@ export class AuthService {
         user.email,
         active?.organizationId,
         active?.role,
+        undefined,
+        { phone: user.phone },
       ),
       refreshToken,
       user,
@@ -521,6 +717,12 @@ export class AuthService {
     orgId?: string,
     role?: Role,
     impersonatingOrgId?: string,
+    extras?: {
+      actorType?: 'STAFF' | 'CUSTOMER';
+      customerOrgId?: string;
+      customerId?: string;
+      phone?: string | null;
+    },
   ): Promise<string> {
     const payload: JwtPayload = {
       sub: userId,
@@ -528,6 +730,10 @@ export class AuthService {
       typ: ACCESS_TOKEN_TYPE,
       ...(orgId && role ? { orgId, role } : {}),
       ...(impersonatingOrgId ? { impersonatingOrgId } : {}),
+      ...(extras?.phone ? { phone: extras.phone } : {}),
+      ...(extras?.actorType ? { actorType: extras.actorType } : {}),
+      ...(extras?.customerOrgId ? { customerOrgId: extras.customerOrgId } : {}),
+      ...(extras?.customerId ? { customerId: extras.customerId } : {}),
     };
     return this.jwtService.signAsync(payload, {
       expiresIn: ACCESS_TOKEN_TTL,

@@ -13,6 +13,7 @@ import { UserTokensModule } from '../user-tokens/user-tokens.module';
 import { ACCESS_TOKEN_TTL } from './auth.constants';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { OtpService } from './otp.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 
@@ -39,6 +40,7 @@ import { LocalStrategy } from './strategies/local.strategy';
   controllers: [AuthController],
   providers: [
     AuthService,
+    OtpService,
     LocalStrategy,
     JwtStrategy,
     {

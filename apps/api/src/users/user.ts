@@ -10,6 +10,8 @@ export type User = {
   timezone: string;
   locale: string;
   emailVerifiedAt: Date | null;
+  phone?: string | null;
+  phoneVerifiedAt?: Date | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -19,7 +21,7 @@ export type User = {
 // the entity are not accidentally exposed through the API.
 export type PublicUser = Pick<
   User,
-  'id' | 'email' | 'createdAt' | 'emailVerifiedAt'
+  'id' | 'email' | 'createdAt' | 'emailVerifiedAt' | 'phone' | 'phoneVerifiedAt' | 'name'
 >;
 
 export type AuthenticatedUser = PublicUser & {
@@ -38,6 +40,8 @@ export type CreateUserData = {
   passwordHash: string;
   name?: string | null;
   timezone?: string;
+  phone?: string | null;
+  phoneVerifiedAt?: Date | null;
 };
 
 export type UpdateUserData = Partial<{
@@ -47,5 +51,7 @@ export type UpdateUserData = Partial<{
   timezone: string;
   locale: string;
   emailVerifiedAt: Date | null;
+  phone: string | null;
+  phoneVerifiedAt: Date | null;
   deletedAt: Date | null;
 }>;

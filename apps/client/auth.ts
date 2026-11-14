@@ -3,6 +3,8 @@ import Credentials from "next-auth/providers/credentials";
 
 import type { JWT } from "next-auth/jwt";
 
+import { readAuthSession } from "@/lib/api-envelope";
+import { readAuthSession } from "@/lib/api-envelope";
 import { API_URL } from "@/lib/config";
 import { persistCustomerOrgCookie } from "@/lib/portal/customer-cookies";
 import { readAccessTokenClaims } from "@/lib/portal/jwt-claims";
@@ -84,12 +86,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        const envelope = (await response.json()) as AuthEnvelope;
-        if (!envelope.success || !envelope.data) {
+        const session = readAuthSession(await response.json());
+        if (!session) {
           return null;
         }
-
-        const session = envelope.data;
         return {
           id: session.user.id,
           phone: session.user.phone ?? phone,
@@ -148,22 +148,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           if (!response.ok) {
             return null;
           }
-          const envelope = (await response.json()) as {
-            success?: boolean;
-            data?: {
-              accessToken: string;
-              refreshToken: string;
-              user: { id: string; email?: string | null };
-            };
-          };
-          if (!envelope.success || !envelope.data) {
+          const session = readAuthSession(await response.json());
+          if (!session) {
             return null;
           }
           return {
-            id: envelope.data.user.id,
-            email: envelope.data.user.email ?? email,
-            accessToken: envelope.data.accessToken,
-            refreshToken: envelope.data.refreshToken,
+            id: session.user.id,
+            email: session.user.email ?? email,
+            accessToken: session.accessToken,
+            refreshToken: session.refreshToken,
           };
         } catch {
           return null;

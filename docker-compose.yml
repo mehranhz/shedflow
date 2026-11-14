@@ -1,5 +1,5 @@
 # Profiles:
-#   core            — Postgres. `docker compose up -d postgres` still works.
+#   core            — Postgres + NestJS API (apps/api). `docker compose up -d postgres` still works.
 #   observability   — Prometheus, Grafana, node-exporter, Alertmanager
 #
 #   docker compose --profile core up -d
@@ -7,7 +7,9 @@
 #   docker compose --profile core --profile observability up -d
 #
 # With COMPOSE_PROFILES=core,observability in `.env`, `docker compose up -d`
-# starts both stacks.
+# starts both stacks. Host DATABASE_URL uses localhost:5533; the api container
+# uses hostname `postgres:5432`. Apply migrations from the host:
+#   pnpm db:migrate:deploy
 services:
   prometheus:
     image: docker.arvancloud.ir/prom/prometheus:latest
@@ -153,8 +155,52 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - shedflow
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: shedflow-api:local
+    container_name: shedflow-api
+    profiles: ['core']
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      # Inside the compose network, not the host-mapped 5533.
+      DATABASE_URL: postgresql://shedflow:shedflow@postgres:5432/shedflow?schema=public
+      DIRECT_DATABASE_URL: postgresql://shedflow:shedflow@postgres:5432/shedflow?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-development}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:-change-me-in-development}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      API_URL: ${API_URL:-http://localhost:3001}
+      BILLING_URL: ${BILLING_URL:-http://localhost:3002}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - shedflow
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 25s
 
 networks:
+  shedflow:
+    driver: bridge
   monitoring:
     driver: bridge
 

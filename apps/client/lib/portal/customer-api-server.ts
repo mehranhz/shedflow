@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { API_URL } from "@/lib/config";
 import { readCustomerOrgCookie } from "@/lib/portal/customer-cookies";
 
+import { unwrapData } from "@/lib/api-envelope";
 import type { CustomerMe } from "@/lib/portal/customer-api";
 
 type ApiEnvelope<T> = { success: boolean; data?: T };

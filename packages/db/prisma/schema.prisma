@@ -37,6 +37,9 @@ model User {
   timezone        String    @default("UTC")
   locale          String    @default("en")
   emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(3)
+  /// Staff sign-in identifier used by the phone login and booking OTP flows.
+  phone           String?   @unique
+  phoneVerifiedAt DateTime? @map("phone_verified_at") @db.Timestamptz(3)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(3)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -203,6 +206,12 @@ enum BookingStatus {
   NO_SHOW
 }
 
+enum PaymentReceiptStatus {
+  UPLOADED
+  APPROVED
+  REJECTED
+}
+
 enum BookingSource {
   HOSTED
   EMBED
@@ -276,6 +285,9 @@ model EventType {
   slotIntervalMinutes     Int          @default(0) @map("slot_interval_minutes")
   dailyCap                Int?         @map("daily_cap")
   requiresConfirmation    Boolean      @default(false) @map("requires_confirmation")
+  /// Bank-transfer receipt required before the booking is confirmed.
+  requiresPaymentReceipt  Boolean      @default(false) @map("requires_payment_receipt")
+  paymentInstructions     String?      @map("payment_instructions")
   cancellationNoticeHours Int          @default(24) @map("cancellation_notice_hours")
   rescheduleNoticeHours   Int          @default(24) @map("reschedule_notice_hours")
   priceId                 String?      @map("price_id") @db.Uuid
@@ -363,6 +375,7 @@ model Booking {
   customer     Customer     @relation(fields: [customerId], references: [id])
   formAssignments FormAssignment[]
   customerCalendarEvents CustomerCalendarEvent[]
+  paymentReceipts BookingPaymentReceipt[]
 
   @@index([organizationId, startAt])
   @@index([hostUserId, startAt])
@@ -383,6 +396,53 @@ model SignedActionToken {
 
   @@index([bookingId])
   @@map("signed_action_tokens")
+}
+
+model BookingPaymentReceipt {
+  id               String               @id @default(uuid()) @db.Uuid
+  bookingId        String               @map("booking_id") @db.Uuid
+  organizationId   String               @map("organization_id") @db.Uuid
+  uploadedByUserId String?              @map("uploaded_by_user_id") @db.Uuid
+  status           PaymentReceiptStatus @default(UPLOADED)
+  storagePath      String               @map("storage_path")
+  originalFilename String               @map("original_filename")
+  mimeType         String               @map("mime_type")
+  sizeBytes        Int                  @map("size_bytes")
+  rejectionReason  String?              @map("rejection_reason")
+  reviewedAt       DateTime?            @map("reviewed_at") @db.Timestamptz(3)
+  reviewedByUserId String?              @map("reviewed_by_user_id") @db.Uuid
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+  @@index([organizationId])
+  @@map("booking_payment_receipts")
+}
+
+model OtpChallenge {
+  id        String    @id @default(uuid()) @db.Uuid
+  username  String
+  codeHash  String    @map("code_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([username, createdAt])
+  @@map("otp_challenges")
+}
+
+model CustomerClaimToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  email     String
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([email])
+  @@map("customer_claim_tokens")
 }
 
 enum DomainEventStatus {

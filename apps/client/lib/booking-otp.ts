@@ -1,5 +1,6 @@
 "use server";
 
+import { readAuthSession } from "@/lib/api-envelope";
 import { ApiError, apiFetch } from "@/lib/api";
 
 type AuthEnvelope = {
@@ -33,13 +34,16 @@ export async function requestBookingOtp(phone: string): Promise<
   }
 
   try {
-    const envelope = await apiFetch<AuthEnvelope>("/auth/request-otp", {
-      method: "POST",
-      headers: { Accept: "application/json" },
-      body: JSON.stringify({ username }),
-    });
-    if (!envelope.success) {
-      const message = envelope.message || "Could not send a verification code.";
+    const body = await apiFetch<{ success?: boolean; message?: string }>(
+      "/auth/request-otp",
+      {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: JSON.stringify({ username }),
+      },
+    );
+    if (body && body.success === false) {
+      const message = body.message || "Could not send a verification code.";
       return { ok: false, message, alreadySent: ALREADY_SENT.test(message) };
     }
     return { ok: true };
@@ -63,16 +67,18 @@ export async function verifyBookingOtp(
   }
 
   try {
-    const envelope = await apiFetch<AuthEnvelope>("/auth/verify-otp", {
-      method: "POST",
-      headers: { Accept: "application/json" },
-      body: JSON.stringify({ username, code: otp }),
-    });
-    if (!envelope.success || !envelope.data) {
-      return { ok: false, message: envelope.message || "Could not verify that code." };
+    const session = readAuthSession(
+      await apiFetch<unknown>("/auth/verify-otp", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: JSON.stringify({ username, code: otp }),
+      }),
+    );
+    if (!session) {
+      return { ok: false, message: "Could not verify that code." };
     }
 
-    const { accessToken, refreshToken, user } = envelope.data;
+    const { accessToken, refreshToken, user } = session;
     if (!accessToken || !refreshToken || !user?.id) {
       return { ok: false, message: envelope.message || "Could not verify that code." };
     }

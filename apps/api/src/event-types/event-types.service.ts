@@ -107,6 +107,8 @@ export class EventTypesService {
         slotIntervalMinutes: input.slotIntervalMinutes ?? 0,
         dailyCap: input.dailyCap ?? null,
         requiresConfirmation: input.requiresConfirmation ?? false,
+        requiresPaymentReceipt: input.requiresPaymentReceipt ?? false,
+        paymentInstructions: input.paymentInstructions?.trim() || null,
         cancellationNoticeHours: input.cancellationNoticeHours ?? 24,
         rescheduleNoticeHours: input.rescheduleNoticeHours ?? 24,
         priceId: input.priceId ?? null,
@@ -211,6 +213,8 @@ export class EventTypesService {
       locationValue: eventType.locationValue,
       questions: eventType.questions,
       requiresConfirmation: eventType.requiresConfirmation,
+      requiresPaymentReceipt: eventType.requiresPaymentReceipt,
+      paymentInstructions: eventType.paymentInstructions,
       price: null as { amountMinor: number; currency: string } | null,
     };
   }

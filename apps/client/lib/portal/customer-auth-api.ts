@@ -1,5 +1,6 @@
 "use client";
 
+import { unwrapData } from "@/lib/api-envelope";
 import { apiBff } from "@/lib/bff";
 
 export type CustomerBusiness = {
@@ -25,14 +26,11 @@ async function postCustomerAuth<T>(
   path: string,
   body: Record<string, string>,
 ): Promise<T> {
-  const envelope = await apiBff<ApiEnvelope<T>>(`customer/auth/${path}`, {
+  const payload = await apiBff<unknown>(`customer/auth/${path}`, {
     method: "POST",
     body: JSON.stringify(body),
   });
-  if (!envelope?.success || !envelope.data) {
-    throw new Error(envelope?.message ?? "Customer auth failed");
-  }
-  return envelope.data;
+  return unwrapData<T>(payload);
 }
 
 export function loginCustomer(email: string, password: string) {

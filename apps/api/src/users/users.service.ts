@@ -17,7 +17,12 @@ export class UsersService {
   async create(
     email: string,
     passwordHash: string,
-    extras: { name?: string | null; timezone?: string } = {},
+    extras: {
+      name?: string | null;
+      timezone?: string;
+      phone?: string | null;
+      phoneVerifiedAt?: Date | null;
+    } = {},
   ): Promise<User> {
     try {
       return await this.users.create({
@@ -25,13 +30,19 @@ export class UsersService {
         passwordHash,
         ...(extras.name !== undefined ? { name: extras.name } : {}),
         ...(extras.timezone !== undefined ? { timezone: extras.timezone } : {}),
+        ...(extras.phone !== undefined ? { phone: extras.phone } : {}),
+        ...(extras.phoneVerifiedAt !== undefined
+          ? { phoneVerifiedAt: extras.phoneVerifiedAt }
+          : {}),
       });
     } catch (error) {
-      if (
-        error instanceof UniqueConstraintError &&
-        error.fields.includes('email')
-      ) {
-        throw new ConflictException('Email is already registered');
+      if (error instanceof UniqueConstraintError) {
+        if (error.fields.includes('phone')) {
+          throw new ConflictException('Phone is already registered');
+        }
+        if (error.fields.includes('email')) {
+          throw new ConflictException('Email is already registered');
+        }
       }
       throw error;
     }
@@ -39,6 +50,14 @@ export class UsersService {
 
   findByEmail(email: string): Promise<User | null> {
     return this.users.findByEmail(normalizeEmail(email));
+  }
+
+  findByPhone(phone: string): Promise<User | null> {
+    return this.users.findByPhone(phone.trim());
+  }
+
+  markPhoneVerified(userId: string, verifiedAt: Date): Promise<User> {
+    return this.users.update(userId, { phoneVerifiedAt: verifiedAt });
   }
 
   findById(id: string): Promise<User | null> {
@@ -57,6 +76,9 @@ export class UsersService {
     return {
       id: user.id,
       email: user.email,
+      name: user.name,
+      phone: user.phone ?? null,
+      phoneVerifiedAt: user.phoneVerifiedAt ?? null,
       createdAt: user.createdAt,
       emailVerifiedAt: user.emailVerifiedAt,
     };

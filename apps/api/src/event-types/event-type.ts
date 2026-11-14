@@ -19,6 +19,8 @@ export type EventTypeEntity = {
   slotIntervalMinutes: number;
   dailyCap: number | null;
   requiresConfirmation: boolean;
+  requiresPaymentReceipt: boolean;
+  paymentInstructions: string | null;
   cancellationNoticeHours: number;
   rescheduleNoticeHours: number;
   priceId: string | null;
@@ -48,6 +50,8 @@ export type CreateEventTypeData = {
   slotIntervalMinutes?: number;
   dailyCap?: number | null;
   requiresConfirmation?: boolean;
+  requiresPaymentReceipt?: boolean;
+  paymentInstructions?: string | null;
   cancellationNoticeHours?: number;
   rescheduleNoticeHours?: number;
   priceId?: string | null;

@@ -6,7 +6,7 @@ import {
   HttpCode,
   Post,
   Req,
-  UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
@@ -14,6 +14,8 @@ import { AuthService } from './auth.service';
 import { REFRESH_TOKEN_HEADER } from './auth.constants';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { RequestOtpDto, VerifyOtpDto } from './dto/otp.dto';
+import { OtpService } from './otp.service';
 import { RefreshDto } from './dto/refresh.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -21,31 +23,63 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { LocalAuthGuard } from './guards/local-auth.guard';
 import type { AuthenticatedUser, PublicUser } from '../users/user';
 import type { RefreshTokenClientMeta } from '../refresh-tokens/refresh-token';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly otp: OtpService,
+  ) {}
 
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60 * 60 * 1000 } })
   @Post('register')
-  register(@Body() dto: RegisterDto, @Req() req: Request) {
-    return this.authService.register(dto, this.clientMeta(req));
+  async register(@Body() dto: RegisterDto, @Req() req: Request) {
+    const session = await this.authService.register(dto, this.clientMeta(req));
+    return { ...session, success: true, data: session };
   }
 
   @Public()
   @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
-  @UseGuards(LocalAuthGuard)
   @Post('login')
-  login(
-    @Body() _dto: LoginDto,
-    @CurrentUser() user: PublicUser,
-    @Req() req: Request,
-  ) {
-    return this.authService.login(user, this.clientMeta(req));
+  async login(@Body() dto: LoginDto, @Req() req: Request) {
+    const identifier = (dto.email ?? dto.username ?? dto.phone ?? '').trim();
+    const user = await this.authService.validateUser(identifier, dto.password);
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+    const session = await this.authService.login(user, this.clientMeta(req));
+    return { ...session, success: true, data: session };
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000 } })
+  @HttpCode(200)
+  @Post('request-otp')
+  requestOtp(@Body() dto: RequestOtpDto) {
+    return this.otp.request(dto.username);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
+  @HttpCode(200)
+  @Post('verify-otp')
+  async verifyOtp(@Body() dto: VerifyOtpDto, @Req() req: Request) {
+    const session = await this.otp.verify(dto.username, dto.code, this.clientMeta(req));
+    return {
+      success: true,
+      data: {
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        user: {
+          id: session.user.id,
+          phone: session.user.phone ?? null,
+          createdAt: session.user.createdAt,
+        },
+      },
+    };
   }
 
   @Public()
@@ -104,8 +138,18 @@ export class AuthController {
   }
 
   @Get('me')
-  me(@CurrentUser() user: AuthenticatedUser) {
-    return this.authService.getProfile(user.id, user.orgId, user.impersonatingOrgId);
+  async me(@CurrentUser() user: AuthenticatedUser) {
+    const profile = await this.authService.getProfile(
+      user.id,
+      user.orgId,
+      user.impersonatingOrgId,
+    );
+    const data = await this.authService.getClientProfile(
+      user.id,
+      user.orgId,
+      user.impersonatingOrgId,
+    );
+    return { ...profile, success: true, status: 200, data };
   }
 
   private clientMeta(req: Request): RefreshTokenClientMeta {

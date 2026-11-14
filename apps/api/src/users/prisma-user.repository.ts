@@ -32,6 +32,8 @@ export class PrismaUserRepository
       timezone: record.timezone,
       locale: record.locale,
       emailVerifiedAt: record.emailVerifiedAt,
+      phone: record.phone,
+      phoneVerifiedAt: record.phoneVerifiedAt,
       deletedAt: record.deletedAt,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
@@ -44,5 +46,9 @@ export class PrismaUserRepository
 
   findByEmail(email: string): Promise<User | null> {
     return this.findOneWhere({ email, deletedAt: null });
+  }
+
+  findByPhone(phone: string): Promise<User | null> {
+    return this.findOneWhere({ phone, deletedAt: null });
   }
 }

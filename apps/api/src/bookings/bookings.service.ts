@@ -146,6 +146,13 @@ export class BookingsService {
     if (booking.status !== BookingStatus.PENDING_PAYMENT) {
       return booking;
     }
+    const eventType = await this.eventTypes.findInOrganization(
+      booking.organizationId,
+      booking.eventTypeId,
+    );
+    if (!eventType?.priceId) {
+      return booking;
+    }
     return this.attachCheckout(booking, input.invitee);
   }
 
@@ -229,6 +236,18 @@ export class BookingsService {
   ): Promise<BookingEntity> {
     const booking = await this.get(organizationId, id, actor);
     return this.cancelBooking(booking, reason, true);
+  }
+
+  async cancelIfCustomer(
+    bookingId: string,
+    customerIds: string[],
+    reason?: string,
+  ): Promise<BookingEntity> {
+    const booking = await this.bookings.findById(bookingId);
+    if (!booking || !customerIds.includes(booking.customerId)) {
+      throw new NotFoundException('Not found');
+    }
+    return this.cancelBooking(booking, reason, false);
   }
 
   async reschedulePublic(
@@ -408,10 +427,14 @@ export class BookingsService {
             });
           }
         }
-        creditCost = !paid && eventType.creditCost > 0 ? eventType.creditCost : 0;
-        creditCustomerId = creditCost > 0 ? customer.id : null;
         const formsRequired = await this.forms.shouldDeferConfirm(eventType.id);
-        const status = paid
+        const receiptRequired = eventType.requiresPaymentReceipt;
+        creditCost =
+          !paid && !receiptRequired && eventType.creditCost > 0
+            ? eventType.creditCost
+            : 0;
+        creditCustomerId = creditCost > 0 ? customer.id : null;
+        const status = paid || receiptRequired
           ? BookingStatus.PENDING_PAYMENT
           : eventType.requiresConfirmation || formsRequired
             ? BookingStatus.PENDING_CONFIRMATION
@@ -435,7 +458,7 @@ export class BookingsService {
           locationValue: eventType.locationValue,
           answers,
           metadata: input.metadata ?? {},
-          holdExpiresAt: paid
+          holdExpiresAt: paid || receiptRequired
             ? addMinutes(now, HOLD_MINUTES)
             : null,
         });
@@ -458,7 +481,7 @@ export class BookingsService {
           },
           organizationId,
         );
-        if (paid) {
+        if (paid || receiptRequired) {
           await this.outbox.emit(
             DOMAIN_EVENTS.BookingPaymentRequired,
             {
