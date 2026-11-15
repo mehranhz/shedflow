@@ -54,6 +54,7 @@ class InMemoryUserRepository
       emailVerifiedAt: null,
       phone: data.phone ?? null,
       phoneVerifiedAt: data.phoneVerifiedAt ?? null,
+      photoUrl: null,
       deletedAt: null,
       createdAt: now,
       updatedAt: now,

@@ -6,6 +6,7 @@ type BffOptions = RequestInit & {
   idempotencyKey?: string;
   orgId?: string;
   customerOrgId?: string;
+  ifMatch?: string;
 };
 
 async function bffFetch<T>(
@@ -13,7 +14,7 @@ async function bffFetch<T>(
   path: string,
   options: BffOptions = {},
 ): Promise<T> {
-  const { idempotencyKey, orgId, customerOrgId, headers, ...rest } = options;
+  const { idempotencyKey, orgId, customerOrgId, ifMatch, headers, ...rest } = options;
   const normalized = path.startsWith("/") ? path.slice(1) : path;
   const isFormData =
     typeof FormData !== "undefined" && rest.body instanceof FormData;
@@ -22,6 +23,7 @@ async function bffFetch<T>(
     headers: {
       ...(rest.body && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
+      ...(ifMatch ? { "If-Match": ifMatch } : {}),
       ...(orgId ? { "X-Organization-Id": orgId } : {}),
       ...(customerOrgId ? { "X-Customer-Org-Id": customerOrgId } : {}),
       ...headers,

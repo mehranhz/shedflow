@@ -140,27 +140,6 @@ export class CustomerAuthService {
     return this.session(this.users.toPublic(user), meta);
   }
 
-  async profile(userId: string, activeOrgId?: string | null) {
-    const user = await this.users.findById(userId);
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-    const businesses = await this.businessesFor(userId);
-    const active =
-      businesses.find((item) => item.organizationId === activeOrgId) ?? null;
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        phone: user.phone ?? null,
-      },
-      businesses,
-      activeCustomerOrgId: active?.organizationId ?? null,
-      activeCustomerId: active?.customerId ?? null,
-    };
-  }
-
   async switchBusiness(user: PublicUser, organizationId: string) {
     const customer = await this.prisma.customer.findFirst({
       where: { userId: user.id, organizationId },

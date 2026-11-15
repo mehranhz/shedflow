@@ -45,6 +45,7 @@ export type {
   Dependent,
   DomainEvent,
   DsrRequest,
+  EmailChangeToken,
   EventType,
   ExternalBusyBlock,
   IdempotencyKey,

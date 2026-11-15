@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
+  Alert,
+  AlertDescription,
   Badge,
   Button,
   Input,
@@ -94,6 +97,7 @@ function DetailBody({
   onChanged: () => Promise<void>;
 }) {
   const t = useTranslations("portal.appointments");
+  const router = useRouter();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -194,7 +198,7 @@ function DetailBody({
         <div>
           <dt className="text-muted-foreground">{t("receipt")}</dt>
           <dd>
-            {booking.receipt?.status ?? booking.receiptStatus ?? t("receiptNone")}
+            {receiptLabel(booking, t)}
             {booking.receipt?.rejectionReason ? ` — ${booking.receipt.rejectionReason}` : ""}
           </dd>
         </div>
@@ -202,7 +206,24 @@ function DetailBody({
           <div>
             <dt className="text-muted-foreground">{t("policy")}</dt>
             <dd>
-              {t("cancelDeadline", { hours: policy.cancellationNoticeHours })} {policy.noShowPolicySummary}
+              {t("cancelDeadline", { hours: policy.cancellationNoticeHours })}{" "}
+              {t("rescheduleDeadline", { hours: policy.rescheduleNoticeHours })}{" "}
+              {policy.noShowPolicySummary}
+            </dd>
+          </div>
+        ) : null}
+        {answerRows(booking.answers).length > 0 ? (
+          <div>
+            <dt className="text-muted-foreground">{t("answers")}</dt>
+            <dd>
+              <ul className="space-y-1">
+                {answerRows(booking.answers).map((row) => (
+                  <li key={row.key}>
+                    <span className="text-muted-foreground">{row.key}: </span>
+                    {row.value}
+                  </li>
+                ))}
+              </ul>
             </dd>
           </div>
         ) : null}
@@ -221,6 +242,11 @@ function DetailBody({
         ) : null}
         {!readOnly && policy?.canReschedule ? (
           <Button type="button" variant="outline" onClick={() => setRescheduleOpen((open) => !open)}>
+            {t("reschedule")}
+          </Button>
+        ) : null}
+        {!readOnly && policy && !policy.canReschedule && policy.rescheduleBlockedReason === "OUTSIDE_POLICY" ? (
+          <Button type="button" variant="outline" disabled>
             {t("reschedule")}
           </Button>
         ) : null}
@@ -254,9 +280,9 @@ function DetailBody({
       </div>
 
       {!readOnly && policy && !policy.canCancel && policy.cancelBlockedReason === "OUTSIDE_POLICY" ? (
-        <p className="text-sm text-destructive" role="alert">
-          {t("outsidePolicy")}
-        </p>
+        <Alert variant="destructive">
+          <AlertDescription>{t("outsidePolicy")}</AlertDescription>
+        </Alert>
       ) : null}
 
       {rescheduleOpen && eventSlug && booking.organization?.slug ? (
@@ -265,7 +291,17 @@ function DetailBody({
           eventSlug={eventSlug}
           eventType={toPublicEvent(booking)}
           organization={toPublicOrg(booking)}
-          reschedule={{ bookingUid: booking.uid, customerOrgId }}
+          reschedule={{
+            bookingUid: booking.uid,
+            customerOrgId,
+            onRescheduled: async (result) => {
+              setRescheduleOpen(false);
+              await onChanged();
+              if (result.uid && result.uid !== booking.uid) {
+                router.push(`/portal/appointments/${encodeURIComponent(result.uid)}`);
+              }
+            },
+          }}
         />
       ) : null}
 
@@ -287,6 +323,24 @@ function DetailBody({
         )}
       </div>
 
+      {readOnly ? (
+        <div className="space-y-2 rounded-lg border border-dashed p-4">
+          <h2 className="font-medium">{t("attachmentTitle")}</h2>
+          <p className="text-sm text-muted-foreground">{t("attachmentReadOnly")}</p>
+          {booking.attachments && booking.attachments.length > 0 ? (
+            <ul className="text-sm">
+              {booking.attachments.map((item) => (
+                <li key={item.url}>
+                  <a href={item.url} className="underline" target="_blank" rel="noopener noreferrer">
+                    {item.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+      {!readOnly ? (
       <form
         className="space-y-3 rounded-lg border p-4"
         onSubmit={(event) => {
@@ -353,6 +407,7 @@ function DetailBody({
           </ul>
         ) : null}
       </form>
+      ) : null}
 
       <Sheet open={cancelOpen} onOpenChange={setCancelOpen}>
         <SheetContent>
@@ -438,6 +493,53 @@ function toPublicOrg(booking: CustomerBookingDetail): PublicOrg {
   };
 }
 
+function answerRows(
+  answers: Record<string, unknown> | undefined,
+): Array<{ key: string; value: string }> {
+  if (!answers) {
+    return [];
+  }
+  return Object.entries(answers).flatMap(([key, value]) => {
+    if (value == null || value === "") {
+      return [];
+    }
+    return [{ key, value: formatAnswerValue(value) }];
+  });
+}
+
+function formatAnswerValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+  if (typeof value === "number") {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}
+
+function receiptLabel(
+  booking: CustomerBookingDetail,
+  t: (key: "receiptNone" | "receiptUnderReview" | "receiptRejected" | "receiptApproved") => string,
+): string {
+  const status = booking.receipt?.status ?? booking.receiptStatus;
+  if (!status) {
+    return t("receiptNone");
+  }
+  if (status === "UPLOADED") {
+    return t("receiptUnderReview");
+  }
+  if (status === "REJECTED") {
+    return t("receiptRejected");
+  }
+  if (status === "APPROVED") {
+    return t("receiptApproved");
+  }
+  return status;
+}
+
 function conflictMessage(
   error: unknown,
   t: (key: "outsidePolicy" | "slotUnavailable" | "conflict" | "loadFailed") => string,
@@ -445,7 +547,7 @@ function conflictMessage(
   if (error instanceof ClientApiError) {
     if (error.code === "OUTSIDE_POLICY") return t("outsidePolicy");
     if (error.code === "SLOT_UNAVAILABLE") return t("slotUnavailable");
-    if (error.code === "CONFLICT") return t("conflict");
+    if (error.code === "CONFLICT" || error.status === 409) return t("conflict");
     return error.message;
   }
   return t("loadFailed");

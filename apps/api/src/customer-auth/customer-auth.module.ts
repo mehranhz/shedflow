@@ -6,11 +6,12 @@ import { UsersModule } from '../users/users.module';
 import { CustomerAuthController } from './customer-auth.controller';
 import { CustomerAuthService } from './customer-auth.service';
 import { CustomerBookingsService } from './customer-bookings.service';
+import { CustomerProfileService } from './customer-profile.service';
 import { CustomerSessionController } from './customer-session.controller';
 
 @Module({
   imports: [AuthModule, UsersModule, MembershipsModule, BookingsModule],
   controllers: [CustomerAuthController, CustomerSessionController],
-  providers: [CustomerAuthService, CustomerBookingsService],
+  providers: [CustomerAuthService, CustomerBookingsService, CustomerProfileService],
 })
 export class CustomerAuthModule {}

@@ -12,6 +12,7 @@ export type User = {
   emailVerifiedAt: Date | null;
   phone?: string | null;
   phoneVerifiedAt?: Date | null;
+  photoUrl?: string | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -53,5 +54,6 @@ export type UpdateUserData = Partial<{
   emailVerifiedAt: Date | null;
   phone: string | null;
   phoneVerifiedAt: Date | null;
+  photoUrl: string | null;
   deletedAt: Date | null;
 }>;

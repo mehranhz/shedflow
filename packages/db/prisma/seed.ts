@@ -36,6 +36,7 @@ async function upsertPortalBooking(
     startAt: Date;
     timezone: string;
     status?: BookingStatus;
+    answers?: Record<string, string>;
   },
 ): Promise<void> {
   const endAt = new Date(input.startAt.getTime() + 30 * 60 * 1000);
@@ -53,7 +54,7 @@ async function upsertPortalBooking(
     status,
     source: BookingSource.HOSTED,
     locationType: LocationType.GOOGLE_MEET,
-    answers: {},
+    answers: input.answers ?? {},
   };
   await prisma.booking.upsert({
     where: { uid: input.uid },
@@ -65,6 +66,7 @@ async function upsertPortalBooking(
       customerId: input.customerId,
       hostUserId: input.hostUserId,
       eventTypeId: input.eventTypeId,
+      ...(input.answers ? { answers: input.answers } : {}),
     },
   });
 }
@@ -340,6 +342,7 @@ async function main(): Promise<void> {
       customerId: linkedCustomer.id,
       startAt: later,
       timezone: 'America/New_York',
+      answers: { topic: 'Product demo' },
     });
     await upsertPortalBooking(prisma, {
       uid: 'demo-noshow-intro',

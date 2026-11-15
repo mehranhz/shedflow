@@ -230,6 +230,7 @@ export class CustomerGdprService {
           emailVerifiedAt: null,
           phone: null,
           phoneVerifiedAt: null,
+          photoUrl: null,
           deletedAt: now,
         });
       } else {

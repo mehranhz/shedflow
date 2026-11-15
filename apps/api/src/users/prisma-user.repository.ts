@@ -34,6 +34,7 @@ export class PrismaUserRepository
       emailVerifiedAt: record.emailVerifiedAt,
       phone: record.phone,
       phoneVerifiedAt: record.phoneVerifiedAt,
+      photoUrl: record.photoUrl,
       deletedAt: record.deletedAt,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

@@ -5,12 +5,48 @@ import { apiBff } from "@/lib/bff";
 
 import type { CustomerBusiness } from "@/lib/portal/customer-auth-api";
 
+export type CustomerBusinessProfile = {
+  organizationId: string;
+  organizationName: string;
+  name: string;
+  phone: string | null;
+  updatedAt: string;
+};
+
 export type CustomerMe = {
-  user: { id: string; email?: string | null; name?: string | null; phone?: string | null };
+  user: {
+    id: string;
+    email?: string | null;
+    name?: string | null;
+    phone?: string | null;
+    photoUrl?: string | null;
+    timezone?: string;
+    locale?: string;
+    updatedAt?: string;
+  };
   businesses: CustomerBusiness[];
   activeCustomerOrgId?: string | null;
   activeCustomerId?: string | null;
+  businessProfile?: CustomerBusinessProfile | null;
 };
+
+export type CustomerProfileInput = {
+  name?: string;
+  phone?: string | null;
+  photoUrl?: string | null;
+  timezone?: string;
+  locale?: string;
+  updatedAt: string;
+  business?: {
+    name?: string;
+    phone?: string | null;
+    updatedAt: string;
+  };
+};
+
+export function profileEtag(updatedAt: string): string {
+  return `W/"${new Date(updatedAt).toISOString()}"`;
+}
 
 export type CustomerBookingCard = {
   uid: string;
@@ -66,13 +102,52 @@ export type CustomerBookingsPage = {
   total: number;
 };
 
-export async function fetchCustomerMe(): Promise<CustomerMe> {
-  const payload = await apiBff<unknown>("customer/me");
+export async function fetchCustomerMe(customerOrgId?: string): Promise<CustomerMe> {
+  const payload = await apiBff<unknown>(
+    "customer/me",
+    customerOrgId ? { customerOrgId } : undefined,
+  );
   const me = unwrapData<CustomerMe>(payload);
   if (!me?.user?.id) {
     throw new Error("Could not load customer profile");
   }
   return me;
+}
+
+export async function updateCustomerProfile(
+  input: CustomerProfileInput,
+  customerOrgId?: string,
+): Promise<CustomerMe> {
+  const payload = await apiBff<unknown>("customer/me", {
+    method: "PATCH",
+    customerOrgId,
+    ifMatch: profileEtag(input.updatedAt),
+    body: JSON.stringify(input),
+  });
+  const me = unwrapData<CustomerMe>(payload);
+  if (!me?.user?.id) {
+    throw new Error("Could not save customer profile");
+  }
+  return me;
+}
+
+export async function requestCustomerEmailChange(
+  email: string,
+  updatedAt: string,
+): Promise<void> {
+  await apiBff("customer/me/email", {
+    method: "POST",
+    ifMatch: profileEtag(updatedAt),
+    body: JSON.stringify({ email, updatedAt }),
+  });
+}
+
+export async function confirmCustomerEmailChange(token: string): Promise<CustomerMe> {
+  const payload = await apiBff<unknown>("customer/me/email/confirm", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+  return unwrapData<CustomerMe>(payload);
 }
 
 export async function switchCustomerBusiness(organizationId: string): Promise<string> {

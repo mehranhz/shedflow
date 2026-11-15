@@ -47,6 +47,25 @@ function locationIcon(type: PublicEventType["locationType"]) {
   return MapPin;
 }
 
+function rescheduleConflictMessage(
+  error: unknown,
+  t: (key: "outsidePolicy" | "slotUnavailable" | "conflict") => string,
+): string | null {
+  if (!(error instanceof ClientApiError)) {
+    return null;
+  }
+  if (error.code === "OUTSIDE_POLICY") {
+    return t("outsidePolicy");
+  }
+  if (error.code === "SLOT_UNAVAILABLE") {
+    return t("slotUnavailable");
+  }
+  if (error.code === "CONFLICT" || error.status === 409) {
+    return t("conflict");
+  }
+  return null;
+}
+
 function requiredAnswersMissing(
   questions: Question[],
   answers: Record<string, string | boolean>,
@@ -88,9 +107,11 @@ export function SlotPicker({
   reschedule?: {
     bookingUid: string;
     customerOrgId: string;
+    onRescheduled?: (result: { uid: string }) => void | Promise<void>;
   };
 }) {
   const t = useTranslations("booking.picker");
+  const tAppt = useTranslations("portal.appointments");
   const tEvent = useTranslations("booking.event");
   const locale = useLocale();
   const [timeZone, setTimeZone] = useState(() =>
@@ -210,12 +231,17 @@ export function SlotPicker({
           body: JSON.stringify({ startAt: slot.startAt, timezone: timeZone }),
         },
       );
-      window.location.assign(`/portal/appointments/${encodeURIComponent(result.uid)}`);
+      if (reschedule.onRescheduled) {
+        await reschedule.onRescheduled(result);
+      } else {
+        window.location.assign(`/portal/appointments/${encodeURIComponent(result.uid)}`);
+      }
     } catch (error) {
-      if (error instanceof ClientApiError && (error.code === "SLOT_UNAVAILABLE" || error.code === "OUTSIDE_POLICY" || error.code === "CONFLICT")) {
-        toast.error(error.message);
+      const message = rescheduleConflictMessage(error, tAppt);
+      if (message) {
+        toast.error(message);
         portalKey.current = randomUUID();
-        if (error.code === "SLOT_UNAVAILABLE") {
+        if (error instanceof ClientApiError && error.code === "SLOT_UNAVAILABLE") {
           setSlot(null);
           await slotsQuery.refetch();
         }

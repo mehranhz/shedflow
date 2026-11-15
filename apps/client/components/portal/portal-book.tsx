@@ -69,7 +69,7 @@ export function PortalBookEvent({ eventSlug }: { eventSlug: string }) {
       ),
     enabled: Boolean(slug),
   });
-  const me = useQuery({ queryKey: ["customer-me"], queryFn: fetchCustomerMe });
+  const me = useQuery({ queryKey: ["customer-me"], queryFn: () => fetchCustomerMe() });
   const home = useQuery({
     queryKey: ["customer-home", orgId],
     queryFn: () => fetchCustomerHome(orgId!),

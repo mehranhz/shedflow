@@ -29,6 +29,9 @@ export const DOMAIN_EVENTS = {
   ReviewRequested: 'review.requested',
   ReferralAwarded: 'referral.awarded',
   UserNotificationCreated: 'user_notification.created',
+  CustomerProfileUpdated: 'customer.profile_updated',
+  CustomerEmailChangeRequested: 'customer.email_change_requested',
+  CustomerEmailChanged: 'customer.email_changed',
 } as const;
 
 /** Notification log / Resend template ids used by the worker (T-025 / T-026). */

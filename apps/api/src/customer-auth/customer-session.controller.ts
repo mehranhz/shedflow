@@ -3,19 +3,31 @@ import {
   Controller,
   Get,
   Headers,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Idempotent } from '../common/idempotency/idempotent.decorator';
 import type { BookingAnswers } from '@shedflow/shared';
 import type { AuthenticatedUser } from '../users/user';
 import { CustomerAuthService } from './customer-auth.service';
 import { CustomerBookingsService } from './customer-bookings.service';
+import {
+  CustomerProfileService,
+  profileEtag,
+} from './customer-profile.service';
+import {
+  ConfirmEmailChangeDto,
+  RequestEmailChangeDto,
+  UpdateCustomerProfileDto,
+} from './dto/customer-profile.dto';
 import {
   CancelCustomerBookingDto,
   CreateCustomerBookingDto,
@@ -29,14 +41,50 @@ export class CustomerSessionController {
   constructor(
     private readonly customers: CustomerAuthService,
     private readonly bookings: CustomerBookingsService,
+    private readonly profiles: CustomerProfileService,
   ) {}
 
   @Get('me')
-  me(
+  async me(
     @CurrentUser() user: AuthenticatedUser,
-    @Headers('x-customer-org-id') customerOrgId?: string,
+    @Headers('x-customer-org-id') customerOrgId: string | undefined,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.customers.profile(user.id, customerOrgId);
+    const profile = await this.profiles.get(user.id, customerOrgId);
+    res.setHeader('ETag', profileEtag(profile.user.updatedAt));
+    return profile;
+  }
+
+  @Patch('me')
+  async updateMe(
+    @CurrentUser() user: AuthenticatedUser,
+    @Headers('x-customer-org-id') customerOrgId: string | undefined,
+    @Headers('if-match') ifMatch: string | undefined,
+    @Body() dto: UpdateCustomerProfileDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const profile = await this.profiles.update(user.id, customerOrgId, dto, ifMatch);
+    res.setHeader('ETag', profileEtag(profile.user.updatedAt));
+    return profile;
+  }
+
+  @Post('me/email')
+  @HttpCode(202)
+  @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000 } })
+  requestEmailChange(
+    @CurrentUser() user: AuthenticatedUser,
+    @Headers('if-match') ifMatch: string | undefined,
+    @Body() dto: RequestEmailChangeDto,
+  ) {
+    return this.profiles.requestEmailChange(user.id, dto, ifMatch);
+  }
+
+  @Post('me/email/confirm')
+  confirmEmailChange(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ConfirmEmailChangeDto,
+  ) {
+    return this.profiles.confirmEmailChange(user.id, dto.token);
   }
 
   @Post('businesses/:organizationId/switch')

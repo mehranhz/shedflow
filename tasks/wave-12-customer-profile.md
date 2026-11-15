@@ -9,7 +9,7 @@
 
 ## T-055 — Profile identity & contact
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-042, T-046  
 **Apps:** `shedflow-back`, `apps/client`
 

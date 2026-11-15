@@ -5,7 +5,20 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
-import { Badge, Input, Label, Tabs, TabsContent, TabsList, TabsTrigger } from "@shedflow/ui/components";
+import {
+  Badge,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@shedflow/ui/components";
 
 import { formatRelativeInZone } from "@/lib/portal/multi-business";
 import { fetchCustomerBookings } from "@/lib/portal/customer-api";
@@ -17,7 +30,7 @@ const TABS = ["upcoming", "past", "cancelled"] as const;
 export function PortalAppointmentsList() {
   const t = useTranslations("portal.appointments");
   const { data: session } = useSession();
-  const { activeBusiness } = usePortalBusiness();
+  const { activeBusiness, businesses, switchBusiness, loading: businessLoading } = usePortalBusiness();
   const [tab, setTab] = useState<(typeof TABS)[number]>("upcoming");
   const [q, setQ] = useState("");
   const customerOrgId =
@@ -41,6 +54,28 @@ export function PortalAppointmentsList() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
+
+      {businesses.length > 1 ? (
+        <div className="grid gap-2">
+          <Label htmlFor="appointment-business">{t("businessFilter")}</Label>
+          <Select
+            value={activeBusiness?.organizationId}
+            onValueChange={(value) => void switchBusiness(value)}
+            disabled={businessLoading}
+          >
+            <SelectTrigger id="appointment-business" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {businesses.map((business) => (
+                <SelectItem key={business.organizationId} value={business.organizationId}>
+                  {business.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
 
       <div className="grid gap-2">
         <Label htmlFor="appointment-search">{t("search")}</Label>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@shedflow/ui/components";
@@ -29,6 +30,9 @@ export function PortalAccountPanel() {
           <dd className="font-medium">{businesses.length}</dd>
         </div>
       </dl>
+      <Button asChild className="min-h-11 w-full">
+        <Link href="/portal/account/profile">{t("editProfile")}</Link>
+      </Button>
       <Button
         type="button"
         variant="outline"

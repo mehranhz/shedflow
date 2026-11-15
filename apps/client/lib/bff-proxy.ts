@@ -16,7 +16,7 @@ async function forward(
   });
 
   const outbound = new Headers();
-  const pass = ["content-type", "x-request-id"];
+  const pass = ["content-type", "x-request-id", "etag"];
   for (const name of pass) {
     const value = response.headers.get(name);
     if (value) {
@@ -38,6 +38,10 @@ function copyForwardHeaders(request: Request, headers: Headers): void {
   const idempotency = request.headers.get("idempotency-key");
   if (idempotency) {
     headers.set("Idempotency-Key", idempotency);
+  }
+  const ifMatch = request.headers.get("if-match");
+  if (ifMatch) {
+    headers.set("If-Match", ifMatch);
   }
   const requestId = request.headers.get("x-request-id");
   if (requestId) {

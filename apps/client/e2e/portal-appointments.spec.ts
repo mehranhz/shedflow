@@ -88,13 +88,15 @@ test.describe("portal appointments (T-049–T-054)", () => {
     await expect(page.getByRole("heading", { name: /intro call/i })).toBeVisible({
       timeout: 20_000,
     });
+    await expect(page.getByText("Product demo")).toBeVisible();
     const cancel = page.getByRole("button", { name: /^cancel$/i });
     if ((await cancel.count()) > 0 && (await cancel.isEnabled())) {
       await cancel.click();
       await page.getByLabel(/reason/i).fill("Plans changed");
       await page.getByRole("button", { name: /confirm cancellation/i }).click();
     }
-    await expect(page.getByText(/cancelled/i).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page).toHaveURL(/\/portal\/appointments\/demo-upcoming-intro/);
+    await expect(page.getByText("CANCELLED", { exact: true })).toBeVisible({ timeout: 20_000 });
     await page.getByRole("link", { name: /appointments/i }).first().click();
     await page.getByRole("tab", { name: /cancelled/i }).click();
     await expect(page.getByText(/CANCELLED/).first()).toBeVisible({ timeout: 20_000 });
