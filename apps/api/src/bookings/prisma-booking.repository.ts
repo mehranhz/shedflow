@@ -75,6 +75,7 @@ export class PrismaBookingRepository
       paymentId: record.paymentId,
       subscriptionId: record.subscriptionId,
       holdExpiresAt: record.holdExpiresAt,
+      seriesId: record.seriesId,
       metadata: asObject(record.metadata),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,

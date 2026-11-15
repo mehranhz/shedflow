@@ -10,6 +10,8 @@ import { config } from 'dotenv';
 import { resolve } from 'node:path';
 import * as bcrypt from 'bcrypt';
 import {
+  BookingSource,
+  BookingStatus,
   LocationType,
   MembershipStatus,
   PlatformPlan,
@@ -20,6 +22,52 @@ import {
 
 config({ path: resolve(__dirname, '../../../.env') });
 config({ path: resolve(__dirname, '../.env') });
+
+type SeedPrisma = ReturnType<typeof createPrismaClient>;
+
+async function upsertPortalBooking(
+  prisma: SeedPrisma,
+  input: {
+    uid: string;
+    organizationId: string;
+    eventTypeId: string;
+    hostUserId: string;
+    customerId: string;
+    startAt: Date;
+    timezone: string;
+    status?: BookingStatus;
+  },
+): Promise<void> {
+  const endAt = new Date(input.startAt.getTime() + 30 * 60 * 1000);
+  const status = input.status ?? BookingStatus.CONFIRMED;
+  const shared = {
+    organizationId: input.organizationId,
+    eventTypeId: input.eventTypeId,
+    hostUserId: input.hostUserId,
+    customerId: input.customerId,
+    startAt: input.startAt,
+    endAt,
+    bufferBeforeMinutes: 0,
+    bufferAfterMinutes: 0,
+    timezone: input.timezone,
+    status,
+    source: BookingSource.HOSTED,
+    locationType: LocationType.GOOGLE_MEET,
+    answers: {},
+  };
+  await prisma.booking.upsert({
+    where: { uid: input.uid },
+    create: { uid: input.uid, ...shared },
+    update: {
+      startAt: input.startAt,
+      endAt,
+      status,
+      customerId: input.customerId,
+      hostUserId: input.hostUserId,
+      eventTypeId: input.eventTypeId,
+    },
+  });
+}
 
 const DEMO_EMAIL = 'owner@shedflow.dev';
 const CUSTOMER_EMAIL = 'customer@shedflow.dev';
@@ -265,6 +313,45 @@ async function main(): Promise<void> {
       timezone: 'America/New_York',
     },
   });
+
+  const intro = await prisma.eventType.findFirst({
+    where: { organizationId: organization.id, slug: 'intro' },
+  });
+  const linkedCustomer = await prisma.customer.findFirst({
+    where: { organizationId: organization.id, userId: customerUser.id },
+  });
+  if (intro && linkedCustomer) {
+    const soon = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    const later = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    await upsertPortalBooking(prisma, {
+      uid: 'demo-soon-intro',
+      organizationId: organization.id,
+      eventTypeId: intro.id,
+      hostUserId: user.id,
+      customerId: linkedCustomer.id,
+      startAt: soon,
+      timezone: 'America/New_York',
+    });
+    await upsertPortalBooking(prisma, {
+      uid: 'demo-upcoming-intro',
+      organizationId: organization.id,
+      eventTypeId: intro.id,
+      hostUserId: user.id,
+      customerId: linkedCustomer.id,
+      startAt: later,
+      timezone: 'America/New_York',
+    });
+    await upsertPortalBooking(prisma, {
+      uid: 'demo-noshow-intro',
+      organizationId: organization.id,
+      eventTypeId: intro.id,
+      hostUserId: user.id,
+      customerId: linkedCustomer.id,
+      startAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      timezone: 'America/New_York',
+      status: BookingStatus.NO_SHOW,
+    });
+  }
 
   // eslint-disable-next-line no-console
   console.log(

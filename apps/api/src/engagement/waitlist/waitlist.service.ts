@@ -178,7 +178,7 @@ export class WaitlistService {
         });
       }
 
-      if (allowEmail) {
+      if (allowEmail && customer.email) {
         await this.outbox.emit(
           DOMAIN_EVENTS.WaitlistOffer,
           {

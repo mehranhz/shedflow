@@ -11,6 +11,7 @@ export const DOMAIN_EVENTS = {
   BookingCancelled: 'booking.cancelled',
   BookingRescheduled: 'booking.rescheduled',
   BookingExpired: 'booking.expired',
+  BookingCustomerNoteUpdated: 'booking.customer_note_updated',
   BookingPaymentRequired: 'booking.payment_required',
   PaymentSucceeded: 'payment.succeeded',
   PaymentFailed: 'payment.failed',

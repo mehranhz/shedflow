@@ -23,6 +23,7 @@ export type BookingEntity = {
   paymentId: string | null;
   subscriptionId: string | null;
   holdExpiresAt: Date | null;
+  seriesId: string | null;
   metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
@@ -46,6 +47,7 @@ export type CreateBookingData = {
   answers?: BookingAnswers;
   rescheduledFromId?: string | null;
   holdExpiresAt?: Date | null;
+  seriesId?: string | null;
   metadata?: Record<string, unknown>;
 };
 

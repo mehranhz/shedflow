@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -31,6 +31,7 @@ import {
   monthRangeInZone,
 } from "@/lib/booking-time";
 import { postEmbedBooked } from "@/lib/embed-messages";
+import { apiBff } from "@/lib/bff";
 import { ClientApiError } from "@/lib/http";
 import { trackPortalEvent } from "@/lib/portal/analytics";
 import { publicScheduling } from "@/lib/scheduling";
@@ -68,23 +69,42 @@ export function SlotPicker({
   eventType,
   organization,
   embed,
+  portalBooking,
+  reschedule,
 }: {
   orgSlug: string;
   eventSlug: string;
   eventType: PublicEventType;
   organization: PublicOrg;
   embed?: boolean;
+  portalBooking?: {
+    customerOrgId: string;
+    name: string;
+    email: string;
+    phone: string;
+    timezone?: string | null;
+    recurringEnabled?: boolean;
+  };
+  reschedule?: {
+    bookingUid: string;
+    customerOrgId: string;
+  };
 }) {
   const t = useTranslations("booking.picker");
   const tEvent = useTranslations("booking.event");
   const locale = useLocale();
-  const [timeZone, setTimeZone] = useState(() => coerceIanaTimeZone());
+  const [timeZone, setTimeZone] = useState(() =>
+    coerceIanaTimeZone(portalBooking?.timezone ?? undefined),
+  );
   const [month, setMonth] = useState(new Date());
   const [day, setDay] = useState<Date | undefined>();
   const [slot, setSlot] = useState<Slot | null>(null);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [name, setName] = useState(portalBooking?.name ?? "");
+  const [email, setEmail] = useState(portalBooking?.email ?? "");
+  const [phone, setPhone] = useState(portalBooking?.phone ?? "");
+  const [repeats, setRepeats] = useState(false);
+  const [occurrences, setOccurrences] = useState(4);
+  const portalKey = useRef(randomUUID());
   const [otpCode, setOtpCode] = useState("");
   const [step, setStep] = useState<BookingStep>("details");
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
@@ -121,13 +141,91 @@ export function SlotPicker({
   const emptyMonth = !slotsQuery.isLoading && !slotsQuery.isError && daysWithSlots.size === 0;
   const LocationIcon = locationIcon(eventType.locationType);
   const receiptRequired = Boolean(eventType.requiresPaymentReceipt);
+  const trimmedEmail = email.trim();
+  const portalMode = Boolean(portalBooking) && !reschedule;
   const detailsReady =
     Boolean(slot) &&
     name.trim().length > 0 &&
-    email.trim().length > 0 &&
-    phone.trim().length > 0 &&
+    (portalMode || phone.trim().length > 0) &&
     privacyAccepted &&
     !requiredAnswersMissing(eventType.questions, answers);
+
+  const onPortalBook = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!slot || !portalBooking || submitting || !detailsReady) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const result = await apiBff<{ uid: string; status: string }>("customer/bookings", {
+        method: "POST",
+        customerOrgId: portalBooking.customerOrgId,
+        idempotencyKey: portalKey.current,
+        body: JSON.stringify({
+          eventTypeSlug: eventSlug,
+          startAt: slot.startAt,
+          timezone: timeZone,
+          answers,
+          occurrences: repeats ? occurrences : 1,
+        }),
+      });
+      trackPortalEvent("portal_book_start", {
+        organization_slug: orgSlug,
+        event_slug: eventSlug,
+        booking_uid: result.uid,
+        source: "PORTAL",
+      });
+      const receipt = result.status === "PENDING_PAYMENT" || receiptRequired;
+      window.location.assign(
+        `/portal/appointments/${encodeURIComponent(result.uid)}${receipt ? "?receipt=1" : ""}`,
+      );
+    } catch (error) {
+      if (error instanceof ClientApiError && error.code === "SLOT_UNAVAILABLE") {
+        toast.error(t("slotUnavailable"));
+        portalKey.current = randomUUID();
+        setSlot(null);
+        await slotsQuery.refetch();
+        return;
+      }
+      toast.error(error instanceof Error ? error.message : t("bookFailed"));
+      portalKey.current = randomUUID();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onReschedule = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!slot || !reschedule || submitting) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const result = await apiBff<{ uid: string }>(
+        `customer/bookings/${encodeURIComponent(reschedule.bookingUid)}/reschedule`,
+        {
+          method: "POST",
+          customerOrgId: reschedule.customerOrgId,
+          idempotencyKey: portalKey.current,
+          body: JSON.stringify({ startAt: slot.startAt, timezone: timeZone }),
+        },
+      );
+      window.location.assign(`/portal/appointments/${encodeURIComponent(result.uid)}`);
+    } catch (error) {
+      if (error instanceof ClientApiError && (error.code === "SLOT_UNAVAILABLE" || error.code === "OUTSIDE_POLICY" || error.code === "CONFLICT")) {
+        toast.error(error.message);
+        portalKey.current = randomUUID();
+        if (error.code === "SLOT_UNAVAILABLE") {
+          setSlot(null);
+          await slotsQuery.refetch();
+        }
+        return;
+      }
+      toast.error(error instanceof Error ? error.message : t("bookFailed"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const completeBooking = async (verifiedPhone: string) => {
     if (!slot) {
@@ -141,8 +239,8 @@ export function SlotPicker({
         timezone: timeZone,
         invitee: {
           name: name.trim(),
-          email: email.trim(),
           phone: verifiedPhone,
+          ...(trimmedEmail ? { email: trimmedEmail } : {}),
         },
         answers,
         metadata: { privacyAcceptedAt: new Date().toISOString() },
@@ -339,8 +437,27 @@ export function SlotPicker({
               {t("resendCode")}
             </Button>
           </form>
+        ) : slot && reschedule ? (
+          <form className="mx-auto max-w-md space-y-4" onSubmit={(event) => void onReschedule(event)}>
+            <Button
+              type="button"
+              variant="ghost"
+              className="-ms-2"
+              onClick={() => setSlot(null)}
+            >
+              <ArrowLeft className="size-4" />
+              {t("back")}
+            </Button>
+            <h2 className="text-xl font-semibold">{t("confirmReschedule")}</h2>
+            <Button className="w-full" type="submit" disabled={submitting}>
+              {submitting ? t("scheduling") : t("confirmReschedule")}
+            </Button>
+          </form>
         ) : slot ? (
-          <form className="mx-auto max-w-md space-y-4" onSubmit={(event) => void onSendCode(event)}>
+          <form
+            className="mx-auto max-w-md space-y-4"
+            onSubmit={(event) => void (portalMode ? onPortalBook(event) : onSendCode(event))}
+          >
             <Button
               type="button"
               variant="ghost"
@@ -367,14 +484,15 @@ export function SlotPicker({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="invitee-email">{t("email")}</Label>
+              <Label htmlFor="invitee-email">{t("emailOptional")}</Label>
               <Input
                 id="invitee-email"
                 name="email"
                 type="email"
                 autoComplete="email"
-                required
                 value={email}
+                readOnly={Boolean(portalBooking?.email)}
+                aria-readonly={portalBooking?.email ? true : undefined}
                 onChange={(event) => setEmail(event.target.value)}
               />
             </div>
@@ -385,7 +503,7 @@ export function SlotPicker({
                 name="phone"
                 type="tel"
                 autoComplete="tel"
-                required
+                required={!portalMode}
                 value={phone}
                 onChange={(event) => setPhone(event.target.value)}
               />
@@ -401,6 +519,36 @@ export function SlotPicker({
                 }
               />
             ))}
+            {portalBooking?.recurringEnabled ? (
+              <div className="space-y-2 rounded-lg border p-3">
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="repeats-weekly"
+                    checked={repeats}
+                    onCheckedChange={(checked) => setRepeats(checked === true)}
+                  />
+                  <Label htmlFor="repeats-weekly" className="font-normal leading-5">
+                    {t("repeatsWeekly")}
+                  </Label>
+                </div>
+                {repeats ? (
+                  <div className="grid gap-2">
+                    <Label htmlFor="occurrence-count">{t("occurrences")}</Label>
+                    <Input
+                      id="occurrence-count"
+                      type="number"
+                      min={2}
+                      max={12}
+                      value={occurrences}
+                      onChange={(event) => {
+                        const next = Number(event.target.value);
+                        setOccurrences(Number.isFinite(next) ? Math.min(12, Math.max(2, next)) : 2);
+                      }}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             <div className="flex items-start gap-2">
               <Checkbox
                 id="privacy-accepted"
@@ -423,7 +571,13 @@ export function SlotPicker({
               </Label>
             </div>
             <Button className="w-full" type="submit" disabled={submitting || !detailsReady}>
-              {submitting ? t("sendingCode") : t("sendCode")}
+              {portalMode
+                ? submitting
+                  ? t("scheduling")
+                  : t("schedule")
+                : submitting
+                  ? t("sendingCode")
+                  : t("sendCode")}
             </Button>
           </form>
         ) : (

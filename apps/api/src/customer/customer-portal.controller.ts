@@ -6,7 +6,6 @@ import {
   NotFoundException,
   Param,
   ParseUUIDPipe,
-  Post,
   Res,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
@@ -70,26 +69,4 @@ export class CustomerPortalController {
     this.analytics.track('customer_account_deleted', { userId: user.id });
   }
 
-  /**
-   * Stub cancel route for idempotency/rate-limit audit (T-081).
-   * Full cancel logic lands with T-043 — this enforces Idempotency-Key only.
-   */
-  @Post('bookings/:uid/cancel')
-  @Idempotent()
-  @Throttle({ default: { limit: 30, ttl: 15 * 60 * 1000 } })
-  cancelStub(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('uid') uid: string,
-  ) {
-    this.analytics.track('customer_cancel_attempt', {
-      userId: user.id,
-      uid,
-    });
-    return {
-      status: 'NOT_IMPLEMENTED',
-      message:
-        'Customer cancel is owned by T-043. Idempotency-Key + rate limit enforced here (T-081).',
-      uid,
-    };
-  }
 }

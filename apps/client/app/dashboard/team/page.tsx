@@ -194,7 +194,7 @@ export default function TeamPage() {
               <TableBody>
                 {(members.data ?? []).map((member) => (
                   <TableRow key={member.id}>
-                    <TableCell>{member.phone}</TableCell>
+                    <TableCell>{member.phone ?? member.email}</TableCell>
                     <TableCell>
                       {canEditMember(member) ? (
                         <Select
@@ -227,7 +227,7 @@ export default function TeamPage() {
                             variant="ghost"
                             disabled={remove.isPending}
                             onClick={() => {
-                              if (window.confirm(t("removeConfirm", { email: member.phone }))) {
+                              if (window.confirm(t("removeConfirm", { email: member.phone ?? member.email }))) {
                                 remove.mutate(member.userId);
                               }
                             }}
@@ -269,7 +269,7 @@ export default function TeamPage() {
               <TableBody>
                 {invitations.data?.map((invitation) => (
                   <TableRow key={invitation.id}>
-                    <TableCell>{invitation.phone}</TableCell>
+                    <TableCell>{invitation.phone ?? invitation.email}</TableCell>
                     <TableCell>{invitation.role}</TableCell>
                     <TableCell>
                       {new Date(invitation.expiresAt).toLocaleDateString()}

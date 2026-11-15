@@ -30,7 +30,7 @@ export type CustomerPortalExportPayload = {
     organizationId: string;
     organizationSlug: string | null;
     organizationName: string | null;
-    email: string;
+    email: string | null;
     name: string;
     phone: string | null;
     timezone: string | null;

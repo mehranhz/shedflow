@@ -9,7 +9,7 @@
 
 ## T-049 — Customer home dashboard
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-046, T-043  
 **Apps:** `apps/client`, `shedflow-back` (aggregates if needed)
 
@@ -38,7 +38,7 @@
 
 ## T-050 — Appointments list & detail
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-049  
 **Apps:** `apps/client`
 
@@ -63,7 +63,7 @@
 
 ## T-051 — In-portal booking (reuse SlotPicker)
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-050, T-027, T-043  
 **Apps:** `apps/client`
 
@@ -88,7 +88,7 @@
 
 ## T-052 — Reschedule / cancel UX + no-show policy visibility
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-050, T-015  
 **Apps:** `apps/client`, `shedflow-back` (policy payload)
 
@@ -112,7 +112,7 @@
 
 ## T-053 — Recurring series (customer-facing) — MVP-safe slice
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-051, T-014  
 **Apps:** `apps/api`, `apps/client`  
 **Note:** Full series engine is Phase 2 (`full-scale/03`). This task ships a **thin** customer capability only if product chooses to enable flag `customer_recurring`.
@@ -136,7 +136,7 @@
 
 ## T-054 — Appointment history, notes & attachments (customer)
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-050  
 **Apps:** `apps/api`, `apps/client`
 

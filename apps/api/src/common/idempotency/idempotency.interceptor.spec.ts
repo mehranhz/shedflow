@@ -81,7 +81,7 @@ function contextFor(request: object, response: { statusCode: number; status: (co
       getRequest: () => request,
       getResponse: () => response,
     }),
-  } as ExecutionContext;
+  } as unknown as ExecutionContext;
 }
 
 describe('IdempotencyInterceptor', () => {

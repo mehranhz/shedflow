@@ -117,6 +117,9 @@ export class ApiKeyOrJwtAuthGuard extends AuthGuard('jwt') {
     request.user = {
       id: key.id,
       email: `apikey+${key.prefix}@schedflow.internal`,
+      name: null,
+      phone: null,
+      phoneVerifiedAt: null,
       createdAt: key.createdAt,
       emailVerifiedAt: key.createdAt,
       orgId: key.organizationId,

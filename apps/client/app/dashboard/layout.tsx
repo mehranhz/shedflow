@@ -8,8 +8,9 @@ import {
 } from "@shedflow/ui/components";
 
 import { auth } from "@/auth";
+import { normalizeAuthProfile } from "@/lib/auth-profile";
 import { apiFetch } from "@/lib/api";
-import type { APIResponse, AuthMembership, AuthProfile } from "@/lib/types";
+import type { AuthMembership, AuthProfile, Organization } from "@/lib/types";
 import { AppSidebar } from "@/components/app-sidebar";
 import { OrgProvider } from "@/components/org-provider";
 import { SkipLink } from "@/components/skip-link";
@@ -29,14 +30,15 @@ export default async function DashboardLayout({
 
   let profile: AuthProfile | null = null;
   try {
-    profile = (
-      await apiFetch<APIResponse<AuthProfile>>("/v1/auth/me", {
+    const [me, listed] = await Promise.all([
+      apiFetch<unknown>("/auth/me", { accessToken: session.accessToken }),
+      apiFetch<Organization[]>("/v1/organizations", {
         accessToken: session.accessToken,
-      })
-    ).data!;
+      }).catch(() => [] as Organization[]),
+    ]);
+    profile = normalizeAuthProfile(me, Array.isArray(listed) ? listed : []);
   } catch {
-    redirect("/api/auth/logout")
-    
+    redirect("/api/auth/logout");
   }
 
   if (!profile) {
@@ -44,7 +46,7 @@ export default async function DashboardLayout({
   }
 
   if (profile.activeOrganization == null) {
-    const identity = profile.phone || profile.phone || session.user?.email || "";
+    const identity = profile.phone || profile.email || session.user?.email || "";
     return (
       <div className="flex min-h-svh items-center justify-center bg-[#f6f7f9] px-4">
         <CreateWorkspaceForm identity={identity} />
@@ -70,7 +72,9 @@ export default async function DashboardLayout({
           </header>
           <div id="main" className="flex-1 px-6 py-6 lg:px-8" tabIndex={-1}>
             <ImpersonationBanner />
-            {!profile.phoneVerifiedAt && !profile.phone ? (
+            {profile.phone
+              ? !profile.phoneVerifiedAt
+              : !profile.emailVerifiedAt ? (
               <div className="mb-6">
                 <VerificationBanner />
               </div>

@@ -10,6 +10,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'node:crypto';
 import { addMinutes } from 'date-fns';
 import {
   BookingSource,
@@ -43,6 +44,7 @@ import {
 } from './signed-action-token';
 import { SignedActionTokenRepository } from './signed-action-token.repository';
 import { FormsService } from '../forms/forms.service';
+import { weeklyStarts } from './series';
 
 export type BookingActor = {
   userId: string;
@@ -54,7 +56,7 @@ export type CreatePublicBookingInput = {
   eventTypeSlug: string;
   startAt: Date;
   timezone: string;
-  invitee: { name: string; email: string; phone?: string };
+  invitee: { name: string; email?: string | null; phone?: string | null };
   answers?: BookingAnswers;
   metadata?: Record<string, unknown>;
   source: BookingSource;
@@ -153,7 +155,14 @@ export class BookingsService {
     if (!eventType?.priceId) {
       return booking;
     }
-    return this.attachCheckout(booking, input.invitee);
+    const email = blankToNull(input.invitee.email);
+    if (!email) {
+      return booking;
+    }
+    return this.attachCheckout(booking, {
+      email,
+      name: input.invitee.name,
+    });
   }
 
   async retryCheckout(uid: string): Promise<{ checkoutUrl: string | null }> {
@@ -180,6 +189,11 @@ export class BookingsService {
       booking.organizationId,
       booking.customerId,
     );
+    if (!customer.email) {
+      throw new UnprocessableEntityException({
+        message: 'An email is required to start checkout',
+      });
+    }
     const result = await this.attachCheckout(booking, {
       email: customer.email,
       name: customer.name,
@@ -248,6 +262,107 @@ export class BookingsService {
       throw new NotFoundException('Not found');
     }
     return this.cancelBooking(booking, reason, false);
+  }
+
+  async cancelForLinkedCustomer(
+    uid: string,
+    customerIds: string[],
+    reason?: string,
+  ): Promise<BookingEntity> {
+    const booking = await this.getByUid(uid);
+    if (!customerIds.includes(booking.customerId)) {
+      throw new NotFoundException('Not found');
+    }
+    return this.cancelBooking(booking, reason, false);
+  }
+
+  async rescheduleForLinkedCustomer(
+    uid: string,
+    customerIds: string[],
+    startAt: Date,
+    timezone: string,
+  ): Promise<BookingEntity> {
+    const booking = await this.getByUid(uid);
+    if (!customerIds.includes(booking.customerId)) {
+      throw new NotFoundException('Not found');
+    }
+    return this.rescheduleBooking(booking, startAt, timezone, false);
+  }
+
+  /**
+   * Portal booking for an already-linked customer. `occurrences` > 1 books a
+   * weekly series in one transaction (T-053). A slot conflict rolls the batch back.
+   */
+  async createForLinkedCustomer(input: {
+    organizationId: string;
+    customerId: string;
+    eventTypeSlug: string;
+    startAt: Date;
+    timezone: string;
+    answers?: BookingAnswers;
+    occurrences?: number;
+  }): Promise<BookingEntity[]> {
+    const occurrences = input.occurrences ?? 1;
+    const customer = await this.customers.get(input.organizationId, input.customerId);
+    const invitee = {
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+    };
+    const metadata = { privacyAcceptedAt: this.clock.now().toISOString() };
+    if (occurrences === 1) {
+      const created = await this.createBooking(input.organizationId, {
+        eventTypeSlug: input.eventTypeSlug,
+        startAt: input.startAt,
+        timezone: input.timezone,
+        invitee,
+        answers: input.answers,
+        metadata,
+        source: BookingSource.HOSTED,
+        linkedCustomerId: customer.id,
+      });
+      return [created];
+    }
+
+    const starts = weeklyStarts(input.startAt, occurrences);
+    const seriesId = randomUUID();
+    try {
+      return await this.transactions.runInTransaction(async () => {
+        const created: BookingEntity[] = [];
+        for (const startAt of starts) {
+          created.push(
+            await this.createBooking(input.organizationId, {
+              eventTypeSlug: input.eventTypeSlug,
+              startAt,
+              timezone: input.timezone,
+              invitee,
+              answers: input.answers,
+              metadata: { ...metadata, series: true },
+              source: BookingSource.HOSTED,
+              linkedCustomerId: customer.id,
+              seriesId,
+            }),
+          );
+        }
+        return created;
+      });
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        const payload = error.getResponse();
+        const code =
+          payload && typeof payload === 'object'
+            ? (payload as { code?: string }).code
+            : undefined;
+        if (code === 'SLOT_UNAVAILABLE') {
+          throw new ConflictException({
+            code: 'SLOT_UNAVAILABLE',
+            message:
+              'A time in this series is no longer available. Nothing was booked.',
+          });
+        }
+      }
+      throw error;
+    }
   }
 
   async reschedulePublic(
@@ -379,10 +494,12 @@ export class BookingsService {
       eventTypeSlug: string;
       startAt: Date;
       timezone: string;
-      invitee: { name: string; email: string; phone?: string };
+      invitee: { name: string; email?: string | null; phone?: string | null };
       answers?: BookingAnswers;
       metadata?: Record<string, unknown>;
       source: BookingSource;
+      linkedCustomerId?: string;
+      seriesId?: string | null;
     },
   ): Promise<BookingEntity> {
     this.requireTimeZone(input.timezone);
@@ -409,12 +526,14 @@ export class BookingsService {
         const answers = this.parseAnswers(input.answers ?? {});
         this.validateAnswers(eventType.questions, answers);
 
-        const customer = await this.customers.upsert(organizationId, {
-          email: input.invitee.email,
-          name: input.invitee.name,
-          phone: input.invitee.phone ?? null,
-          timezone: input.timezone,
-        });
+        const customer = input.linkedCustomerId
+          ? await this.customers.get(organizationId, input.linkedCustomerId)
+          : await this.customers.upsert(organizationId, {
+              email: blankToNull(input.invitee.email),
+              name: input.invitee.name,
+              phone: blankToNull(input.invitee.phone),
+              timezone: input.timezone,
+            });
 
         const endAt = addMinutes(input.startAt, eventType.durationMinutes);
         const paid = Boolean(eventType.priceId);
@@ -458,6 +577,7 @@ export class BookingsService {
           locationValue: eventType.locationValue,
           answers,
           metadata: input.metadata ?? {},
+          seriesId: input.seriesId ?? null,
           holdExpiresAt: paid || receiptRequired
             ? addMinutes(now, HOLD_MINUTES)
             : null,
@@ -661,6 +781,8 @@ export class BookingsService {
           locationType: booking.locationType,
           locationValue: booking.locationValue,
           answers: booking.answers,
+          metadata: booking.metadata,
+          seriesId: booking.seriesId,
           rescheduledFromId: booking.id,
           holdExpiresAt:
             booking.status === BookingStatus.PENDING_PAYMENT
@@ -812,6 +934,11 @@ export class BookingsService {
       }
     }
   }
+}
+
+function blankToNull(value?: string | null): string | null {
+  const trimmed = value?.trim() ?? '';
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 export function isExclusionViolation(error: unknown): boolean {

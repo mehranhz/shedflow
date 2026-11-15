@@ -17,7 +17,9 @@ export abstract class ReferralCreditLedgerPort {
 
 @Injectable()
 export class LocalReferralCreditLedger extends ReferralCreditLedgerPort {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
 
   async grantReferralCredit(input: {
     organizationId: string;

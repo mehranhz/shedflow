@@ -20,8 +20,6 @@ export type CustomerAuthSession = {
   actorType?: string;
 };
 
-type ApiEnvelope<T> = { success: boolean; data?: T; message?: string };
-
 async function postCustomerAuth<T>(
   path: string,
   body: Record<string, string>,

@@ -86,7 +86,10 @@ export const orgsApi = {
   async members(orgId: string): Promise<Member[]> {
     return apiBff<Member[]>(`organizations/${orgId}/members`);
   },
-  async invite(orgId: string, body: { email: string; role: "ADMIN" | "MEMBER" }): Promise<Invitation> {
+  async invite(
+    orgId: string,
+    body: { email?: string; phone?: string; role: "ADMIN" | "MEMBER" },
+  ): Promise<Invitation> {
     try {
       return await apiBff<Invitation>(`organizations/${orgId}/invitations`, {
         method: "POST",
@@ -96,15 +99,24 @@ export const orgsApi = {
       if (!isMissingRoute(error)) {
         throw error;
       }
+      const contact = body.phone ?? body.email ?? "";
       const invitation: Invitation = {
         id: randomUUID(),
         organizationId: orgId,
-        email: body.email,
+        email: body.email ?? contact,
+        phone: contact,
         role: body.role,
         createdAt: new Date().toISOString(),
         expiresAt: addMinutes(new Date(), 60 * 24 * 7).toISOString(),
       };
-      previewStore.addInvitation(orgId, invitation);
+      previewStore.addInvitation(orgId, {
+        id: invitation.id,
+        organizationId: orgId,
+        phone: contact,
+        role: invitation.role,
+        createdAt: invitation.createdAt,
+        expiresAt: invitation.expiresAt,
+      });
       return invitation;
     }
   },
@@ -115,7 +127,11 @@ export const orgsApi = {
     if (api) {
       return api.data;
     }
-    return previewStore.listInvitations(orgId);
+    return previewStore.listInvitations(orgId).map((item) => ({
+      ...item,
+      email: item.phone,
+      phone: item.phone,
+    }));
   },
   async updateMember(
     orgId: string,
@@ -823,7 +839,7 @@ export const publicScheduling = {
       orgSlug: string;
       startAt: string;
       timezone: string;
-      invitee: { name: string; email: string; phone?: string };
+      invitee: { name: string; email?: string; phone?: string };
       answers: Record<string, string | boolean>;
       metadata?: Record<string, unknown>;
       source: "HOSTED" | "EMBED";
@@ -865,7 +881,7 @@ export const publicScheduling = {
     const customer = previewStore.upsertCustomer(bundle.org.id, {
       id: randomUUID(),
       organizationId: bundle.org.id,
-      email: body.invitee.email,
+      email: body.invitee.email?.trim() ?? "",
       name: body.invitee.name,
       phone: body.invitee.phone ?? null,
       timezone: body.timezone,

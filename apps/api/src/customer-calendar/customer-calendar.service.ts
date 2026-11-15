@@ -51,9 +51,9 @@ export class CustomerCalendarService {
     );
   }
 
-  private enc(plaintext: string): Uint8Array {
+  private enc(plaintext: string): Uint8Array<ArrayBuffer> {
     const encrypted = this.crypto.encrypt(plaintext);
-    const bytes = new Uint8Array(encrypted.byteLength);
+    const bytes = new Uint8Array(new ArrayBuffer(encrypted.byteLength));
     bytes.set(encrypted);
     return bytes;
   }
@@ -61,9 +61,7 @@ export class CustomerCalendarService {
   private providerFor(
     provider: CalendarProviderEnum | 'GOOGLE' | 'MICROSOFT',
   ): CalendarProvider {
-    return provider === CalendarProviderEnum.MICROSOFT || provider === 'MICROSOFT'
-      ? this.microsoft
-      : this.google;
+    return String(provider) === 'MICROSOFT' ? this.microsoft : this.google;
   }
 
   async listConnections(userId: string) {
@@ -274,7 +272,7 @@ export class CustomerCalendarService {
           startAt: booking.startAt,
           endAt: booking.endAt,
           timezone: booking.timezone,
-          attendeeEmails: [booking.customer.email],
+          attendeeEmails: booking.customer.email ? [booking.customer.email] : [],
           bookingId: booking.id,
         };
         if (existing) {

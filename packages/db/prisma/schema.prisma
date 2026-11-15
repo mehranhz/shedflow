@@ -315,7 +315,8 @@ model Customer {
   organizationId String   @map("organization_id") @db.Uuid
   /// Linked end-customer User (Wave 9 T-040). Nullable until claim/login.
   userId         String?  @map("user_id") @db.Uuid
-  email          String
+  /// Optional. Public booking identifies the guest by phone; email may be omitted.
+  email          String?
   name           String
   phone          String?
   timezone       String?
@@ -365,6 +366,10 @@ model Booking {
   paymentId           String?       @map("payment_id") @db.Uuid
   subscriptionId      String?       @map("subscription_id") @db.Uuid
   holdExpiresAt       DateTime?     @map("hold_expires_at") @db.Timestamptz(3)
+  /// Wave 11 T-053. Null when the booking is not part of a customer series.
+  seriesId            String?       @map("series_id") @db.Uuid
+  /// Host overlap range. The bookings_set_occupied trigger overwrites this on write.
+  occupied            Unsupported("tstzrange") @default(dbgenerated("'empty'::tstzrange"))
   metadata            Json          @default("{}")
   createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -382,6 +387,7 @@ model Booking {
   @@index([eventTypeId, startAt])
   @@index([customerId])
   @@index([status, holdExpiresAt])
+  @@index([seriesId])
   @@map("bookings")
 }
 

@@ -1,17 +1,7 @@
 "use server";
 
-import { readAuthSession } from "@/lib/api-envelope";
 import { ApiError, apiFetch } from "@/lib/api";
-
-type AuthEnvelope = {
-  success: boolean;
-  message?: string;
-  data?: {
-    accessToken: string;
-    refreshToken: string;
-    user: { id: string; phone: string | null; createdAt: string };
-  };
-};
+import { readAuthSession } from "@/lib/api-envelope";
 
 const ALREADY_SENT = /already sent/i;
 
@@ -80,7 +70,7 @@ export async function verifyBookingOtp(
 
     const { accessToken, refreshToken, user } = session;
     if (!accessToken || !refreshToken || !user?.id) {
-      return { ok: false, message: envelope.message || "Could not verify that code." };
+      return { ok: false, message: "Could not verify that code." };
     }
 
     return {

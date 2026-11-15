@@ -103,7 +103,7 @@ export class CustomerPaymentsService {
     const result = await this.billing.createPortalSession({
       organizationId: input.organizationId,
       customerId: customer.id,
-      invitee: { email: customer.email, name: customer.name },
+      invitee: this.checkoutInvitee(customer),
       returnUrl: input.returnUrl,
       idempotencyKey,
     });
@@ -134,7 +134,12 @@ export class CustomerPaymentsService {
       user.id,
       organizationId,
     );
-    const all = [];
+    const all: Array<{
+      organizationId: string;
+      customerId: string;
+      memberships: unknown[];
+      packages: unknown[];
+    }> = [];
     for (const c of customers) {
       const rows = (await this.billing.listMemberships(
         c.organizationId,
@@ -199,7 +204,7 @@ export class CustomerPaymentsService {
       organizationId: input.organizationId,
       customerId: customer.id,
       priceId: input.priceId,
-      invitee: { email: customer.email, name: customer.name },
+      invitee: this.checkoutInvitee(customer),
       successUrl: input.successUrl,
       cancelUrl: input.cancelUrl,
     });
@@ -227,7 +232,7 @@ export class CustomerPaymentsService {
       organizationId: input.organizationId,
       customerId: customer.id,
       priceId: input.priceId,
-      invitee: { email: customer.email, name: customer.name },
+      invitee: this.checkoutInvitee(customer),
       successUrl: input.successUrl,
       cancelUrl: input.cancelUrl,
       expiresAt: input.expiresAt,
@@ -287,5 +292,17 @@ export class CustomerPaymentsService {
       });
     }
     return result;
+  }
+
+  private checkoutInvitee(customer: { email: string | null; name: string }): {
+    email: string;
+    name: string;
+  } {
+    if (!customer.email) {
+      throw new UnprocessableEntityException({
+        message: 'An email is required for checkout',
+      });
+    }
+    return { email: customer.email, name: customer.name };
   }
 }

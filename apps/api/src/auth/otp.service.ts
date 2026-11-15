@@ -4,6 +4,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { createHash, randomInt, randomUUID } from 'node:crypto';
+import { appendFile, mkdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import * as bcrypt from 'bcrypt';
 import { Clock } from '../common/clock/clock';
 import { PrismaService } from '../prisma/prisma.service';
@@ -50,6 +52,7 @@ export class OtpService {
       },
     });
     this.logger.log(`OTP for ${phone}: ${code}`);
+    await this.writeDevOtpLine({ event: 'request', username: phone, code });
     return { success: true };
   }
 
@@ -91,10 +94,41 @@ export class OtpService {
       user = await this.users.markPhoneVerified(user.id, now);
     }
 
-    return this.auth.login(this.users.toPublic(user), meta);
+    const session = await this.auth.login(this.users.toPublic(user), meta);
+    await this.writeDevOtpLine({
+      event: 'verify',
+      username: phone,
+      code: otp,
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+    });
+    return session;
+  }
+
+  /** Plaintext OTP file for local development. Never written in production. */
+  private async writeDevOtpLine(fields: Record<string, string>): Promise<void> {
+    if (process.env.NODE_ENV === 'production') {
+      return;
+    }
+    const path = process.env.DEV_OTP_LOG_PATH?.trim() || '/app/logs/dev-otp.log';
+    const line = [
+      new Date().toISOString(),
+      ...Object.entries(fields).map(([key, value]) => `${key}=${oneLine(value)}`),
+    ].join(' ');
+    try {
+      await mkdir(dirname(path), { recursive: true });
+      await appendFile(path, `${line}\n`, 'utf8');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      this.logger.warn(`Dev OTP log write failed: ${message}`);
+    }
   }
 }
 
 function hashCode(code: string): string {
   return createHash('sha256').update(code).digest('hex');
+}
+
+function oneLine(value: string): string {
+  return value.replace(/[\r\n]/g, '');
 }

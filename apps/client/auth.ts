@@ -4,26 +4,10 @@ import Credentials from "next-auth/providers/credentials";
 import type { JWT } from "next-auth/jwt";
 
 import { readAuthSession } from "@/lib/api-envelope";
-import { readAuthSession } from "@/lib/api-envelope";
 import { API_URL } from "@/lib/config";
 import { persistCustomerOrgCookie } from "@/lib/portal/customer-cookies";
 import { readAccessTokenClaims } from "@/lib/portal/jwt-claims";
 import { refreshSessionTokens } from "@/lib/refresh-session";
-
-type ApiUser = {
-  id: string;
-  phone: string | null;
-  email?: string | null;
-  createdAt: string;
-};
-type AuthEnvelope = {
-  success: boolean;
-  data: {
-    accessToken: string;
-    refreshToken: string;
-    user: ApiUser;
-  };
-};
 
 const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 const ACCESS_REFRESH_SKEW_MS = 60_000;

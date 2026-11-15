@@ -24,10 +24,10 @@ import { brandStyle } from "@/lib/booking-brand";
 
 const desktopLinks = [
   { href: "/portal", key: "home", icon: Home, exact: true },
-  { href: "/portal/appointments", key: "appointments", icon: CalendarDays },
-  { href: "/portal/payments", key: "payments", icon: CreditCard },
-  { href: "/portal/account", key: "account", icon: UserRound },
-] as const;
+  { href: "/portal/appointments", key: "appointments", icon: CalendarDays, exact: false },
+  { href: "/portal/payments", key: "payments", icon: CreditCard, exact: false },
+  { href: "/portal/account", key: "account", icon: UserRound, exact: false },
+] as const satisfies readonly { href: string; key: string; icon: typeof Home; exact?: boolean }[];
 
 export function PortalShell({ children }: { children: React.ReactNode }) {
   const t = useTranslations("portal.shell");

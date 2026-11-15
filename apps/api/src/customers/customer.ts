@@ -1,7 +1,7 @@
 export type CustomerEntity = {
   id: string;
   organizationId: string;
-  email: string;
+  email: string | null;
   name: string;
   phone: string | null;
   timezone: string | null;
@@ -12,7 +12,7 @@ export type CustomerEntity = {
 
 export type CreateCustomerData = {
   organizationId: string;
-  email: string;
+  email?: string | null;
   name: string;
   phone?: string | null;
   timezone?: string | null;
@@ -20,7 +20,7 @@ export type CreateCustomerData = {
 };
 
 export type UpdateCustomerData = Partial<{
-  email: string;
+  email: string | null;
   name: string;
   phone: string | null;
   timezone: string | null;
@@ -28,7 +28,7 @@ export type UpdateCustomerData = Partial<{
 }>;
 
 export type UpsertCustomerInput = {
-  email: string;
+  email?: string | null;
   name: string;
   phone?: string | null;
   timezone?: string | null;

@@ -14,5 +14,5 @@ agent-transcripts
 .env
 .env.*
 !.env.example
-apps/client/public
 apps/embed/dist
+logs

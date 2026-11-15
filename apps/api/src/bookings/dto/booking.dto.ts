@@ -7,6 +7,7 @@ import {
   IsString,
   IsUUID,
   MinLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { BookingSource } from '@shedflow/db';
@@ -18,6 +19,24 @@ class InviteeDto {
 
   @IsEmail()
   email!: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+}
+
+class PublicInviteeDto {
+  @IsString()
+  @MinLength(1)
+  name!: string;
+
+  @IsOptional()
+  @ValidateIf(
+    (invitee: PublicInviteeDto) =>
+      typeof invitee.email === 'string' && invitee.email.trim().length > 0,
+  )
+  @IsEmail()
+  email?: string;
 
   @IsOptional()
   @IsString()
@@ -40,8 +59,8 @@ export class CreatePublicBookingDto {
   timezone!: string;
 
   @ValidateNested()
-  @Type(() => InviteeDto)
-  invitee!: InviteeDto;
+  @Type(() => PublicInviteeDto)
+  invitee!: PublicInviteeDto;
 
   @IsOptional()
   @IsObject()

@@ -182,7 +182,7 @@ export class SupportService {
       body: text,
       notifyCustomerUserId: thread.customer.userId,
       toStaff: false,
-      customerEmail: thread.customer.email,
+      customerEmail: thread.customer.email ?? undefined,
     });
   }
 

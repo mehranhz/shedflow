@@ -17,7 +17,7 @@ import {
 } from 'class-validator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Idempotent } from '../common/idempotency/idempotent.decorator';
-import { AuthenticatedUser } from '../users/user';
+import type { AuthenticatedUser } from '../users/user';
 import { CustomerJwtGuard } from './customer-jwt.guard';
 import { CustomerPaymentsService } from './customer-payments.service';
 

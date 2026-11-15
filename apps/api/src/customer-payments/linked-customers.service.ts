@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export type LinkedCustomer = {
   id: string;
   organizationId: string;
-  email: string;
+  email: string | null;
   name: string;
   userId: string | null;
 };

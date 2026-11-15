@@ -59,6 +59,7 @@ export type Member = {
   organizationId: string;
   userId: string;
   email: string;
+  phone?: string | null;
   role: OrgRole;
   status: "ACTIVE" | "DISABLED";
   createdAt: string;
@@ -68,6 +69,7 @@ export type Invitation = {
   id: string;
   organizationId: string;
   email: string;
+  phone?: string | null;
   role: "ADMIN" | "MEMBER";
   expiresAt: string;
   createdAt: string;

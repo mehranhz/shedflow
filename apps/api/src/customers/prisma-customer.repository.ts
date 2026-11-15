@@ -99,22 +99,55 @@ export class PrismaCustomerRepository
     organizationId: string,
     input: UpsertCustomerInput,
   ): Promise<CustomerEntity> {
-    const email = input.email.trim().toLowerCase();
+    const email = input.email?.trim().toLowerCase() || null;
+    const phone = input.phone?.trim() || null;
+    const name = input.name.trim();
     return this.run(async () => {
-      const record = await this.model.upsert({
-        where: {
-          organizationId_email: { organizationId, email },
-        },
-        create: {
+      if (email) {
+        const record = await this.model.upsert({
+          where: {
+            organizationId_email: { organizationId, email },
+          },
+          create: {
+            organizationId,
+            email,
+            name,
+            phone,
+            timezone: input.timezone ?? null,
+          },
+          update: {
+            name,
+            phone,
+            timezone: input.timezone ?? null,
+          },
+        });
+        return this.toEntity(record);
+      }
+
+      if (phone) {
+        const [existing] = await this.model.findMany({
+          where: { organizationId, phone },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        });
+        if (existing) {
+          const record = await this.model.update({
+            where: { id: existing.id },
+            data: {
+              name,
+              timezone: input.timezone ?? existing.timezone,
+            },
+          });
+          return this.toEntity(record);
+        }
+      }
+
+      const record = await this.model.create({
+        data: {
           organizationId,
-          email,
-          name: input.name.trim(),
-          phone: input.phone ?? null,
-          timezone: input.timezone ?? null,
-        },
-        update: {
-          name: input.name.trim(),
-          phone: input.phone ?? null,
+          email: null,
+          name,
+          phone,
           timezone: input.timezone ?? null,
         },
       });
