@@ -362,6 +362,61 @@ export function revokeOtherCustomerSessions(): Promise<void> {
   });
 }
 
+export type ConsentDecision = {
+  granted: boolean;
+  consentedAt: string | null;
+};
+
+export type LinkedPrivacyBusiness = {
+  organizationId: string;
+  slug: string;
+  name: string;
+  customerId: string;
+  brandColor: string | null;
+  logoUrl: string | null;
+  lastBookingAt: string | null;
+};
+
+export type PrivacyOverview = {
+  consents: {
+    marketingEmail: ConsentDecision;
+    marketingOffers: ConsentDecision;
+  };
+  businesses: LinkedPrivacyBusiness[];
+  links: {
+    privacyPolicy: string;
+    terms: string;
+    export: string;
+    deleteAccount: string;
+  };
+};
+
+export type PrivacyConsentInput = {
+  marketingEmail?: boolean;
+  marketingOffers?: boolean;
+};
+
+export async function fetchPrivacyOverview(): Promise<PrivacyOverview> {
+  const payload = await apiBff<unknown>("customer/privacy");
+  return unwrapData<PrivacyOverview>(payload);
+}
+
+export async function updatePrivacyConsents(input: PrivacyConsentInput): Promise<PrivacyOverview> {
+  const payload = await apiBff<unknown>("customer/privacy/consents", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  return unwrapData<PrivacyOverview>(payload);
+}
+
+export async function disconnectPrivacyBusiness(organizationId: string): Promise<PrivacyOverview> {
+  const payload = await apiBff<unknown>(
+    `customer/privacy/businesses/${encodeURIComponent(organizationId)}/disconnect`,
+    { method: "POST" },
+  );
+  return unwrapData<PrivacyOverview>(payload);
+}
+
 export function addCustomerAttachment(
   customerOrgId: string,
   uid: string,

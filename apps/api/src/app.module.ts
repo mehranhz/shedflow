@@ -21,7 +21,6 @@ import { CustomerAuthModule } from './customer-auth/customer-auth.module';
 import { CustomerNotificationsModule } from './customer-notifications/customer-notifications.module';
 import { CustomerPrivacyModule } from './customer-privacy/customer-privacy.module';
 import { CustomerSecurityModule } from './customer-security/customer-security.module';
-import { CustomerPrivacyModule } from './customer-privacy/customer-privacy.module';
 import { CustomerPortalModule } from './customer/customer-portal.module';
 import { EventTypesModule } from './event-types/event-types.module';
 import { FallbackModule } from './fallback/fallback.module';

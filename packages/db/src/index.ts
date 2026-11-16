@@ -37,6 +37,7 @@ export type {
   BookingReview,
   CalendarConnection,
   ConnectedCalendar,
+  ConsentLog,
   CreditBalance,
   CreditLedgerEntry,
   Customer,

@@ -42,6 +42,9 @@ export function PortalAccountPanel() {
       <Button asChild variant="outline" className="min-h-11 w-full">
         <Link href="/portal/account/security">{t("securityLink")}</Link>
       </Button>
+      <Button asChild variant="outline" className="min-h-11 w-full">
+        <Link href="/portal/account/privacy">{t("privacyLink")}</Link>
+      </Button>
       <Button
         type="button"
         variant="outline"

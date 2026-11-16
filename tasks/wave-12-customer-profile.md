@@ -113,7 +113,7 @@
 
 ## T-059 — Privacy, consent & linked businesses list
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-055, T-034  
 **Apps:** `shedflow-back`, `apps/client`
 

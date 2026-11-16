@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Headers,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -38,6 +39,7 @@ export class CustomerPrivacyController {
   }
 
   @Post('businesses/:organizationId/disconnect')
+  @HttpCode(200)
   disconnect(
     @CurrentUser() user: AuthenticatedUser,
     @Param('organizationId', ParseUUIDPipe) organizationId: string,
