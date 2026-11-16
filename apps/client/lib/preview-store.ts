@@ -232,7 +232,7 @@ export const previewStore = {
       throw new Error("Organization preview data not found");
     }
     const index = bundle.customers.findIndex(
-      (item) => item.email.toLowerCase() === customer.email.toLowerCase(),
+      (item) => Boolean(customer.phone) && item.phone === customer.phone,
     );
     if (index >= 0) {
       bundle.customers[index] = { ...bundle.customers[index], ...customer };

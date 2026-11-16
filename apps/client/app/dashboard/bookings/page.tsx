@@ -217,7 +217,7 @@ export default function BookingsPage() {
                   <TableCell className="font-medium">
                     {booking.customer?.name ?? tc("invitee")}
                     <div className="text-xs text-muted-foreground">
-                      {booking.customer?.email}
+                      {booking.customer?.phone}
                     </div>
                   </TableCell>
                   <TableCell>{booking.eventType?.title ?? tc("meeting")}</TableCell>

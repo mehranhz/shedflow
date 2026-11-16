@@ -46,7 +46,7 @@ export default async function DashboardLayout({
   }
 
   if (profile.activeOrganization == null) {
-    const identity = profile.phone || profile.email || session.user?.email || "";
+    const identity = profile.phone || session.user?.phone || "";
     return (
       <div className="flex min-h-svh items-center justify-center bg-[#f6f7f9] px-4">
         <CreateWorkspaceForm identity={identity} />
@@ -72,9 +72,7 @@ export default async function DashboardLayout({
           </header>
           <div id="main" className="flex-1 px-6 py-6 lg:px-8" tabIndex={-1}>
             <ImpersonationBanner />
-            {profile.phone
-              ? !profile.phoneVerifiedAt
-              : !profile.emailVerifiedAt ? (
+            {profile.phone && !profile.phoneVerifiedAt ? (
               <div className="mb-6">
                 <VerificationBanner />
               </div>

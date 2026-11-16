@@ -27,8 +27,8 @@ export function verifyTotp(secret: string, code: string, at = Date.now()): boole
   return false;
 }
 
-export function totpAuthUrl(email: string, secret: string): string {
-  const label = encodeURIComponent(`SchedFlow:${email}`);
+export function totpAuthUrl(phone: string, secret: string): string {
+  const label = encodeURIComponent(`SchedFlow:${phone}`);
   const issuer = encodeURIComponent('SchedFlow');
   return `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`;
 }

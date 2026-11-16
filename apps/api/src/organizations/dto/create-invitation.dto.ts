@@ -1,8 +1,10 @@
-import { IsEmail, IsIn } from 'class-validator';
+import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateInvitationDto {
-  @IsEmail()
-  email: string;
+  @IsString()
+  @MinLength(3)
+  @MaxLength(32)
+  phone!: string;
 
   @IsIn(['ADMIN', 'MEMBER'])
   role: 'ADMIN' | 'MEMBER';

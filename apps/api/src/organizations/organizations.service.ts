@@ -48,7 +48,7 @@ export type MemberView = {
   id: string;
   organizationId: string;
   userId: string;
-  email: string;
+  phone: string;
   role: Role;
   status: MembershipStatus;
   createdAt: Date;
@@ -57,7 +57,7 @@ export type MemberView = {
 export type InvitationView = {
   id: string;
   organizationId: string;
-  email: string;
+  phone: string;
   role: Role;
   expiresAt: Date;
   createdAt: Date;
@@ -291,7 +291,7 @@ export class OrganizationsService {
         id: membership.id,
         organizationId: membership.organizationId,
         userId: membership.userId,
-        email: user?.email ?? '',
+        phone: user?.phone ?? '',
         role: membership.role,
         status: membership.status,
         createdAt: membership.createdAt,
@@ -342,7 +342,7 @@ export class OrganizationsService {
       id: updated.id,
       organizationId: updated.organizationId,
       userId: updated.userId,
-      email: user?.email ?? '',
+      phone: user?.phone ?? '',
       role: updated.role,
       status: updated.status,
       createdAt: updated.createdAt,
@@ -369,12 +369,12 @@ export class OrganizationsService {
   async invite(
     organizationId: string,
     actor: OrgActor,
-    input: { email: string; role: 'ADMIN' | 'MEMBER' },
+    input: { phone: string; role: 'ADMIN' | 'MEMBER' },
   ): Promise<InvitationView> {
     this.assertCanManageTeam(actor);
 
-    const email = input.email.toLowerCase();
-    const existingMemberUser = await this.users.findByEmail(email);
+    const phone = input.phone.trim();
+    const existingMemberUser = await this.users.findByPhone(phone);
     if (existingMemberUser) {
       const existingMembership = await this.memberships.findByUserInOrganization(
         organizationId,
@@ -385,14 +385,14 @@ export class OrganizationsService {
       }
     }
 
-    const pending = await this.invitations.findPendingByEmail(
+    const pending = await this.invitations.findPendingByPhone(
       organizationId,
-      email,
+      phone,
     );
     if (pending) {
       if (pending.expiresAt.getTime() > this.clock.now().getTime()) {
         throw new ConflictException(
-          'An invitation for this email is already pending',
+          'An invitation for this phone is already pending',
         );
       }
       await this.invitations.deleteInOrganization(organizationId, pending.id);
@@ -402,7 +402,7 @@ export class OrganizationsService {
     const invitation = await this.transactions.runInTransaction(async () => {
       const created = await this.invitations.create({
         organizationId,
-        email,
+        phone,
         role: input.role as Role,
         tokenHash: hashInvitationToken(raw),
         invitedById: actor.userId,
@@ -412,7 +412,7 @@ export class OrganizationsService {
         DOMAIN_EVENTS.InvitationCreated,
         {
           invitationId: created.id,
-          email,
+          phone,
           role: created.role,
           token: raw,
         },
@@ -459,8 +459,8 @@ export class OrganizationsService {
       });
     }
 
-    if (invitation.email !== user.email.toLowerCase()) {
-      throw new ForbiddenException('Invitation email does not match');
+    if (!user.phone || invitation.phone !== user.phone) {
+      throw new ForbiddenException('Invitation phone does not match');
     }
 
     const organization = await this.organizations.findActiveById(
@@ -492,7 +492,7 @@ export class OrganizationsService {
         id: membership.id,
         organizationId: membership.organizationId,
         userId: membership.userId,
-        email: user.email,
+        phone: user.phone ?? '',
         role: membership.role,
         status: membership.status,
         createdAt: membership.createdAt,
@@ -626,7 +626,7 @@ export class OrganizationsService {
     return {
       id: invitation.id,
       organizationId: invitation.organizationId,
-      email: invitation.email,
+      phone: invitation.phone,
       role: invitation.role,
       expiresAt: invitation.expiresAt,
       createdAt: invitation.createdAt,

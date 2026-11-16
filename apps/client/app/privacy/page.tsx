@@ -27,11 +27,10 @@ export default function PrivacyPage() {
 
         <h2 className="text-lg font-medium">Data we process</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Account data: name, email, password hash, timezone, locale.</li>
+          <li>Account data: name, phone, password hash, timezone, locale.</li>
           <li>
-            Booking data: invitee name, email, phone (optional), answers, time,
-            timezone, and related metadata (including privacy consent timestamp
-            when collected).
+            Booking data: invitee name, phone, answers, time, timezone, and
+            related metadata (including privacy consent timestamp when collected).
           </li>
           <li>
             Payment receipt uploads (images or PDF) when an event type requires
@@ -56,7 +55,7 @@ export default function PrivacyPage() {
 
         <h2 className="text-lg font-medium">Subprocessors</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Resend — transactional email</li>
+          <li>Resend — transactional texts</li>
           <li>Neon / Supabase — database hosting</li>
           <li>Vercel — application hosting</li>
           <li>Google / Microsoft — calendar sync (when connected)</li>

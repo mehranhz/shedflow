@@ -7,44 +7,77 @@ import { Button } from "@shedflow/ui/components";
 
 import { usePortalBusiness } from "@/components/portal/portal-business-context";
 
+const SECTIONS = [
+  {
+    titleKey: "sectionProfile",
+    items: [
+      { href: "/portal/account/profile", labelKey: "editProfile", hintKey: "editProfileHint" },
+      { href: "/portal/account/preferences", labelKey: "preferencesLink", hintKey: "preferencesHint" },
+    ],
+  },
+  {
+    titleKey: "sectionNotifications",
+    items: [
+      { href: "/portal/account/notifications", labelKey: "notificationsLink", hintKey: "notificationsHint" },
+    ],
+  },
+  {
+    titleKey: "sectionSecurity",
+    items: [{ href: "/portal/account/security", labelKey: "securityLink", hintKey: "securityHint" }],
+  },
+  {
+    titleKey: "sectionPrivacy",
+    items: [{ href: "/portal/account/privacy", labelKey: "privacyLink", hintKey: "privacyHint" }],
+  },
+] as const;
+
 export function PortalAccountPanel() {
   const t = useTranslations("portal.account");
   const { data: session } = useSession();
   const { businesses, activeBusiness } = usePortalBusiness();
 
-  const email = session?.user?.email ?? session?.user?.phone;
+  const phone = session?.user?.phone;
 
   return (
-    <div className="space-y-6 rounded-lg border p-4">
-      <dl className="space-y-3 text-sm">
-        <div>
+    <div className="min-w-0 space-y-6">
+      <dl className="space-y-3 rounded-lg border p-4 text-sm">
+        <div className="min-w-0">
           <dt className="text-muted-foreground">{t("signedInAs")}</dt>
-          <dd className="font-medium">{email ?? t("unknownUser")}</dd>
+          <dd className="break-all font-medium">{phone ?? t("unknownUser")}</dd>
         </div>
-        <div>
+        <div className="min-w-0">
           <dt className="text-muted-foreground">{t("activeBusiness")}</dt>
-          <dd className="font-medium">{activeBusiness?.name ?? t("none")}</dd>
+          <dd className="break-words font-medium">{activeBusiness?.name ?? t("none")}</dd>
         </div>
         <div>
           <dt className="text-muted-foreground">{t("linkedBusinesses")}</dt>
           <dd className="font-medium">{businesses.length}</dd>
         </div>
       </dl>
-      <Button asChild className="min-h-11 w-full">
-        <Link href="/portal/account/profile">{t("editProfile")}</Link>
-      </Button>
-      <Button asChild variant="outline" className="min-h-11 w-full">
-        <Link href="/portal/account/preferences">{t("preferencesLink")}</Link>
-      </Button>
-      <Button asChild variant="outline" className="min-h-11 w-full">
-        <Link href="/portal/account/notifications">{t("notificationsLink")}</Link>
-      </Button>
-      <Button asChild variant="outline" className="min-h-11 w-full">
-        <Link href="/portal/account/security">{t("securityLink")}</Link>
-      </Button>
-      <Button asChild variant="outline" className="min-h-11 w-full">
-        <Link href="/portal/account/privacy">{t("privacyLink")}</Link>
-      </Button>
+
+      <nav aria-label={t("sectionsLabel")} className="space-y-6">
+        {SECTIONS.map((section) => (
+          <section key={section.titleKey} className="space-y-2" aria-labelledby={`account-${section.titleKey}`}>
+            <h2 id={`account-${section.titleKey}`} className="text-sm font-medium text-muted-foreground">
+              {t(section.titleKey)}
+            </h2>
+            <ul className="overflow-hidden rounded-lg border">
+              {section.items.map((item) => (
+                <li key={item.href} className="border-t first:border-t-0">
+                  <Link
+                    href={item.href}
+                    className="flex min-h-11 min-w-0 flex-col justify-center gap-0.5 px-4 py-3 hover:bg-muted/50"
+                  >
+                    <span className="font-medium">{t(item.labelKey)}</span>
+                    <span className="text-sm text-muted-foreground">{t(item.hintKey)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </nav>
+
       <Button
         type="button"
         variant="outline"

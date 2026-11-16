@@ -35,7 +35,7 @@ export type LinkedBusiness = {
 
 export type PrivacyOverview = {
   consents: {
-    marketingEmail: ConsentDecision;
+    marketingPhone: ConsentDecision;
     marketingOffers: ConsentDecision;
   };
   businesses: LinkedBusiness[];
@@ -73,7 +73,7 @@ export class CustomerPrivacyService {
     ]);
     return {
       consents: {
-        marketingEmail: this.decision(logs, CONSENT_PURPOSES.marketingEmail),
+        marketingPhone: this.marketingDecision(logs),
         marketingOffers: this.decision(logs, CONSENT_PURPOSES.marketingOffers),
       },
       businesses,
@@ -131,7 +131,7 @@ export class CustomerPrivacyService {
           },
           null,
         );
-        if (change.purpose === CONSENT_PURPOSES.marketingEmail) {
+        if (change.purpose === CONSENT_PURPOSES.marketingPhone) {
           await this.syncMarketingPreference(userId, change.granted, user.timezone);
         }
       }
@@ -190,12 +190,7 @@ export class CustomerPrivacyService {
     dto: UpdateConsentsDto,
   ): Array<{ purpose: ConsentPurpose; granted: boolean }> {
     const changes: Array<{ purpose: ConsentPurpose; granted: boolean }> = [];
-    this.pushChange(
-      changes,
-      logs,
-      CONSENT_PURPOSES.marketingEmail,
-      dto.marketingEmail,
-    );
+    this.pushMarketingChange(changes, logs, dto.marketingPhone);
     this.pushChange(
       changes,
       logs,
@@ -218,6 +213,34 @@ export class CustomerPrivacyService {
       return;
     }
     changes.push({ purpose, granted });
+  }
+
+  private pushMarketingChange(
+    changes: Array<{ purpose: ConsentPurpose; granted: boolean }>,
+    logs: ConsentLog[],
+    granted: boolean | undefined,
+  ): void {
+    if (granted === undefined) {
+      return;
+    }
+    if (this.marketingDecision(logs).granted === granted) {
+      return;
+    }
+    changes.push({ purpose: CONSENT_PURPOSES.marketingPhone, granted });
+  }
+
+  /** Prefer the phone purpose, then an older marketing-email row. */
+  private marketingDecision(logs: ConsentLog[]): ConsentDecision {
+    const row =
+      logs.find((item) => item.purpose === CONSENT_PURPOSES.marketingPhone) ??
+      logs.find((item) => item.purpose === CONSENT_PURPOSES.marketingEmail);
+    if (!row) {
+      return { granted: false, consentedAt: null };
+    }
+    return {
+      granted: row.granted,
+      consentedAt: row.consentedAt.toISOString(),
+    };
   }
 
   private decision(logs: ConsentLog[], purpose: string): ConsentDecision {

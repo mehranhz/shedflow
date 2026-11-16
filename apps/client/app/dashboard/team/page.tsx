@@ -53,7 +53,7 @@ export default function TeamPage() {
     mutationFn: () => orgsApi.invite(organization.id, { phone, role: inviteRole }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["invitations", organization.id] });
-      toast.success(t("invited", { email: phone }));
+      toast.success(t("invited", { phone }));
       setPhone("");
     },
     onError: (error) => {
@@ -185,7 +185,7 @@ export default function TeamPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t("colEmail")}</TableHead>
+                  <TableHead>{t("colPhone")}</TableHead>
                   <TableHead>{t("colRole")}</TableHead>
                   <TableHead>{t("colStatus")}</TableHead>
                   {canManage ? <TableHead className="w-[180px]">{t("colActions")}</TableHead> : null}
@@ -194,7 +194,7 @@ export default function TeamPage() {
               <TableBody>
                 {(members.data ?? []).map((member) => (
                   <TableRow key={member.id}>
-                    <TableCell>{member.phone ?? member.email}</TableCell>
+                    <TableCell>{member.phone}</TableCell>
                     <TableCell>
                       {canEditMember(member) ? (
                         <Select
@@ -227,7 +227,7 @@ export default function TeamPage() {
                             variant="ghost"
                             disabled={remove.isPending}
                             onClick={() => {
-                              if (window.confirm(t("removeConfirm", { email: member.phone ?? member.email }))) {
+                              if (window.confirm(t("removeConfirm", { phone: member.phone ?? "" }))) {
                                 remove.mutate(member.userId);
                               }
                             }}
@@ -258,7 +258,7 @@ export default function TeamPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t("colEmail")}</TableHead>
+                  <TableHead>{t("colPhone")}</TableHead>
                   <TableHead>{t("colRole")}</TableHead>
                   <TableHead>{t("colExpires")}</TableHead>
                   {canManage ? (
@@ -269,7 +269,7 @@ export default function TeamPage() {
               <TableBody>
                 {invitations.data?.map((invitation) => (
                   <TableRow key={invitation.id}>
-                    <TableCell>{invitation.phone ?? invitation.email}</TableCell>
+                    <TableCell>{invitation.phone}</TableCell>
                     <TableCell>{invitation.role}</TableCell>
                     <TableCell>
                       {new Date(invitation.expiresAt).toLocaleDateString()}

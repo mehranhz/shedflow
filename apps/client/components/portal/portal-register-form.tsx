@@ -25,15 +25,15 @@ export function PortalRegisterForm() {
   const next = searchParams.get("next");
 
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    const prefilled = searchParams.get("email");
+    const prefilled = searchParams.get("phone");
     if (prefilled) {
-      setEmail(prefilled);
+      setPhone(prefilled);
     }
   }, [searchParams]);
 
@@ -43,9 +43,9 @@ export function PortalRegisterForm() {
 
     startTransition(async () => {
       try {
-        const session = await registerCustomer({ email, password, name: name || undefined });
+        const session = await registerCustomer({ phone, password, name: name || undefined });
         const result = await signIn("customer-portal", {
-          email,
+          phone,
           accessToken: session.accessToken,
           refreshToken: session.refreshToken,
           redirect: false,
@@ -83,15 +83,16 @@ export function PortalRegisterForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="email">{t("email")}</Label>
+        <Label htmlFor="phone">{t("phone")}</Label>
         <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id="phone"
+          name="phone"
+          type="tel"
+          autoComplete="tel"
+          inputMode="tel"
           required
-          value={email}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
+          value={phone}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setPhone(event.target.value)}
         />
       </div>
 

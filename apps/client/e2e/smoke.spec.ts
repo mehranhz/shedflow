@@ -23,7 +23,7 @@ test.describe("smoke (seed)", () => {
     const stamp = Date.now();
     await completeFreeBooking(page, {
       name: `E2E Guest ${stamp}`,
-      email: `e2e.guest.${stamp}@example.com`,
+      phone: `+1${String(stamp).slice(-10)}`,
     });
 
     await cancelManagedBooking(page);
@@ -38,7 +38,7 @@ test.describe("smoke (register)", () => {
     test.skip(!(await requireStack(request)), "Stack not up — start pnpm dev + migrate/seed");
 
     const stamp = Date.now();
-    const email = `e2e.owner.${stamp}@example.com`;
+    const phone = `+1${String(stamp).slice(-10)}`;
     const password = "Password123!";
     const orgName = `E2E Org ${stamp}`;
     const eventTitle = `E2E Intro ${stamp}`;
@@ -46,7 +46,7 @@ test.describe("smoke (register)", () => {
     await page.goto("/register");
     await page.getByLabel(/^name$/i).fill("E2E Owner");
     await page.getByLabel(/workspace/i).fill(orgName);
-    await page.getByLabel(/email/i).fill(email);
+    await page.getByLabel(/^phone/i).fill(phone);
     await page.getByLabel(/^password$/i).fill(password);
     await page.getByRole("button", { name: /sign up/i }).click();
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 45_000 });
@@ -65,7 +65,7 @@ test.describe("smoke (register)", () => {
     await expect(page.getByText(eventTitle).first()).toBeVisible({ timeout: 30_000 });
     await completeFreeBooking(page, {
       name: `Guest ${stamp}`,
-      email: `guest.${stamp}@example.com`,
+      phone: `+1${String(stamp + 1).slice(-10)}`,
     });
     await cancelManagedBooking(page);
   });

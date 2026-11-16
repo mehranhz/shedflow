@@ -227,7 +227,7 @@ class InMemoryInvitationRepository
     return {
       id,
       organizationId: data.organizationId,
-      email: data.email,
+      phone: data.phone,
       role: data.role,
       tokenHash: data.tokenHash,
       invitedById: data.invitedById,
@@ -254,14 +254,14 @@ class InMemoryInvitationRepository
     return this.findOneWhere((row) => row.tokenHash === tokenHash);
   }
 
-  findPendingByEmail(
+  findPendingByPhone(
     organizationId: string,
-    email: string,
+    phone: string,
   ): Promise<Invitation | null> {
     return this.findOneWhere(
       (row) =>
         row.organizationId === organizationId &&
-        row.email === email &&
+        row.phone === phone &&
         row.acceptedAt == null,
     );
   }
@@ -341,8 +341,21 @@ describe('OrganizationsService', () => {
     users = module.get(UsersService);
   });
 
-  async function createUser(email: string): Promise<User> {
-    return users.create(email, 'hash');
+  function phoneFrom(label: string): string {
+    let hash = 2166136261;
+    for (let index = 0; index < label.length; index += 1) {
+      hash ^= label.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return `+1${(hash >>> 0).toString().padStart(10, '0').slice(0, 10)}`;
+  }
+
+  async function createUser(label: string): Promise<User> {
+    const phone = phoneFrom(label);
+    return users.create(`phone.${phone.replace(/\D/g, '')}@users.shedflow.invalid`, 'hash', {
+      phone,
+      phoneVerifiedAt: new Date(),
+    });
   }
 
   it('makes the creator OWNER', async () => {
@@ -368,7 +381,7 @@ describe('OrganizationsService', () => {
     const invitation = await service.invite(
       org.id,
       { userId: owner.id, role: Role.OWNER },
-      { email: member.email, role: 'MEMBER' },
+      { phone: member.phone ?? '', role: 'MEMBER' },
     );
     await service.acceptInvitation(invitation.token!, {
       id: member.id,
@@ -396,7 +409,7 @@ describe('OrganizationsService', () => {
     const invitation = await service.invite(
       org.id,
       { userId: owner.id, role: Role.OWNER },
-      { email: admin.email, role: 'ADMIN' },
+      { phone: admin.phone ?? '', role: 'ADMIN' },
     );
     await service.acceptInvitation(invitation.token!, {
       id: admin.id,

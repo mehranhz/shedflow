@@ -37,7 +37,7 @@ export class PrismaInvitationRepository
     return {
       id: record.id,
       organizationId: record.organizationId,
-      email: record.email,
+      phone: record.phone,
       role: record.role,
       tokenHash: record.tokenHash,
       invitedById: record.invitedById,
@@ -64,13 +64,13 @@ export class PrismaInvitationRepository
     return this.findOneWhere({ tokenHash });
   }
 
-  findPendingByEmail(
+  findPendingByPhone(
     organizationId: string,
-    email: string,
+    phone: string,
   ): Promise<Invitation | null> {
     return this.findOneWhere({
       organizationId,
-      email,
+      phone,
       acceptedAt: null,
     });
   }

@@ -9,7 +9,9 @@ import * as bcrypt from 'bcrypt';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/app.setup';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { syntheticEmailForPhone } from './../src/auth/auth.service';
 import { UsersService } from './../src/users/users.service';
+import { testPhone } from './test-phone';
 
 config({ path: resolve(__dirname, '../../../.env') });
 config({ path: resolve(__dirname, '../../.env') });
@@ -39,22 +41,23 @@ describe('Organizations (e2e)', () => {
 
     prisma = app.get(PrismaService);
     users = app.get(UsersService);
-    await prisma.user.deleteMany();
     await prisma.organization.deleteMany();
+    await prisma.user.deleteMany();
   });
 
   afterEach(async () => {
     await app.close();
   });
 
-  async function register(email: string, password = 'password123') {
+  async function register(label: string, password = 'password123') {
+    const phone = testPhone(label);
     const response = await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ email, password })
+      .send({ username: phone, password })
       .expect(201);
     return response.body as {
       accessToken: string;
-      user: { id: string; email: string };
+      user: { id: string; phone: string };
     };
   }
 
@@ -81,13 +84,15 @@ describe('Organizations (e2e)', () => {
   }
 
   it('returns an empty list when the user has no organizations', async () => {
+    const phone = testPhone('solo');
     await users.create(
-      'solo@example.com',
+      syntheticEmailForPhone(phone),
       await bcrypt.hash('password123', 10),
+      { phone, phoneVerifiedAt: new Date() },
     );
     const login = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'solo@example.com', password: 'password123' })
+      .send({ username: phone, password: 'password123' })
       .expect(201);
 
     const response = await request(app.getHttpServer())
@@ -98,13 +103,15 @@ describe('Organizations (e2e)', () => {
   });
 
   it('lets a user without an organization create one', async () => {
+    const phone = testPhone('legacy');
     await users.create(
-      'legacy@example.com',
+      syntheticEmailForPhone(phone),
       await bcrypt.hash('password123', 10),
+      { phone, phoneVerifiedAt: new Date() },
     );
     const login = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'legacy@example.com', password: 'password123' })
+      .send({ username: phone, password: 'password123' })
       .expect(201);
 
     const created = await createOrg(login.body.accessToken, {
@@ -164,7 +171,7 @@ describe('Organizations (e2e)', () => {
         expect.objectContaining({
           userId: user.id,
           role: 'OWNER',
-          email: 'owner@example.com',
+          phone: testPhone('owner@example.com'),
         }),
       ]),
     );
@@ -180,7 +187,7 @@ describe('Organizations (e2e)', () => {
     const adminInvite = await request(app.getHttpServer())
       .post(`/v1/organizations/${org.body.id}/invitations`)
       .set('Authorization', `Bearer ${owner.accessToken}`)
-      .send({ email: admin.user.email, role: 'ADMIN' })
+      .send({ phone: admin.user.phone, role: 'ADMIN' })
       .expect(201);
 
     await request(app.getHttpServer())
@@ -197,7 +204,7 @@ describe('Organizations (e2e)', () => {
     const memberInvite = await request(app.getHttpServer())
       .post(`/v1/organizations/${org.body.id}/invitations`)
       .set('Authorization', `Bearer ${admin.accessToken}`)
-      .send({ email: member.user.email, role: 'MEMBER' })
+      .send({ phone: member.user.phone, role: 'MEMBER' })
       .expect(201);
 
     await request(app.getHttpServer())

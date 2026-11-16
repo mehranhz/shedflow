@@ -143,30 +143,6 @@ export async function updateCustomerProfile(
   return me;
 }
 
-export async function requestCustomerEmailChange(
-  email: string,
-  updatedAt: string,
-  totpCode?: string,
-): Promise<void> {
-  await apiBff("customer/me/email", {
-    method: "POST",
-    ifMatch: profileEtag(updatedAt),
-    body: JSON.stringify({
-      email,
-      updatedAt,
-      ...(totpCode ? { totpCode } : {}),
-    }),
-  });
-}
-
-export async function confirmCustomerEmailChange(token: string): Promise<CustomerMe> {
-  const payload = await apiBff<unknown>("customer/me/email/confirm", {
-    method: "POST",
-    body: JSON.stringify({ token }),
-  });
-  return unwrapData<CustomerMe>(payload);
-}
-
 export async function switchCustomerBusiness(organizationId: string): Promise<string> {
   const payload = await apiBff<unknown>(
     `customer/businesses/${organizationId}/switch`,
@@ -379,7 +355,7 @@ export type LinkedPrivacyBusiness = {
 
 export type PrivacyOverview = {
   consents: {
-    marketingEmail: ConsentDecision;
+    marketingPhone: ConsentDecision;
     marketingOffers: ConsentDecision;
   };
   businesses: LinkedPrivacyBusiness[];
@@ -392,7 +368,7 @@ export type PrivacyOverview = {
 };
 
 export type PrivacyConsentInput = {
-  marketingEmail?: boolean;
+  marketingPhone?: boolean;
   marketingOffers?: boolean;
 };
 

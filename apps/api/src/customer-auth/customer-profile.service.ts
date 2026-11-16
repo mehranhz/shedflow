@@ -17,6 +17,7 @@ import {
   generateUserToken,
   hashUserToken,
 } from '../user-tokens/user-token.crypto';
+import { syntheticEmailForPhone } from '../auth/auth.service';
 import type { CustomerBusiness } from './customer-auth.service';
 
 const EMAIL_CHANGE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -56,7 +57,6 @@ export type PortalPreferences = {
 export type CustomerProfile = {
   user: {
     id: string;
-    email: string;
     name: string | null;
     phone: string | null;
     photoUrl: string | null;
@@ -480,7 +480,6 @@ export class CustomerProfileService {
     return {
       user: {
         id: user.id,
-        email: user.email,
         name: user.name,
         phone: user.phone,
         photoUrl: user.photoUrl,
@@ -628,6 +627,7 @@ export class CustomerProfileService {
     name?: string;
     phone?: string | null;
     phoneVerifiedAt?: null;
+    email?: string;
     photoUrl?: string | null;
     timezone?: string;
     locale?: string;
@@ -637,6 +637,7 @@ export class CustomerProfileService {
       name?: string;
       phone?: string | null;
       phoneVerifiedAt?: null;
+      email?: string;
       photoUrl?: string | null;
       timezone?: string;
       locale?: string;
@@ -648,6 +649,9 @@ export class CustomerProfileService {
     if (patch.phone !== undefined && patch.phone !== user.phone) {
       data.phone = patch.phone;
       data.phoneVerifiedAt = null;
+      if (patch.phone) {
+        data.email = syntheticEmailForPhone(patch.phone);
+      }
     }
     if (patch.photoUrl !== undefined && patch.photoUrl !== user.photoUrl) {
       data.photoUrl = patch.photoUrl;

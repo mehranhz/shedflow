@@ -8,7 +8,7 @@ function toDto<T extends object>(cls: new () => T, data: object): T {
 }
 
 describe('auth DTO / zod contracts', () => {
-  const valid = { email: 'ada@example.com', password: 'password123' };
+  const valid = { username: '+14155550100', password: 'password123' };
 
   it('accepts the same valid register payload', async () => {
     expect(RegisterSchema.safeParse(valid).success).toBe(true);
@@ -32,7 +32,7 @@ describe('auth DTO / zod contracts', () => {
   });
 
   it('rejects a short password in both schemas', async () => {
-    const invalid = { email: 'ada@example.com', password: 'short' };
+    const invalid = { username: '+14155550100', password: 'short' };
     expect(RegisterSchema.safeParse(invalid).success).toBe(false);
     expect(LoginSchema.safeParse(invalid).success).toBe(false);
     expect(await validate(toDto(RegisterDto, invalid))).not.toHaveLength(0);

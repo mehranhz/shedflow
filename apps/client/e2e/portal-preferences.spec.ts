@@ -5,7 +5,7 @@ import { CUSTOMER_DEMO, requireStack } from "./helpers";
 
 async function openPreferences(page: Page): Promise<void> {
   await page.goto("/portal/login");
-  await page.getByLabel(/email/i).fill(CUSTOMER_DEMO.email);
+  await page.getByLabel(/^phone/i).fill(CUSTOMER_DEMO.phone);
   await page.getByLabel(/^password$/i).fill(CUSTOMER_DEMO.password);
   await page.getByRole("button", { name: /log in|ورود/i }).click();
   await expect(page).toHaveURL(/\/portal\/?$/, { timeout: 45_000 });

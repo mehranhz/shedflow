@@ -4,14 +4,14 @@ import AxeBuilder from "@axe-core/playwright";
 import { apiUrl, requireStack } from "./helpers";
 
 const CUSTOMER = {
-  email: "customer@shedflow.dev",
+  phone: "+14155551001",
   password: "Password123!",
 } as const;
 
 async function seedCustomerAvailable(request: import("@playwright/test").APIRequestContext): Promise<boolean> {
   try {
     const res = await request.post(`${apiUrl()}/v1/customer/auth/login`, {
-      data: { email: CUSTOMER.email, password: CUSTOMER.password },
+      data: { phone: CUSTOMER.phone, password: CUSTOMER.password },
       timeout: 8_000,
     });
     return res.ok();
@@ -72,7 +72,7 @@ test.describe("portal smoke (T-082)", () => {
     );
 
     await page.goto("/portal/login");
-    await page.getByLabel(/email/i).fill(CUSTOMER.email);
+    await page.getByLabel(/^phone/i).fill(CUSTOMER.phone);
     await page.getByLabel(/^password$/i).fill(CUSTOMER.password);
     await page.getByRole("button", { name: /log in|sign in/i }).click();
     await expect(page).toHaveURL(/\/portal/, { timeout: 45_000 });
@@ -108,7 +108,7 @@ test.describe("portal mobile shell (T-046)", () => {
       "Seed customer (T-044) missing — skip mobile shell",
     );
     await page.goto("/portal/login");
-    await page.getByLabel(/email/i).fill(CUSTOMER.email);
+    await page.getByLabel(/^phone/i).fill(CUSTOMER.phone);
     await page.getByLabel(/^password$/i).fill(CUSTOMER.password);
     await page.getByRole("button", { name: /log in|sign in/i }).click();
     await expect(page).toHaveURL(/\/portal\/?$/, { timeout: 45_000 });

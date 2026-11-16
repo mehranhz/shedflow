@@ -88,7 +88,7 @@ export const orgsApi = {
   },
   async invite(
     orgId: string,
-    body: { email?: string; phone?: string; role: "ADMIN" | "MEMBER" },
+    body: { phone: string; role: "ADMIN" | "MEMBER" },
   ): Promise<Invitation> {
     try {
       return await apiBff<Invitation>(`organizations/${orgId}/invitations`, {
@@ -99,12 +99,10 @@ export const orgsApi = {
       if (!isMissingRoute(error)) {
         throw error;
       }
-      const contact = body.phone ?? body.email ?? "";
       const invitation: Invitation = {
         id: randomUUID(),
         organizationId: orgId,
-        email: body.email ?? contact,
-        phone: contact,
+        phone: body.phone,
         role: body.role,
         createdAt: new Date().toISOString(),
         expiresAt: addMinutes(new Date(), 60 * 24 * 7).toISOString(),
@@ -129,7 +127,6 @@ export const orgsApi = {
     }
     return previewStore.listInvitations(orgId).map((item) => ({
       ...item,
-      email: item.phone,
       phone: item.phone,
     }));
   },
@@ -465,7 +462,7 @@ export const schedulingApi = {
       eventTypeId: string;
       startAt: string;
       timezone: string;
-      invitee: { name: string; email: string; phone?: string };
+      invitee: { name: string; phone: string };
       answers?: Record<string, string | boolean>;
     },
   ): Promise<Result<Booking>> {
@@ -490,9 +487,8 @@ export const schedulingApi = {
     const customer = previewStore.upsertCustomer(org.id, {
       id: randomUUID(),
       organizationId: org.id,
-      email: input.invitee.email,
       name: input.invitee.name,
-      phone: input.invitee.phone ?? null,
+      phone: input.invitee.phone,
       timezone: input.timezone,
       notes: "",
       createdAt: now,
@@ -527,7 +523,6 @@ export const schedulingApi = {
       customer: {
         id: customer.id,
         name: customer.name,
-        email: customer.email,
         phone: customer.phone,
       },
     };
@@ -839,7 +834,7 @@ export const publicScheduling = {
       orgSlug: string;
       startAt: string;
       timezone: string;
-      invitee: { name: string; email?: string; phone?: string };
+      invitee: { name: string; phone: string };
       answers: Record<string, string | boolean>;
       metadata?: Record<string, unknown>;
       source: "HOSTED" | "EMBED";
@@ -881,9 +876,8 @@ export const publicScheduling = {
     const customer = previewStore.upsertCustomer(bundle.org.id, {
       id: randomUUID(),
       organizationId: bundle.org.id,
-      email: body.invitee.email?.trim() ?? "",
       name: body.invitee.name,
-      phone: body.invitee.phone ?? null,
+      phone: body.invitee.phone,
       timezone: body.timezone,
       notes: "",
       createdAt: now,

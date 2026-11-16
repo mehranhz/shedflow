@@ -24,27 +24,27 @@ export function PortalClaimForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tokenFromQuery = searchParams.get("token") ?? "";
-  const emailFromQuery = searchParams.get("email") ?? "";
+  const phoneFromQuery = searchParams.get("phone") ?? "";
 
-  const [email, setEmail] = useState(emailFromQuery);
+  const [phone, setPhone] = useState(phoneFromQuery);
   const [token, setToken] = useState(tokenFromQuery);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (emailFromQuery) {
-      setEmail(emailFromQuery);
+    if (phoneFromQuery) {
+      setPhone(phoneFromQuery);
     }
-  }, [emailFromQuery]);
+  }, [phoneFromQuery]);
 
   const requestClaim = () => {
     setError(null);
     setMessage(null);
     startTransition(async () => {
       try {
-        await requestCustomerClaim(email);
-        setMessage(t("checkEmail"));
+        await requestCustomerClaim(phone);
+        setMessage(t("checkPhone"));
       } catch (err) {
         setError(err instanceof Error ? err.message : t("requestFailed"));
       }
@@ -58,7 +58,7 @@ export function PortalClaimForm() {
       try {
         const session = await confirmCustomerClaim(token);
         const result = await signIn("customer-portal", {
-          email: session.user.email ?? email,
+          phone: session.user.phone ?? phone,
           accessToken: session.accessToken,
           refreshToken: session.refreshToken,
           redirect: false,
@@ -92,16 +92,17 @@ export function PortalClaimForm() {
           </Alert>
         ) : null}
         <div className="grid gap-2">
-          <Label htmlFor="claim-email">{t("email")}</Label>
+          <Label htmlFor="claim-phone">{t("phone")}</Label>
           <Input
-            id="claim-email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
+            id="claim-phone"
+            type="tel"
+            autoComplete="tel"
+            inputMode="tel"
+            value={phone}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setPhone(event.target.value)}
           />
         </div>
-        <Button type="button" className="min-h-11" disabled={isPending || !email} onClick={requestClaim}>
+        <Button type="button" className="min-h-11" disabled={isPending || !phone} onClick={requestClaim}>
           {t("sendLink")}
         </Button>
       </section>

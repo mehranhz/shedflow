@@ -15,7 +15,9 @@ export default function BookingPendingHost(props: BookingEmailProps) {
     >
       {paragraph(`A new booking for ${props.eventTitle} is waiting for your confirmation.`)}
       {paragraph(`When: ${props.whenLabel}`)}
-      {paragraph(`Invitee: ${props.inviteeName} <${props.inviteeEmail}>`)}
+      {paragraph(
+        `Invitee: ${props.inviteeName}${props.inviteePhone ? ` · ${props.inviteePhone}` : ''}`,
+      )}
     </EmailShell>
   );
 }

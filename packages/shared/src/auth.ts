@@ -1,17 +1,28 @@
 import { z } from 'zod';
 
+const phoneField = z
+  .string()
+  .min(3)
+  .max(32)
+  .refine((value) => !value.includes('@'), 'Phone is required');
+
 export const RegisterSchema = z.object({
-  email: z.string().email(),
+  username: phoneField,
   password: z.string().min(8),
   name: z.string().min(1).max(120).optional(),
   organizationName: z.string().min(1).max(100).optional(),
   timezone: z.string().min(1).optional(),
 });
 
-export const LoginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
+export const LoginSchema = z
+  .object({
+    username: phoneField.optional(),
+    phone: phoneField.optional(),
+    password: z.string().min(8),
+  })
+  .refine((value) => Boolean(value.username || value.phone), {
+    message: 'Phone is required',
+  });
 
 export const RefreshSchema = z.object({
   refreshToken: z.string().min(1),
@@ -19,7 +30,7 @@ export const RefreshSchema = z.object({
 });
 
 export const ForgotPasswordSchema = z.object({
-  email: z.string().email(),
+  phone: phoneField,
 });
 
 export const ResetPasswordSchema = z.object({

@@ -27,7 +27,7 @@ export function PortalLoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
 
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -42,13 +42,13 @@ export function PortalLoginForm() {
       try {
         const session = mfaToken
           ? await completeCustomerMfaLogin(mfaToken, code.trim())
-          : await loginCustomer(email, password);
+          : await loginCustomer(phone, password);
         if ("mfaRequired" in session) {
           setMfaToken(session.mfaToken);
           return;
         }
         const result = await signIn("customer-portal", {
-          email,
+          phone,
           accessToken: session.accessToken,
           refreshToken: session.refreshToken,
           redirect: false,
@@ -81,15 +81,16 @@ export function PortalLoginForm() {
       ) : null}
 
       <div className="grid gap-2">
-        <Label htmlFor="email">{t("email")}</Label>
+        <Label htmlFor="phone">{t("phone")}</Label>
         <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id="phone"
+          name="phone"
+          type="tel"
+          autoComplete="tel"
+          inputMode="tel"
           required
-          value={email}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
+          value={phone}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => setPhone(event.target.value)}
         />
       </div>
 

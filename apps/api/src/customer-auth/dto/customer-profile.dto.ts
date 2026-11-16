@@ -1,7 +1,6 @@
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
-  IsEmail,
   IsIn,
   IsOptional,
   IsString,
@@ -85,22 +84,3 @@ export class UpdateCustomerProfileDto {
   portal?: PortalPreferencesDto;
 }
 
-export class RequestEmailChangeDto {
-  @IsEmail()
-  email!: string;
-
-  @IsString()
-  @MinLength(4)
-  updatedAt!: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(32)
-  totpCode?: string;
-}
-
-export class ConfirmEmailChangeDto {
-  @IsString()
-  @MinLength(20)
-  token!: string;
-}

@@ -47,7 +47,7 @@ type ClientBooking = {
   cancellationReason: string | null;
   eventType?: { id: string; slug: string; title: string };
   organization?: { id: string; name: string; slug: string };
-  customer?: { id: string; name: string; email: string; phone: string | null };
+  customer?: { id: string; name: string; phone: string | null };
 };
 
 function bookingHeading(booking: ClientBooking, fallback: string): string {

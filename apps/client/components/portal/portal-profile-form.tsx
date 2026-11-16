@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   Alert,
@@ -20,9 +19,7 @@ import {
 import { usePortalBusiness } from "@/components/portal/portal-business-context";
 import { ClientApiError } from "@/lib/http";
 import {
-  confirmCustomerEmailChange,
   fetchCustomerMe,
-  requestCustomerEmailChange,
   updateCustomerProfile,
   type CustomerMe,
 } from "@/lib/portal/customer-api";
@@ -40,18 +37,6 @@ const TIMEZONES = [
   "Asia/Tokyo",
   "Australia/Sydney",
 ] as const;
-
-const emailConfirms = new Map<string, Promise<CustomerMe>>();
-
-function confirmEmailOnce(token: string): Promise<CustomerMe> {
-  const existing = emailConfirms.get(token);
-  if (existing) {
-    return existing;
-  }
-  const pending = confirmCustomerEmailChange(token);
-  emailConfirms.set(token, pending);
-  return pending;
-}
 
 function readFieldErrors(error: unknown): Record<string, string[]> {
   if (!(error instanceof ClientApiError) || !error.details || typeof error.details !== "object") {
@@ -88,18 +73,14 @@ function FieldError({ id, messages }: { id: string; messages?: string[] }) {
 
 export function PortalProfileForm() {
   const t = useTranslations("portal.account.profile");
-  const searchParams = useSearchParams();
-  const emailToken = searchParams.get("emailToken");
   const { activeBusiness } = usePortalBusiness();
   const organizationId = activeBusiness?.organizationId;
 
   const [loaded, setLoaded] = useState<CustomerMe | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [requestingEmail, setRequestingEmail] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
-  const [emailError, setEmailError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
@@ -108,9 +89,6 @@ export function PortalProfileForm() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [timezone, setTimezone] = useState("UTC");
   const [locale, setLocale] = useState("en");
-  const [email, setEmail] = useState("");
-  const [nextEmail, setNextEmail] = useState("");
-  const [emailTotp, setEmailTotp] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [businessPhone, setBusinessPhone] = useState("");
 
@@ -121,12 +99,6 @@ export function PortalProfileForm() {
       setLoading(true);
       setLoadError(null);
       try {
-        if (emailToken) {
-          await confirmEmailOnce(emailToken);
-          if (!cancelled) {
-            setNotice(t("emailUpdated"));
-          }
-        }
         const me = await fetchCustomerMe(organizationId);
         if (cancelled) {
           return;
@@ -147,7 +119,7 @@ export function PortalProfileForm() {
     return () => {
       cancelled = true;
     };
-  }, [emailToken, organizationId, t]);
+  }, [organizationId, t]);
 
   function applyProfile(me: CustomerMe): void {
     setLoaded(me);
@@ -156,7 +128,6 @@ export function PortalProfileForm() {
     setPhotoUrl(me.user.photoUrl ?? "");
     setTimezone(me.user.timezone || "UTC");
     setLocale(me.user.locale === "fa" ? "fa" : "en");
-    setEmail(me.user.email ?? "");
     setBusinessName(me.businessProfile?.name ?? "");
     setBusinessPhone(me.businessProfile?.phone ?? "");
     setFieldErrors({});
@@ -214,33 +185,6 @@ export function PortalProfileForm() {
       );
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function onRequestEmail(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    if (!loaded?.user.updatedAt) {
-      setEmailError(t("loadError"));
-      return;
-    }
-    setRequestingEmail(true);
-    setEmailError(null);
-    setNotice(null);
-    try {
-      await requestCustomerEmailChange(nextEmail, loaded.user.updatedAt, emailTotp.trim() || undefined);
-      setNextEmail("");
-      setEmailTotp("");
-      setNotice(t("emailSent"));
-    } catch (error) {
-      const errors = readFieldErrors(error);
-      setFieldErrors((current) => ({ ...current, ...errors }));
-      setEmailError(
-        error instanceof ClientApiError && error.status === 409
-          ? messageOf(error, t("saveError"))
-          : messageOf(error, t("emailInvalid")),
-      );
-    } finally {
-      setRequestingEmail(false);
     }
   }
 
@@ -405,55 +349,6 @@ export function PortalProfileForm() {
 
         <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={saving || !loaded}>
           {saving ? t("saving") : t("save")}
-        </Button>
-      </form>
-
-      <form
-        onSubmit={(event) => void onRequestEmail(event)}
-        className="space-y-4 rounded-lg border p-4"
-      >
-        <div className="grid gap-2">
-          <Label htmlFor="profile-email">{t("email")}</Label>
-          <Input id="profile-email" name="email" type="email" value={email} readOnly />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="profile-new-email">{t("newEmail")}</Label>
-          <Input
-            id="profile-new-email"
-            name="newEmail"
-            type="email"
-            autoComplete="email"
-            value={nextEmail}
-            aria-invalid={fieldErrors.email ? true : undefined}
-            onChange={(event) => setNextEmail(event.target.value)}
-          />
-          <FieldError id="profile-email-error" messages={fieldErrors.email} />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="profile-email-totp">{t("emailTotp")}</Label>
-          <Input
-            id="profile-email-totp"
-            name="totpCode"
-            inputMode="text"
-            autoComplete="one-time-code"
-            value={emailTotp}
-            aria-invalid={fieldErrors.totpCode ? true : undefined}
-            aria-describedby="profile-email-totp-hint"
-            onChange={(event) => setEmailTotp(event.target.value)}
-          />
-          <p id="profile-email-totp-hint" className="text-sm text-muted-foreground">
-            {t("emailTotpHint")}
-          </p>
-          <FieldError id="profile-email-totp-error" messages={fieldErrors.totpCode} />
-        </div>
-        {emailError ? <p className="text-sm text-destructive">{emailError}</p> : null}
-        <Button
-          type="submit"
-          variant="outline"
-          className="min-h-11 w-full sm:w-auto"
-          disabled={requestingEmail || nextEmail.trim().length === 0}
-        >
-          {t("requestEmail")}
         </Button>
       </form>
     </div>

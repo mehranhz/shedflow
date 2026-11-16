@@ -20,9 +20,9 @@ export abstract class InvitationRepository extends Repository<
 
   abstract findByTokenHash(tokenHash: string): Promise<Invitation | null>;
 
-  abstract findPendingByEmail(
+  abstract findPendingByPhone(
     organizationId: string,
-    email: string,
+    phone: string,
   ): Promise<Invitation | null>;
 
   abstract deleteInOrganization(

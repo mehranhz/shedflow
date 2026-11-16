@@ -9,6 +9,7 @@ import { MembershipRepository } from '../memberships/membership.repository';
 import { RefreshTokenRepository } from '../refresh-tokens/refresh-token.repository';
 import { PublicUser, User } from '../users/user';
 import { UserRepository } from '../users/user.repository';
+import { presentUser } from '../auth/auth.service';
 import { UsersService } from '../users/users.service';
 
 export type MeExport = {
@@ -47,7 +48,7 @@ export class MeService {
     const memberships = await this.memberships.listByUserId(userId);
     return {
       user: {
-        ...this.users.toPublic(user),
+        ...presentUser(this.users.toPublic(user)),
         name: user.name,
         timezone: user.timezone,
         locale: user.locale,

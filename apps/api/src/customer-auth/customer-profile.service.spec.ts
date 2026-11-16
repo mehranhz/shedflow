@@ -301,6 +301,7 @@ describe('customer profile API validation (T-055)', () => {
 
     expect(saved.user.name).toBe('Ada Lovelace');
     expect(saved.user.phone).toBe('+14155552671');
+    expect(db.users[0]?.email).toBe('phone.14155552671@users.shedflow.invalid');
     expect(saved.user.photoUrl).toBe('https://cdn.example/ada.png');
     expect(saved.user.timezone).toBe('Asia/Tehran');
     expect(saved.user.locale).toBe('fa');

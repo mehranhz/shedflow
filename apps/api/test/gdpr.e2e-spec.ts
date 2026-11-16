@@ -15,6 +15,7 @@ import { configureApp } from './../src/app.setup';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { anonymizedCustomerEmail } from './../src/customers/customers.service';
 import { anonymizedUserEmail } from './../src/me/me.service';
+import { testPhone } from './test-phone';
 
 config({ path: resolve(__dirname, '../../../.env') });
 config({ path: resolve(__dirname, '../../.env') });
@@ -64,12 +65,12 @@ describe('GDPR export/erasure (e2e)', () => {
   async function register(email: string) {
     const response = await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ email, password: 'password123', timezone: 'UTC' })
+      .send({ username: testPhone(email), password: 'password123', timezone: 'UTC' })
       .expect(201);
     return response.body as {
       accessToken: string;
       refreshToken: string;
-      user: { id: string; email: string };
+      user: { id: string; phone: string };
     };
   }
 
@@ -175,7 +176,8 @@ describe('GDPR export/erasure (e2e)', () => {
       .get('/v1/me/export')
       .set('Authorization', `Bearer ${session.accessToken}`)
       .expect(200);
-    expect(exported.body.user.email).toBe('deleteme@example.com');
+    expect(exported.body.user.phone).toBe(testPhone('deleteme@example.com'));
+    expect(exported.body.user).not.toHaveProperty('email');
 
     await request(app.getHttpServer())
       .delete('/v1/me')

@@ -35,7 +35,6 @@ export function CreateBookingDialog() {
   const [eventTypeId, setEventTypeId] = useState("");
   const [startLocal, setStartLocal] = useState("");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
 
   const events = useQuery({
@@ -50,7 +49,7 @@ export function CreateBookingDialog() {
 
   const create = useMutation({
     mutationFn: async () => {
-      if (!eventTypeId || !startLocal || !name.trim() || !email.trim()) {
+      if (!eventTypeId || !startLocal || !name.trim() || !phone.trim()) {
         throw new Error(t("createRequired"));
       }
       const startAt = new Date(startLocal).toISOString();
@@ -60,8 +59,7 @@ export function CreateBookingDialog() {
         timezone: organization.timezone,
         invitee: {
           name: name.trim(),
-          email: email.trim(),
-          phone: phone.trim() || undefined,
+          phone: phone.trim(),
         },
       });
     },
@@ -73,7 +71,6 @@ export function CreateBookingDialog() {
       setEventTypeId("");
       setStartLocal("");
       setName("");
-      setEmail("");
       setPhone("");
     },
     onError: (error) => {
@@ -132,18 +129,7 @@ export function CreateBookingDialog() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="invitee-email">{t("inviteeEmail")}</Label>
-            <Input
-              id="invitee-email"
-              type="email"
-              value={email}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                setEmail(event.target.value)
-              }
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="invitee-phone">{t("phoneOptional")}</Label>
+            <Label htmlFor="invitee-phone">{t("phone")}</Label>
             <Input
               id="invitee-phone"
               value={phone}

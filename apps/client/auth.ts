@@ -77,7 +77,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return {
           id: session.user.id,
           phone: session.user.phone ?? phone,
-          email: session.user.email,
           accessToken: session.accessToken,
           refreshToken: session.refreshToken,
         };
@@ -87,7 +86,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       id: "customer-portal",
       name: "Customer portal",
       credentials: {
-        email: { label: "Email", type: "text" },
+        phone: { label: "Phone", type: "text" },
         password: { label: "Password", type: "password" },
         accessToken: { label: "Access token", type: "text" },
         refreshToken: { label: "Refresh token", type: "text" },
@@ -105,17 +104,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           if (!claims.id) {
             return null;
           }
+          const phone =
+            typeof credentials?.phone === "string" ? credentials.phone : undefined;
           return {
             id: claims.id,
-            email: typeof credentials?.email === "string" ? credentials.email : undefined,
+            phone,
             accessToken,
             refreshToken,
           };
         }
 
-        const email = credentials?.email;
+        const phone = credentials?.phone;
         const password = credentials?.password;
-        if (typeof email !== "string" || typeof password !== "string") {
+        if (typeof phone !== "string" || typeof password !== "string") {
           return null;
         }
 
@@ -126,7 +127,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               "Content-Type": "application/json",
               Accept: "application/json",
             },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ phone, password }),
             cache: "no-store",
           });
           if (!response.ok) {
@@ -138,7 +139,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
           return {
             id: session.user.id,
-            email: session.user.email ?? email,
+            phone: session.user.phone ?? phone,
             accessToken: session.accessToken,
             refreshToken: session.refreshToken,
           };
@@ -164,9 +165,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id;
         if (user.phone) {
           token.phone = user.phone;
-        }
-        if (user.email) {
-          token.email = user.email;
         }
         applyAccessToken(token, user.accessToken, user.refreshToken);
 
@@ -234,9 +232,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       if (token.phone) {
         session.user.phone = token.phone;
-      }
-      if (token.email) {
-        session.user.email = token.email;
       }
       if (token.accessToken) {
         session.accessToken = token.accessToken;

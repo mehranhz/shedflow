@@ -21,7 +21,7 @@ export default function Invitation({
       title="You're invited"
       ctaLabel="Accept invitation"
       ctaHref={inviteUrl}
-      footer="This invitation expires. If you were not expecting it, ignore this email."
+      footer="This invitation expires. If you were not expecting it, ignore this message."
     >
       {paragraph(
         `You've been invited to join ${organizationName} as ${role.toLowerCase()}.`,

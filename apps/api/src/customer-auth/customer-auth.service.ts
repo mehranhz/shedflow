@@ -11,7 +11,7 @@ import { MembershipStatus } from '@shedflow/db';
 import { Clock } from '../common/clock/clock';
 import { MembershipRepository } from '../memberships/membership.repository';
 import { PrismaService } from '../prisma/prisma.service';
-import { AuthService, type AuthSession } from '../auth/auth.service';
+import { AuthService, syntheticEmailForPhone, type AuthSession } from '../auth/auth.service';
 import { CustomerSecurityService } from '../customer-security/customer-security.service';
 import type { RefreshTokenClientMeta } from '../refresh-tokens/refresh-token';
 import { UsersService } from '../users/users.service';
@@ -55,37 +55,39 @@ export class CustomerAuthService {
   ) {}
 
   async register(
-    input: { email: string; password: string; name?: string; timezone?: string },
+    input: { phone: string; password: string; name?: string; timezone?: string },
     meta: RefreshTokenClientMeta,
   ): Promise<CustomerSession> {
-    const email = normalizeEmail(input.email);
-    if (await this.users.findByEmail(email)) {
-      throw new ConflictException('Email is already registered');
+    const phone = normalizePhone(input.phone);
+    if (await this.users.findByPhone(phone)) {
+      throw new ConflictException('Phone is already registered');
     }
     const passwordHash = await bcrypt.hash(input.password, 10);
     const now = this.clock.now();
-    const user = await this.users.create(email, passwordHash, {
+    const user = await this.users.create(syntheticEmailForPhone(phone), passwordHash, {
       name: input.name?.trim() || null,
       timezone: input.timezone?.trim() || 'UTC',
+      phone,
+      phoneVerifiedAt: now,
     });
     await this.users.markEmailVerified(user.id, now);
-    await this.linkCustomers(user.id, email);
+    await this.linkCustomers(user.id, phone);
     const fresh = (await this.users.findById(user.id)) ?? user;
     return this.session(this.users.toPublic(fresh), meta);
   }
 
   async login(
-    email: string,
+    phone: string,
     password: string,
     meta: RefreshTokenClientMeta,
   ): Promise<CustomerLoginResult> {
-    const normalized = normalizeEmail(email);
-    const user = await this.users.findByEmail(normalized);
+    const normalized = normalizePhone(phone);
+    const user = await this.users.findByPhone(normalized);
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    if (!user.emailVerifiedAt) {
-      throw new HttpException('Email is not verified', 403);
+    if (!user.phoneVerifiedAt) {
+      throw new HttpException('Phone is not verified', 403);
     }
     const businesses = await this.businessesFor(user.id);
     const memberships = await this.memberships.listByUserId(user.id);
@@ -122,10 +124,10 @@ export class CustomerAuthService {
     return this.session(this.users.toPublic(user), meta);
   }
 
-  async requestClaim(email: string): Promise<void> {
-    const normalized = normalizeEmail(email);
+  async requestClaim(phone: string): Promise<void> {
+    const normalized = normalizePhone(phone);
     const customers = await this.prisma.customer.count({
-      where: { email: { equals: normalized, mode: 'insensitive' } },
+      where: { phone: normalized },
     });
     if (customers === 0) {
       return;
@@ -133,14 +135,14 @@ export class CustomerAuthService {
     const raw = randomBytes(32).toString('base64url');
     await this.prisma.customerClaimToken.create({
       data: {
-        email: normalized,
+        phone: normalized,
         tokenHash: sha256(raw),
         expiresAt: new Date(this.clock.now().getTime() + CLAIM_TTL_MS),
       },
     });
     const appUrl = (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
     this.logger.log(
-      `customer claim ${normalized} ${appUrl}/portal/claim?token=${raw}`,
+      `customer claim ${normalized} ${appUrl}/portal/claim?token=${raw}&phone=${encodeURIComponent(normalized)}`,
     );
   }
 
@@ -160,16 +162,20 @@ export class CustomerAuthService {
       data: { usedAt: now },
     });
 
-    let user = await this.users.findByEmail(stored.email);
+    let user = await this.users.findByPhone(stored.phone);
     if (!user) {
       const passwordHash = await bcrypt.hash(randomBytes(24).toString('hex'), 10);
-      user = await this.users.create(stored.email, passwordHash, { timezone: 'UTC' });
+      user = await this.users.create(syntheticEmailForPhone(stored.phone), passwordHash, {
+        timezone: 'UTC',
+        phone: stored.phone,
+        phoneVerifiedAt: now,
+      });
       await this.users.markEmailVerified(user.id, now);
       user = (await this.users.findById(user.id)) ?? user;
-    } else if (!user.emailVerifiedAt) {
-      user = await this.users.markEmailVerified(user.id, now);
+    } else if (!user.phoneVerifiedAt) {
+      user = await this.users.markPhoneVerified(user.id, now);
     }
-    await this.linkCustomers(user.id, stored.email);
+    await this.linkCustomers(user.id, stored.phone);
     return this.session(this.users.toPublic(user), meta);
   }
 
@@ -211,11 +217,11 @@ export class CustomerAuthService {
     return { ...auth, businesses: linked, actorType: 'CUSTOMER' };
   }
 
-  private async linkCustomers(userId: string, email: string): Promise<void> {
+  private async linkCustomers(userId: string, phone: string): Promise<void> {
     await this.prisma.customer.updateMany({
       where: {
         userId: null,
-        email: { equals: email, mode: 'insensitive' },
+        phone,
       },
       data: { userId },
     });
@@ -246,8 +252,12 @@ export class CustomerAuthService {
   }
 }
 
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+function normalizePhone(phone: string): string {
+  const value = phone.trim();
+  if (!value || value.includes('@')) {
+    throw new UnauthorizedException('Invalid credentials');
+  }
+  return value;
 }
 
 function sha256(value: string): string {

@@ -10,7 +10,7 @@ test.describe("portal profile (T-055)", () => {
   test("rejects an invalid phone, then saves the profile name", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/portal/login");
-    await page.getByLabel(/email/i).fill(CUSTOMER_DEMO.email);
+    await page.getByLabel(/^phone/i).fill(CUSTOMER_DEMO.phone);
     await page.getByLabel(/^password$/i).fill(CUSTOMER_DEMO.password);
     await page.getByRole("button", { name: /log in/i }).click();
     await expect(page).toHaveURL(/\/portal\/?$/, { timeout: 45_000 });

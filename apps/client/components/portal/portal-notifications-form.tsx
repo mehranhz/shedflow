@@ -248,9 +248,9 @@ export function PortalNotificationsForm() {
       <fieldset className="space-y-4">
         <legend className="text-sm font-medium">{t("channels")}</legend>
         <ToggleRow
-          id="notify-email"
-          label={t("email")}
-          hint={t("emailHint")}
+          id="notify-text"
+          label={t("text")}
+          hint={t("textHint")}
           checked={emailEnabled}
           onCheckedChange={setEmailEnabled}
         />

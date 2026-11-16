@@ -22,8 +22,11 @@ export type User = {
 // the entity are not accidentally exposed through the API.
 export type PublicUser = Pick<
   User,
-  'id' | 'email' | 'createdAt' | 'emailVerifiedAt' | 'phone' | 'phoneVerifiedAt' | 'name'
->;
+  'id' | 'createdAt' | 'emailVerifiedAt' | 'phone' | 'phoneVerifiedAt' | 'name'
+> & {
+  /** Hidden synthetic mailbox. Omitted from API responses. */
+  email?: string;
+};
 
 export type AuthenticatedUser = PublicUser & {
   orgId?: string;

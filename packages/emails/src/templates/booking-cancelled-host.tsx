@@ -10,7 +10,9 @@ export default function BookingCancelledHost(props: BookingEmailProps) {
     <EmailShell preview={`${props.eventTitle} was cancelled`} title="Booking cancelled">
       {paragraph(`A booking for ${props.eventTitle} was cancelled.`)}
       {paragraph(`When: ${props.whenLabel}`)}
-      {paragraph(`Invitee: ${props.inviteeName} <${props.inviteeEmail}>`)}
+      {paragraph(
+        `Invitee: ${props.inviteeName}${props.inviteePhone ? ` · ${props.inviteePhone}` : ''}`,
+      )}
       {props.reason ? paragraph(`Reason: ${props.reason}`) : null}
     </EmailShell>
   );

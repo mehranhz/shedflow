@@ -6,7 +6,9 @@ export type BookingEmailProps = {
   whenLabel: string;
   locationLabel?: string | null;
   inviteeName: string;
+  /** Transport address. Templates must not render it. */
   inviteeEmail: string;
+  inviteePhone?: string | null;
   hostName: string;
   manageUrl?: string | null;
   reason?: string | null;
@@ -26,7 +28,9 @@ export default function BookingConfirmedHost(props: BookingEmailProps) {
       {paragraph(`You have a confirmed booking for ${props.eventTitle}.`)}
       {paragraph(`When: ${props.whenLabel}`)}
       {props.locationLabel ? paragraph(`Where: ${props.locationLabel}`) : null}
-      {paragraph(`Invitee: ${props.inviteeName} <${props.inviteeEmail}>`)}
+      {paragraph(
+        `Invitee: ${props.inviteeName}${props.inviteePhone ? ` · ${props.inviteePhone}` : ''}`,
+      )}
     </EmailShell>
   );
 }

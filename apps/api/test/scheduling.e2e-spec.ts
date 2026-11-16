@@ -7,6 +7,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { randomUUID } from 'node:crypto';
 import { AppModule } from './../src/app.module';
+import { testPhone } from './test-phone';
 import { configureApp } from './../src/app.setup';
 import { PrismaService } from './../src/prisma/prisma.service';
 
@@ -57,7 +58,7 @@ describe('Scheduling (e2e)', () => {
   async function register(email: string) {
     const response = await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ email, password: 'password123', timezone: 'UTC' })
+      .send({ username: testPhone(email), password: 'password123', timezone: 'UTC' })
       .expect(201);
     return response.body as {
       accessToken: string;
@@ -225,7 +226,7 @@ describe('Scheduling (e2e)', () => {
       eventTypeSlug: 'intro',
       startAt,
       timezone: 'UTC',
-      invitee: { name: 'Ada', email: 'ada@example.com' },
+      invitee: { name: 'Ada', phone: testPhone('ada') },
       answers: {},
       source: 'HOSTED',
     };
@@ -240,7 +241,7 @@ describe('Scheduling (e2e)', () => {
         .set('Idempotency-Key', randomUUID())
         .send({
           ...body,
-          invitee: { name: 'Grace', email: 'grace@example.com' },
+          invitee: { name: 'Grace', phone: testPhone('grace') },
         }),
     ]);
 
@@ -290,7 +291,7 @@ describe('Scheduling (e2e)', () => {
         eventTypeSlug: 'intro',
         startAt,
         timezone: 'UTC',
-        invitee: { name: 'Ada', email: 'ada2@example.com' },
+        invitee: { name: 'Ada', phone: testPhone('ada2') },
         answers: {},
         source: 'HOSTED',
       })
@@ -332,8 +333,9 @@ describe('Scheduling (e2e)', () => {
       })
       .expect(201);
 
-    const org = await prisma.organization.findUniqueOrThrow({
+    const org = await prisma.organization.update({
       where: { id: orgId },
+      data: { platformPlan: 'PRO' },
     });
     const startAt = nextWeekdayUtc(2, 10, 0).toISOString();
     const created = await request(app.getHttpServer())
@@ -344,7 +346,7 @@ describe('Scheduling (e2e)', () => {
         eventTypeSlug: eventType.body.slug,
         startAt,
         timezone: 'UTC',
-        invitee: { name: 'Pay', email: 'pay@example.com' },
+        invitee: { name: 'Pay', phone: testPhone('pay') },
         answers: {},
         source: 'HOSTED',
       })

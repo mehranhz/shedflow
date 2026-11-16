@@ -110,7 +110,6 @@ export function PortalBookEvent({ eventSlug }: { eventSlug: string }) {
         portalBooking={{
           customerOrgId: orgId ?? "",
           name: me.data?.user.name ?? "",
-          email: me.data?.user.email ?? "",
           phone: me.data?.user.phone ?? "",
           timezone: me.data?.user.timezone,
           recurringEnabled: home.data?.features.customerRecurring ?? false,

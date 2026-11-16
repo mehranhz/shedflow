@@ -34,7 +34,7 @@ export class CustomerAuthController {
   @HttpCode(200)
   @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
   async login(@Body() dto: CustomerLoginDto, @Req() req: Request) {
-    const session = await this.customers.login(dto.email, dto.password, meta(req));
+    const session = await this.customers.login(dto.phone, dto.password, meta(req));
     return { success: true, data: session };
   }
 
@@ -50,7 +50,7 @@ export class CustomerAuthController {
   @HttpCode(204)
   @Throttle({ default: { limit: 5, ttl: 60 * 60 * 1000 } })
   claim(@Body() dto: CustomerClaimDto) {
-    return this.customers.requestClaim(dto.email);
+    return this.customers.requestClaim(dto.phone);
   }
 
   @Post('claim/confirm')

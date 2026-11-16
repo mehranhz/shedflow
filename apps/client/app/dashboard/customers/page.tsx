@@ -50,7 +50,6 @@ export default function CustomersPage() {
     return list.filter(
       (customer) =>
         customer.name.toLowerCase().includes(q) ||
-        customer.email.toLowerCase().includes(q) ||
         (customer.phone ?? "").toLowerCase().includes(q),
     );
   }, [query.data, search]);
@@ -91,8 +90,7 @@ export default function CustomersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("colName")}</TableHead>
-                <TableHead>{t("colEmail")}</TableHead>
-                <TableHead className="hidden md:table-cell">{t("colPhone")}</TableHead>
+                <TableHead>{t("colPhone")}</TableHead>
                 <TableHead className="hidden sm:table-cell">{t("colBookings")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -107,10 +105,7 @@ export default function CustomersPage() {
                       {customer.name}
                     </Link>
                   </TableCell>
-                  <TableCell>{customer.email}</TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {customer.phone ?? "—"}
-                  </TableCell>
+                  <TableCell>{customer.phone ?? "—"}</TableCell>
                   <TableCell className="hidden sm:table-cell">
                     {bookingCounts.get(customer.id) ?? 0}
                   </TableCell>

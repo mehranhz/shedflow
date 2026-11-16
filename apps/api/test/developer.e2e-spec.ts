@@ -6,6 +6,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { PlatformPlan } from '@shedflow/db';
 import { AppModule } from './../src/app.module';
+import { testPhone } from './test-phone';
 import { configureApp } from './../src/app.setup';
 import { PrismaService } from './../src/prisma/prisma.service';
 
@@ -58,7 +59,7 @@ describe('Developer API (e2e)', () => {
   async function register(email: string) {
     const response = await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ email, password: 'password123', timezone: 'UTC' })
+      .send({ username: testPhone(email), password: 'password123', timezone: 'UTC' })
       .expect(201);
     return response.body as {
       accessToken: string;

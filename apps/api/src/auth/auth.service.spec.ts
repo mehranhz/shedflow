@@ -389,27 +389,30 @@ describe('AuthService', () => {
     usersService = module.get(UsersService);
   });
 
-  it('registers a user and returns an access token', async () => {
+  it('registers a phone and hides the synthetic mailbox', async () => {
     const result = await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
     });
 
     expect(result.accessToken).toEqual(expect.any(String));
     expect(result.refreshToken).toEqual(expect.any(String));
-    expect(result.user.email).toBe('ada@example.com');
+    expect(result.user.phone).toBe('+14155550100');
+    expect(result.user).not.toHaveProperty('email');
     expect(result.user).not.toHaveProperty('passwordHash');
+    const stored = await usersService.findByPhone('+14155550100');
+    expect(stored?.email).toBe('phone.14155550100@users.shedflow.invalid');
   });
 
-  it('rejects a duplicate email', async () => {
+  it('rejects a duplicate phone', async () => {
     await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
     });
 
     await expect(
       authService.register({
-        email: 'ADA@example.com',
+        username: '+14155550100',
         password: 'password123',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
@@ -423,29 +426,29 @@ describe('AuthService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('validates credentials', async () => {
+  it('validates phone credentials and ignores an email address', async () => {
     await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
     });
 
-    const valid = await authService.validateUser(
-      'ada@example.com',
+    const valid = await authService.validateUser('+14155550100', 'password123');
+    const invalid = await authService.validateUser('+14155550100', 'wrongpass');
+    const email = await authService.validateUser(
+      'phone.14155550100@users.shedflow.invalid',
       'password123',
     );
-    const invalid = await authService.validateUser(
-      'ada@example.com',
-      'wrongpass',
-    );
 
-    expect(valid?.email).toBe('ada@example.com');
+    expect(valid?.phone).toBe('+14155550100');
+    expect(valid).not.toHaveProperty('email');
     expect(invalid).toBeNull();
-    expect(await usersService.findByEmail('ada@example.com')).not.toBeNull();
+    expect(email).toBeNull();
+    expect(await usersService.findByPhone('+14155550100')).not.toBeNull();
   });
 
   it('issues an access JWT that expires in 15 minutes', async () => {
     const result = await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
     });
 
@@ -460,7 +463,7 @@ describe('AuthService', () => {
 
   it('creates an OWNER workspace and puts orgId on the access JWT', async () => {
     const result = await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
       name: 'Ada',
     });
@@ -483,7 +486,7 @@ describe('AuthService', () => {
 
   it('re-issues an access JWT when switching organizations', async () => {
     const session = await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
     });
     const first = jwtService.decode(session.accessToken) as JwtPayload;
@@ -508,7 +511,7 @@ describe('AuthService', () => {
 
   it('rotates the refresh token and revokes the previous hash', async () => {
     const session = await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
     });
 
@@ -516,7 +519,8 @@ describe('AuthService', () => {
 
     expect(rotated.refreshToken).not.toBe(session.refreshToken);
     expect(rotated.accessToken).not.toBe(session.accessToken);
-    expect(rotated.user.email).toBe('ada@example.com');
+    expect(rotated.user.phone).toBe('+14155550100');
+    expect(rotated.user).not.toHaveProperty('email');
 
     const previous = await refreshTokens.findByTokenHash(
       hashRefreshToken(session.refreshToken),
@@ -532,7 +536,7 @@ describe('AuthService', () => {
 
   it('revokes every refresh token for the user when a revoked hash is reused', async () => {
     const first = await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
     });
     const sibling = await authService.login(first.user);
@@ -554,37 +558,37 @@ describe('AuthService', () => {
     expect(stored.items.every((token) => token.revokedAt != null)).toBe(true);
   });
 
-  it('creates a hashed email-verify token on register and leaves the user unverified', async () => {
+  it('marks the phone verified on register and does not return a mailbox', async () => {
     const session = await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
     });
 
-    expect(session.user.emailVerifiedAt).toBeNull();
-    const stored = await userTokens.findAll();
-    expect(stored.items).toHaveLength(1);
-    expect(stored.items[0]?.type).toBe(UserTokenType.EMAIL_VERIFY);
-    expect(stored.items[0]?.tokenHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(session.user.phone).toBe('+14155550100');
+    expect(session.user).not.toHaveProperty('email');
+    const stored = await usersService.findById(session.user.id);
+    expect(stored?.phoneVerifiedAt).toEqual(now);
+    expect((await userTokens.findAll()).items).toHaveLength(0);
   });
 
-  it('forgot-password does not reveal whether the email exists', async () => {
+  it('forgot-password does not reveal whether the phone exists', async () => {
     await expect(
-      authService.forgotPassword('missing@example.com'),
+      authService.forgotPassword('+14155550999'),
     ).resolves.toBeUndefined();
 
     await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
     });
 
     await expect(
-      authService.forgotPassword('ada@example.com'),
+      authService.forgotPassword('+14155550100'),
     ).resolves.toBeUndefined();
   });
 
   it('verifies email and rejects token reuse', async () => {
     const session = await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
     });
     const raw = 'verify-raw-token';
@@ -607,7 +611,7 @@ describe('AuthService', () => {
 
   it('resets the password, revokes refresh tokens, and rejects reuse', async () => {
     const session = await authService.register({
-      email: 'ada@example.com',
+      username: '+14155550100',
       password: 'password123',
     });
     const raw = 'reset-raw-token';
@@ -621,10 +625,10 @@ describe('AuthService', () => {
     await authService.resetPassword(raw, 'newpass123');
 
     expect(
-      await authService.validateUser('ada@example.com', 'password123'),
+      await authService.validateUser('+14155550100', 'password123'),
     ).toBeNull();
     expect(
-      await authService.validateUser('ada@example.com', 'newpass123'),
+      await authService.validateUser('+14155550100', 'newpass123'),
     ).not.toBeNull();
 
     await expect(authService.refresh(session.refreshToken)).rejects.toBeInstanceOf(

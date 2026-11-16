@@ -9,6 +9,7 @@ import { BookingSource, BookingStatus, LocationType } from '@shedflow/db';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/app.setup';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { testPhone } from './test-phone';
 
 config({ path: resolve(__dirname, '../../../.env') });
 config({ path: resolve(__dirname, '../../.env') });
@@ -67,12 +68,12 @@ describe('Customer privacy consent and unlink (e2e)', () => {
   it('appends consent decisions and unlinks a business without deleting host history', async () => {
     const server = app.getHttpServer();
     const stamp = Date.now();
-    const hostEmail = `host-privacy-${stamp}@example.com`;
-    const customerEmail = `customer-privacy-${stamp}@example.com`;
+    const hostPhone = testPhone(`host-privacy-${stamp}`);
+    const customerPhone = testPhone(`customer-privacy-${stamp}`);
 
     const host = await request(server)
       .post('/auth/register')
-      .send({ email: hostEmail, password: 'password123', timezone: 'UTC' })
+      .send({ username: hostPhone, password: 'password123', timezone: 'UTC' })
       .expect(201);
     const orgId = decodeJwt(host.body.accessToken as string).orgId!;
     const hostId = host.body.user.id as string;
@@ -80,7 +81,7 @@ describe('Customer privacy consent and unlink (e2e)', () => {
     const customer = await request(server)
       .post('/v1/customer/auth/register')
       .send({
-        email: customerEmail,
+        phone: customerPhone,
         password: 'password123',
         name: 'Ada',
         timezone: 'Asia/Tehran',
@@ -116,7 +117,7 @@ describe('Customer privacy consent and unlink (e2e)', () => {
       data: {
         organizationId: orgId,
         userId,
-        email: customerEmail,
+        phone: customerPhone,
         name: 'Ada',
       },
     });
@@ -143,7 +144,7 @@ describe('Customer privacy consent and unlink (e2e)', () => {
       .get('/v1/customer/privacy')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
-    expect(initial.body.consents.marketingEmail).toEqual({
+    expect(initial.body.consents.marketingPhone).toEqual({
       granted: false,
       consentedAt: null,
     });
@@ -169,31 +170,31 @@ describe('Customer privacy consent and unlink (e2e)', () => {
       .patch('/v1/customer/privacy/consents')
       .set('Authorization', `Bearer ${accessToken}`)
       .set('User-Agent', 'privacy-e2e')
-      .send({ marketingEmail: true, marketingOffers: true })
+      .send({ marketingPhone: true, marketingOffers: true })
       .expect(200);
-    expect(granted.body.consents.marketingEmail.granted).toBe(true);
+    expect(granted.body.consents.marketingPhone.granted).toBe(true);
     expect(granted.body.consents.marketingOffers.granted).toBe(true);
-    expect(granted.body.consents.marketingEmail.consentedAt).toEqual(expect.any(String));
+    expect(granted.body.consents.marketingPhone.consentedAt).toEqual(expect.any(String));
 
     const unchanged = await request(server)
       .patch('/v1/customer/privacy/consents')
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({ marketingEmail: true })
+      .send({ marketingPhone: true })
       .expect(200);
-    expect(unchanged.body.consents.marketingEmail.consentedAt).toBe(
-      granted.body.consents.marketingEmail.consentedAt,
+    expect(unchanged.body.consents.marketingPhone.consentedAt).toBe(
+      granted.body.consents.marketingPhone.consentedAt,
     );
 
     const revoked = await request(server)
       .patch('/v1/customer/privacy/consents')
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({ marketingEmail: false })
+      .send({ marketingPhone: false })
       .expect(200);
-    expect(revoked.body.consents.marketingEmail.granted).toBe(false);
+    expect(revoked.body.consents.marketingPhone.granted).toBe(false);
     expect(revoked.body.consents.marketingOffers.granted).toBe(true);
 
     const emailLogs = await prisma.consentLog.findMany({
-      where: { userId, purpose: 'marketing_email' },
+      where: { userId, purpose: 'marketing_phone' },
       orderBy: { consentedAt: 'asc' },
     });
     expect(emailLogs).toHaveLength(2);
@@ -241,7 +242,7 @@ describe('Customer privacy consent and unlink (e2e)', () => {
     const kept = await prisma.customer.findUniqueOrThrow({ where: { id: linked.id } });
     expect(kept.userId).toBeNull();
     expect(kept.organizationId).toBe(orgId);
-    expect(kept.email).toBe(customerEmail);
+    expect(kept.phone).toBe(customerPhone);
     expect(kept.name).toBe('Ada');
 
     const keptBooking = await prisma.booking.findUniqueOrThrow({ where: { id: booking.id } });

@@ -188,7 +188,7 @@ export function BookingDetailSheet({
               <SheetTitle>{booking.eventType?.title ?? tc("meeting")}</SheetTitle>
               <SheetDescription>
                 {booking.customer?.name ?? tc("invitee")}
-                {booking.customer?.email ? ` · ${booking.customer.email}` : ""}
+                {booking.customer?.phone ? ` · ${booking.customer.phone}` : ""}
               </SheetDescription>
             </SheetHeader>
 

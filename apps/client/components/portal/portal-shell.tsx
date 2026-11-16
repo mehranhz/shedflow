@@ -68,7 +68,7 @@ export function PortalShell({
 
   const brand = activeBusiness?.brandColor;
   const initials =
-    (session?.user?.email?.[0] ?? session?.user?.phone?.[0] ?? "U").toUpperCase();
+    (session?.user?.phone?.[0] ?? "U").toUpperCase();
 
   return (
     <div
@@ -139,7 +139,7 @@ export function PortalShell({
 
         <main
           id="portal-main"
-          className="mx-auto w-full max-w-lg flex-1 px-4 py-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:max-w-none md:pb-6"
+          className="mx-auto w-full min-w-0 max-w-lg flex-1 px-4 py-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:max-w-none md:pb-6"
         >
           {children}
         </main>

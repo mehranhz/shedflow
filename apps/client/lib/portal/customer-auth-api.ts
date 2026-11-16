@@ -36,12 +36,12 @@ export type CustomerLoginResult =
   | CustomerAuthSession;
 
 export async function loginCustomer(
-  email: string,
+  phone: string,
   password: string,
 ): Promise<CustomerLoginResult> {
   const payload = await apiBff<unknown>("customer/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ phone, password }),
   });
   const data = unwrapData<Record<string, unknown>>(payload);
   if (data.mfaRequired === true && typeof data.mfaToken === "string") {
@@ -63,12 +63,12 @@ export function completeCustomerMfaLogin(mfaToken: string, code: string) {
 }
 
 export function registerCustomer(input: {
-  email: string;
+  phone: string;
   password: string;
   name?: string;
 }) {
   return postCustomerAuth<CustomerAuthSession>("register", {
-    email: input.email,
+    phone: input.phone,
     password: input.password,
     ...(input.name ? { name: input.name } : {}),
   });
@@ -79,9 +79,9 @@ export function confirmCustomerClaim(token: string) {
 }
 
 /** Enumeration-safe: always succeeds from the client's perspective on 204. */
-export async function requestCustomerClaim(email: string): Promise<void> {
+export async function requestCustomerClaim(phone: string): Promise<void> {
   await apiBff<undefined>(`customer/auth/claim`, {
     method: "POST",
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ phone }),
   });
 }

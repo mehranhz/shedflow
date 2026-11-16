@@ -72,12 +72,12 @@ export function PortalPrivacyForm() {
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [overview, setOverview] = useState<PrivacyOverview | null>(null);
-  const [marketingEmail, setMarketingEmail] = useState(false);
+  const [marketingPhone, setMarketingPhone] = useState(false);
   const [marketingOffers, setMarketingOffers] = useState(false);
 
   function applyOverview(next: PrivacyOverview) {
     setOverview(next);
-    setMarketingEmail(next.consents.marketingEmail.granted);
+    setMarketingPhone(next.consents.marketingPhone.granted);
     setMarketingOffers(next.consents.marketingOffers.granted);
   }
 
@@ -112,7 +112,7 @@ export function PortalPrivacyForm() {
     setFormError(null);
     setNotice(null);
     try {
-      const saved = await updatePrivacyConsents({ marketingEmail, marketingOffers });
+      const saved = await updatePrivacyConsents({ marketingPhone, marketingOffers });
       applyOverview(saved);
       setNotice(t("saved"));
     } catch (error) {
@@ -161,7 +161,7 @@ export function PortalPrivacyForm() {
     return null;
   }
 
-  const emailWhen = recordedAt(overview.consents.marketingEmail.consentedAt);
+  const phoneWhen = recordedAt(overview.consents.marketingPhone.consentedAt);
   const offersWhen = recordedAt(overview.consents.marketingOffers.consentedAt);
 
   return (
@@ -171,15 +171,15 @@ export function PortalPrivacyForm() {
           <legend className="text-sm font-medium">{t("marketingTitle")}</legend>
           <p className="text-sm text-muted-foreground">{t("marketingHint")}</p>
           <ToggleRow
-            id="privacy-marketing-email"
-            label={t("marketingEmail")}
-            hint={t("marketingEmailHint")}
-            checked={marketingEmail}
+            id="privacy-marketing-phone"
+            label={t("marketingText")}
+            hint={t("marketingTextHint")}
+            checked={marketingPhone}
             disabled={saving}
-            onCheckedChange={setMarketingEmail}
+            onCheckedChange={setMarketingPhone}
           />
           <p className="text-sm text-muted-foreground">
-            {emailWhen ? t("consentedAt", { when: emailWhen }) : t("notRecorded")}
+            {phoneWhen ? t("consentedAt", { when: phoneWhen }) : t("notRecorded")}
           </p>
           <ToggleRow
             id="privacy-marketing-offers"

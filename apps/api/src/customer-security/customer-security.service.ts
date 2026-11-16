@@ -166,7 +166,7 @@ export class CustomerSecurityService {
         windowStartedAt: null,
       });
     }
-    return { secret, otpauthUrl: totpAuthUrl(user.email, secret) };
+    return { secret, otpauthUrl: totpAuthUrl(user.phone ?? user.id, secret) };
   }
 
   async confirmEnroll(

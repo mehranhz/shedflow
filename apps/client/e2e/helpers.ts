@@ -1,14 +1,14 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 
 export const DEMO = {
-  email: "owner@shedflow.dev",
+  phone: "+14155551000",
   password: "Password123!",
   orgSlug: "acme",
   introSlug: "intro",
 } as const;
 
 export const CUSTOMER_DEMO = {
-  email: "customer@shedflow.dev",
+  phone: "+14155551001",
   password: "Password123!",
 } as const;
 
@@ -53,7 +53,7 @@ export async function requireStack(request: APIRequestContext): Promise<boolean>
 
 export async function loginAsDemo(page: Page): Promise<void> {
   await page.goto("/login");
-  await page.getByLabel(/email/i).fill(DEMO.email);
+  await page.getByLabel(/^phone/i).fill(DEMO.phone);
   await page.getByLabel(/^password$/i).fill(DEMO.password);
   await page.getByRole("button", { name: /log in/i }).click();
   await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
@@ -61,7 +61,7 @@ export async function loginAsDemo(page: Page): Promise<void> {
 
 export async function loginAsCustomer(page: Page): Promise<void> {
   await page.goto("/portal/login");
-  await page.getByLabel(/email/i).fill(CUSTOMER_DEMO.email);
+  await page.getByLabel(/^phone/i).fill(CUSTOMER_DEMO.phone);
   await page.getByLabel(/^password$/i).fill(CUSTOMER_DEMO.password);
   await page.getByRole("button", { name: /log in/i }).click();
   await expect(page).toHaveURL(/\/portal/, { timeout: 30_000 });
@@ -86,12 +86,12 @@ export async function pickFirstAvailableSlot(page: Page): Promise<void> {
 
 export async function completeFreeBooking(
   page: Page,
-  invitee: { name: string; email: string },
+  invitee: { name: string; phone: string },
 ): Promise<string> {
   await pickFirstAvailableSlot(page);
 
   await page.getByLabel(/^name/i).fill(invitee.name);
-  await page.getByLabel(/^email/i).fill(invitee.email);
+  await page.getByLabel(/^phone/i).fill(invitee.phone);
   await page.locator("#privacy-accepted").check();
   await page.getByRole("button", { name: /schedule event/i }).click();
 

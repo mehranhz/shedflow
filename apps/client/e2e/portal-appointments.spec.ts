@@ -5,7 +5,7 @@ import { CUSTOMER_DEMO, pickFirstAvailableSlot, requireStack } from "./helpers";
 
 async function loginPortal(page: import("@playwright/test").Page): Promise<void> {
   await page.goto("/portal/login");
-  await page.getByLabel(/email/i).fill(CUSTOMER_DEMO.email);
+  await page.getByLabel(/^phone/i).fill(CUSTOMER_DEMO.phone);
   await page.getByLabel(/^password$/i).fill(CUSTOMER_DEMO.password);
   await page.getByRole("button", { name: /log in/i }).click();
   await expect(page).toHaveURL(/\/portal\/?$/, { timeout: 45_000 });
@@ -109,9 +109,9 @@ test.describe("portal appointments (T-049–T-054)", () => {
     await page.getByRole("link", { name: /intro call/i }).click();
     await expect(page.getByText(/repeats weekly/i)).toHaveCount(0);
     await pickFirstAvailableSlot(page);
-    const email = page.getByLabel(/email/i);
-    await expect(email).toHaveValue(CUSTOMER_DEMO.email);
-    await expect(email).toHaveAttribute("readonly", "");
+    const phone = page.getByLabel(/^phone/i);
+    await expect(phone).toHaveValue(CUSTOMER_DEMO.phone);
+    await expect(phone).toHaveAttribute("readonly", "");
     await page.getByLabel(/^name/i).fill("Demo Customer");
     await page.locator("#privacy-accepted").check();
     const schedule = page.getByRole("button", { name: /schedule event/i });

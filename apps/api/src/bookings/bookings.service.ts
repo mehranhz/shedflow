@@ -56,7 +56,7 @@ export type CreatePublicBookingInput = {
   eventTypeSlug: string;
   startAt: Date;
   timezone: string;
-  invitee: { name: string; email?: string | null; phone?: string | null };
+  invitee: { name: string; phone?: string | null };
   answers?: BookingAnswers;
   metadata?: Record<string, unknown>;
   source: BookingSource;
@@ -155,14 +155,7 @@ export class BookingsService {
     if (!eventType?.priceId) {
       return booking;
     }
-    const email = blankToNull(input.invitee.email);
-    if (!email) {
-      return booking;
-    }
-    return this.attachCheckout(booking, {
-      email,
-      name: input.invitee.name,
-    });
+    return booking;
   }
 
   async retryCheckout(uid: string): Promise<{ checkoutUrl: string | null }> {
@@ -189,16 +182,7 @@ export class BookingsService {
       booking.organizationId,
       booking.customerId,
     );
-    if (!customer.email) {
-      throw new UnprocessableEntityException({
-        message: 'An email is required to start checkout',
-      });
-    }
-    const result = await this.attachCheckout(booking, {
-      email: customer.email,
-      name: customer.name,
-    });
-    return { checkoutUrl: result.checkoutUrl ?? null };
+    return { checkoutUrl: null };
   }
 
   async createHost(
@@ -208,7 +192,7 @@ export class BookingsService {
       eventTypeId: string;
       startAt: Date;
       timezone: string;
-      invitee: { name: string; email: string; phone?: string };
+      invitee: { name: string; phone: string };
       answers?: BookingAnswers;
     },
   ): Promise<BookingEntity> {
@@ -306,7 +290,6 @@ export class BookingsService {
     const customer = await this.customers.get(input.organizationId, input.customerId);
     const invitee = {
       name: customer.name,
-      email: customer.email,
       phone: customer.phone,
     };
     const metadata = { privacyAcceptedAt: this.clock.now().toISOString() };
@@ -494,7 +477,7 @@ export class BookingsService {
       eventTypeSlug: string;
       startAt: Date;
       timezone: string;
-      invitee: { name: string; email?: string | null; phone?: string | null };
+      invitee: { name: string; phone?: string | null };
       answers?: BookingAnswers;
       metadata?: Record<string, unknown>;
       source: BookingSource;
@@ -529,7 +512,6 @@ export class BookingsService {
         const customer = input.linkedCustomerId
           ? await this.customers.get(organizationId, input.linkedCustomerId)
           : await this.customers.upsert(organizationId, {
-              email: blankToNull(input.invitee.email),
               name: input.invitee.name,
               phone: blankToNull(input.invitee.phone),
               timezone: input.timezone,

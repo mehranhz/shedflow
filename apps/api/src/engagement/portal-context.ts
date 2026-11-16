@@ -95,14 +95,14 @@ export class CustomerPortalGuard implements CanActivate {
       throw new NotFoundException('Not found');
     }
 
-    const customer = await this.resolveCustomer(user.id, user.email, organizationId);
+    const customer = await this.resolveCustomer(user.id, user.email ?? '', organizationId);
     if (!customer) {
       throw new NotFoundException('Not found');
     }
 
     attachPortalCustomer(request, {
       userId: user.id,
-      userEmail: user.email,
+      userEmail: user.email ?? '',
       organizationId,
       customerId: customer.id,
       customerName: customer.name,

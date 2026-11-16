@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Headers,
-  HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -24,11 +23,7 @@ import {
   CustomerProfileService,
   profileEtag,
 } from './customer-profile.service';
-import {
-  ConfirmEmailChangeDto,
-  RequestEmailChangeDto,
-  UpdateCustomerProfileDto,
-} from './dto/customer-profile.dto';
+import { UpdateCustomerProfileDto } from './dto/customer-profile.dto';
 import {
   CancelCustomerBookingDto,
   CreateCustomerBookingDto,
@@ -68,26 +63,6 @@ export class CustomerSessionController {
     const profile = await this.profiles.update(user.id, customerOrgId, dto, ifMatch);
     res.setHeader('ETag', profileEtag(profile.user.updatedAt));
     return profile;
-  }
-
-  @Post('me/email')
-  @HttpCode(202)
-  @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000 } })
-  async requestEmailChange(
-    @CurrentUser() user: AuthenticatedUser,
-    @Headers('if-match') ifMatch: string | undefined,
-    @Body() dto: RequestEmailChangeDto,
-  ) {
-    await this.security.assertStepUp(user.id, dto.totpCode);
-    return this.profiles.requestEmailChange(user.id, dto, ifMatch);
-  }
-
-  @Post('me/email/confirm')
-  confirmEmailChange(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: ConfirmEmailChangeDto,
-  ) {
-    return this.profiles.confirmEmailChange(user.id, dto.token);
   }
 
   @Post('businesses/:organizationId/switch')

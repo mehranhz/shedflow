@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@shedflow/ui/components";
 
 import { formatRelativeInZone } from "@/lib/portal/multi-business";
-import { fetchCustomerHome, type CustomerBookingCard } from "@/lib/portal/customer-api";
+import { fetchCustomerHome, fetchCustomerMe, type CustomerBookingCard } from "@/lib/portal/customer-api";
 import { usePortalBusiness } from "@/components/portal/portal-business-context";
 import { PortalEmptyState, PortalErrorState, PortalSkeleton } from "@/components/portal/portal-states";
 
@@ -38,6 +38,15 @@ export function PortalHome() {
     enabled: Boolean(customerOrgId),
     refetchOnWindowFocus: true,
   });
+  const profile = useQuery({
+    queryKey: ["customer-me", customerOrgId ?? "session"],
+    queryFn: () => fetchCustomerMe(customerOrgId),
+    enabled: status === "authenticated",
+  });
+  const profileIncomplete = Boolean(
+    profile.data &&
+      (!profile.data.user.name?.trim() || !profile.data.user.phone?.trim()),
+  );
 
   const loading = status === "loading" || (Boolean(customerOrgId) && home.isLoading);
   const next = home.data?.nextAppointment ?? null;
@@ -147,6 +156,24 @@ export function PortalHome() {
             ) : null}
           </CardContent>
         </Card>
+
+        {profile.data ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>{profileIncomplete ? t("completeProfile") : t("editProfileHome")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {profileIncomplete ? t("completeProfileHint") : t("editProfileHomeHint")}
+              </p>
+              <Button asChild className="min-h-11 w-full">
+                <Link href="/portal/account/profile">
+                  {profileIncomplete ? t("completeProfile") : t("editProfileHome")}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <Card>
           <CardHeader>

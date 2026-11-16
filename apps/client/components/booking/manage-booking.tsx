@@ -78,18 +78,18 @@ export function ManageBooking({ uid }: { uid: string }) {
     ...(eventSlug ? { event: eventSlug } : {}),
   }).toString()}`;
 
-  const inviteeEmail = booking?.customer?.email?.trim() ?? "";
+  const inviteePhone = booking?.customer?.phone?.trim() ?? "";
   const portalNext = `/portal/appointments/${encodeURIComponent(uid)}`;
   const registerHref =
-    inviteeEmail && isCustomerPortalEnabled()
+    inviteePhone && isCustomerPortalEnabled()
       ? `/portal/register?${new URLSearchParams({
-          email: inviteeEmail,
+          phone: inviteePhone,
           next: portalNext,
         }).toString()}`
       : null;
   const claimHref =
-    inviteeEmail && isCustomerPortalEnabled()
-      ? `/portal/claim?${new URLSearchParams({ email: inviteeEmail }).toString()}`
+    inviteePhone && isCustomerPortalEnabled()
+      ? `/portal/claim?${new URLSearchParams({ phone: inviteePhone }).toString()}`
       : null;
 
   return (

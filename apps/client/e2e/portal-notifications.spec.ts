@@ -4,7 +4,7 @@ import { CUSTOMER_DEMO, requireStack } from "./helpers";
 
 async function openNotifications(page: Page): Promise<void> {
   await page.goto("/portal/login");
-  await page.getByLabel(/email/i).fill(CUSTOMER_DEMO.email);
+  await page.getByLabel(/^phone/i).fill(CUSTOMER_DEMO.phone);
   await page.getByLabel(/^password$/i).fill(CUSTOMER_DEMO.password);
   await page.getByRole("button", { name: /log in|ورود/i }).click();
   await expect(page).toHaveURL(/\/portal\/?$/, { timeout: 45_000 });
@@ -31,7 +31,7 @@ test.describe("portal notification preferences (T-057)", () => {
     await openNotifications(page);
 
     await expect(page.getByText(/required for account security|برای امنیت حساب لازم است/i)).toBeVisible();
-    await expect(page.getByRole("switch", { name: /account security emails|ایمیل‌های امنیت حساب/i })).toBeDisabled();
+    await expect(page.getByRole("switch", { name: /account security texts|پیامک‌های امنیت حساب/i })).toBeDisabled();
     await expect(page.getByRole("switch", { name: /booking confirmations|تأیید نوبت/i })).toBeDisabled();
     await expect(page.getByRole("switch", { name: /^sms$|پیامک/i })).toBeDisabled();
 

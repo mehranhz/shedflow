@@ -58,8 +58,7 @@ export type Member = {
   id: string;
   organizationId: string;
   userId: string;
-  email: string;
-  phone?: string | null;
+  phone: string;
   role: OrgRole;
   status: "ACTIVE" | "DISABLED";
   createdAt: string;
@@ -68,8 +67,7 @@ export type Member = {
 export type Invitation = {
   id: string;
   organizationId: string;
-  email: string;
-  phone?: string | null;
+  phone: string;
   role: "ADMIN" | "MEMBER";
   expiresAt: string;
   createdAt: string;
@@ -178,7 +176,6 @@ export type BookingSource = "HOSTED" | "EMBED" | "API" | "DASHBOARD";
 export type Customer = {
   id: string;
   organizationId: string;
-  email: string;
   name: string;
   phone: string | null;
   timezone: string | null;
@@ -209,7 +206,7 @@ export type Booking = {
   createdAt: string;
   updatedAt: string;
   eventType?: Pick<EventType, "id" | "title" | "slug" | "durationMinutes">;
-  customer?: Pick<Customer, "id" | "name" | "email" | "phone">;
+  customer?: Pick<Customer, "id" | "name" | "phone">;
   holdExpiresAt?: string | null;
   paymentReceipt?: BookingPaymentReceipt | null;
 };

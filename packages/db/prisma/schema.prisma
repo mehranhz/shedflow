@@ -227,7 +227,7 @@ model Membership {
 model Invitation {
   id             String    @id @default(uuid()) @db.Uuid
   organizationId String    @map("organization_id") @db.Uuid
-  email          String
+  phone          String
   role           Role
   tokenHash      String    @unique @map("token_hash")
   invitedById    String    @map("invited_by_id") @db.Uuid
@@ -237,7 +237,7 @@ model Invitation {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  @@index([organizationId, email])
+  @@index([organizationId, phone])
   @@map("invitations")
 }
 
@@ -498,13 +498,13 @@ model OtpChallenge {
 
 model CustomerClaimToken {
   id        String    @id @default(uuid()) @db.Uuid
-  email     String
+  phone     String
   tokenHash String    @unique @map("token_hash")
   expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
   usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  @@index([email])
+  @@index([phone])
   @@map("customer_claim_tokens")
 }
 

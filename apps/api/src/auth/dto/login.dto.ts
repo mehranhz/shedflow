@@ -1,22 +1,20 @@
-import { IsEmail, IsOptional, IsString, MinLength, ValidateIf } from 'class-validator';
+import { IsString, MaxLength, MinLength, ValidateIf } from 'class-validator';
 
 export class LoginDto {
-  /** Email login used by the original Nest contract. */
-  @ValidateIf((dto: LoginDto) => !dto.username)
-  @IsEmail()
-  email?: string;
-
-  /** Phone login used by the staff sign-in form. */
-  @ValidateIf((dto: LoginDto) => !dto.email)
+  /** Phone sign-in. `username` is the same value, kept for the staff form. */
+  @ValidateIf((dto: LoginDto) => !dto.phone)
   @IsString()
   @MinLength(3)
+  @MaxLength(32)
   username?: string;
+
+  @ValidateIf((dto: LoginDto) => !dto.username)
+  @IsString()
+  @MinLength(3)
+  @MaxLength(32)
+  phone?: string;
 
   @IsString()
   @MinLength(8)
   password: string;
-
-  @IsOptional()
-  @IsString()
-  phone?: string;
 }

@@ -5,7 +5,9 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { Role } from '@shedflow/db';
+import { syntheticEmailForPhone } from './../src/auth/auth.service';
 import { AppModule } from './../src/app.module';
+import { testPhone } from './test-phone';
 import { configureApp } from './../src/app.setup';
 import { PrismaService } from './../src/prisma/prisma.service';
 
@@ -71,7 +73,7 @@ describe('Platform flags + impersonation (e2e)', () => {
   async function register(email: string) {
     const response = await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ email, password: 'password123', timezone: 'UTC' })
+      .send({ username: testPhone(email), password: 'password123', timezone: 'UTC' })
       .expect(201);
     return response.body as {
       accessToken: string;
@@ -109,7 +111,7 @@ describe('Platform flags + impersonation (e2e)', () => {
   });
 
   it('allowlisted admin impersonates another org and writes audit', async () => {
-    process.env.PLATFORM_ADMINS = 'ops@example.com';
+    process.env.PLATFORM_ADMINS = syntheticEmailForPhone(testPhone('ops@example.com'));
     await app.close();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({

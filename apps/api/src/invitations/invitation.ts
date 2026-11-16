@@ -3,7 +3,7 @@ import { Role } from '@shedflow/db';
 export type Invitation = {
   id: string;
   organizationId: string;
-  email: string;
+  phone: string;
   role: Role;
   tokenHash: string;
   invitedById: string;
@@ -14,7 +14,7 @@ export type Invitation = {
 
 export type CreateInvitationData = {
   organizationId: string;
-  email: string;
+  phone: string;
   role: Role;
   tokenHash: string;
   invitedById: string;

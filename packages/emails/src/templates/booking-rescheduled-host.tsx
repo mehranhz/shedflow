@@ -15,7 +15,9 @@ export default function BookingRescheduledHost(props: BookingEmailProps) {
     >
       {paragraph(`A booking for ${props.eventTitle} was rescheduled.`)}
       {paragraph(`New time: ${props.whenLabel}`)}
-      {paragraph(`Invitee: ${props.inviteeName} <${props.inviteeEmail}>`)}
+      {paragraph(
+        `Invitee: ${props.inviteeName}${props.inviteePhone ? ` · ${props.inviteePhone}` : ''}`,
+      )}
     </EmailShell>
   );
 }

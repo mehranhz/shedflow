@@ -7,6 +7,7 @@ import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/app.setup';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { testPhone } from './test-phone';
 
 config({ path: resolve(__dirname, '../../../.env') });
 config({ path: resolve(__dirname, '../../.env') });
@@ -46,11 +47,11 @@ describe('Customer notification preferences (e2e)', () => {
 
   it('PATCH /v1/customer/notifications/prefs stores an opt-out and audits it', async () => {
     const server = app.getHttpServer();
-    const email = `prefs-${Date.now()}@example.com`;
+    const phone = testPhone(`prefs-${Date.now()}`);
 
     const register = await request(server)
       .post('/v1/customer/auth/register')
-      .send({ email, password: 'password123', name: 'Ada', timezone: 'Asia/Tehran' })
+      .send({ phone, password: 'password123', name: 'Ada', timezone: 'Asia/Tehran' })
       .expect(201);
 
     const accessToken = register.body.data.accessToken as string;

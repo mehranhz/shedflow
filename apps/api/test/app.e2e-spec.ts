@@ -12,6 +12,7 @@ import { UserRepository } from './../src/users/user.repository';
 import { SHEDFLOW_VERSION } from '@shedflow/shared';
 import { UserTokenType } from '@shedflow/db';
 import { hashUserToken } from './../src/user-tokens/user-token.crypto';
+import { testPhone } from './test-phone';
 
 config({ path: resolve(__dirname, '../../../.env') });
 config({ path: resolve(__dirname, '../../.env') });
@@ -106,13 +107,13 @@ describe('Auth (e2e)', () => {
   it('validation errors return VALIDATION_ERROR with field details', async () => {
     const response = await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ email: 'not-an-email', password: 'short' })
+      .send({ username: 'x', password: 'short' })
       .expect(400);
 
     expect(response.body.error.code).toBe('VALIDATION_ERROR');
     expect(response.body.error.details.fieldErrors).toEqual(
       expect.objectContaining({
-        email: expect.any(Array),
+        username: expect.any(Array),
         password: expect.any(Array),
       }),
     );
@@ -126,18 +127,19 @@ describe('Auth (e2e)', () => {
 
     const register = await request(server)
       .post('/auth/register')
-      .send({ email: 'ada@example.com', password: 'password123' })
+      .send({ username: testPhone('ada'), password: 'password123' })
       .expect(201);
 
     const registered = register.body as {
       accessToken: string;
       refreshToken: string;
-      user: { email: string };
+      user: { phone: string };
     };
 
     expect(registered.accessToken).toEqual(expect.any(String));
     expect(registered.refreshToken).toEqual(expect.any(String));
-    expect(registered.user.email).toBe('ada@example.com');
+    expect(registered.user.phone).toBe(testPhone('ada'));
+    expect(registered.user).not.toHaveProperty('email');
 
     const payload = decodeJwt(registered.accessToken);
     expect(payload.typ).toBe('access');
@@ -151,17 +153,18 @@ describe('Auth (e2e)', () => {
       .expect(200)
       .expect((response) => {
         const profile = response.body as {
-          email: string;
+          phone: string;
           memberships: Array<{ organizationId: string; role: string }>;
           activeOrganization: { id: string; name: string } | null;
         };
-        expect(profile.email).toBe('ada@example.com');
+        expect(profile.phone).toBe(testPhone('ada'));
+        expect(profile).not.toHaveProperty('email');
         expect(profile).not.toHaveProperty('passwordHash');
         expect(profile.memberships).toHaveLength(1);
         expect(profile.memberships[0]?.organizationId).toBe(payload.orgId);
         expect(profile.memberships[0]?.role).toBe('OWNER');
         expect(profile.activeOrganization?.id).toBe(payload.orgId);
-        expect(profile.activeOrganization?.name).toBe("ada's workspace");
+        expect(profile.activeOrganization?.name).toBe('My workspace');
       });
   });
 
@@ -170,12 +173,12 @@ describe('Auth (e2e)', () => {
 
     await request(server)
       .post('/auth/register')
-      .send({ email: 'grace@example.com', password: 'password123' })
+      .send({ username: testPhone('grace'), password: 'password123' })
       .expect(201);
 
     const login = await request(server)
       .post('/auth/login')
-      .send({ email: 'grace@example.com', password: 'password123' })
+      .send({ username: testPhone('grace'), password: 'password123' })
       .expect(201);
 
     const loggedIn = login.body as { accessToken: string; refreshToken: string };
@@ -188,12 +191,12 @@ describe('Auth (e2e)', () => {
 
     await request(server)
       .post('/auth/register')
-      .send({ email: 'refresh@example.com', password: 'password123' })
+      .send({ username: testPhone('refresh'), password: 'password123' })
       .expect(201);
 
     const login = await request(server)
       .post('/auth/login')
-      .send({ email: 'refresh@example.com', password: 'password123' })
+      .send({ username: testPhone('refresh'), password: 'password123' })
       .expect(201);
 
     const loggedIn = login.body as {
@@ -223,7 +226,8 @@ describe('Auth (e2e)', () => {
       .set('Authorization', `Bearer ${rotated.accessToken}`)
       .expect(200)
       .expect((response) => {
-        expect(response.body.email).toBe('refresh@example.com');
+        expect(response.body.phone).toBe(testPhone('refresh'));
+        expect(response.body).not.toHaveProperty('email');
       });
 
     const reuse = await request(server)
@@ -257,22 +261,22 @@ describe('Auth (e2e)', () => {
     expect(await users.findByEmail('rollback@example.com')).toBeNull();
   });
 
-  it('forgot-password always returns 204 whether or not the email exists', async () => {
+  it('forgot-password always returns 204 whether or not the phone exists', async () => {
     const server = app.getHttpServer();
 
     await request(server)
       .post('/auth/forgot-password')
-      .send({ email: 'nobody@example.com' })
+      .send({ phone: testPhone('nobody') })
       .expect(204);
 
     await request(server)
       .post('/auth/register')
-      .send({ email: 'ada@example.com', password: 'password123' })
+      .send({ username: testPhone('ada-reset'), password: 'password123' })
       .expect(201);
 
     await request(server)
       .post('/auth/forgot-password')
-      .send({ email: 'ada@example.com' })
+      .send({ phone: testPhone('ada-reset') })
       .expect(204);
   });
 
@@ -280,14 +284,15 @@ describe('Auth (e2e)', () => {
     const server = app.getHttpServer();
     const register = await request(server)
       .post('/auth/register')
-      .send({ email: 'verify@example.com', password: 'password123' })
+      .send({ username: testPhone('verify'), password: 'password123' })
       .expect(201);
 
     const registered = register.body as {
       accessToken: string;
-      user: { id: string; emailVerifiedAt: string | null };
+      user: { id: string; phone: string };
     };
-    expect(registered.user.emailVerifiedAt).toBeNull();
+    expect(registered.user.phone).toBe(testPhone('verify'));
+    expect(registered.user).not.toHaveProperty('email');
 
     const raw = 'e2e-verify-token';
     await prisma.userToken.create({
@@ -322,7 +327,7 @@ describe('Auth (e2e)', () => {
     const server = app.getHttpServer();
     const register = await request(server)
       .post('/auth/register')
-      .send({ email: 'reset@example.com', password: 'password123' })
+      .send({ username: testPhone('reset'), password: 'password123' })
       .expect(201);
 
     const registered = register.body as {
@@ -348,12 +353,12 @@ describe('Auth (e2e)', () => {
 
     await request(server)
       .post('/auth/login')
-      .send({ email: 'reset@example.com', password: 'password123' })
+      .send({ username: testPhone('reset'), password: 'password123' })
       .expect(401);
 
     await request(server)
       .post('/auth/login')
-      .send({ email: 'reset@example.com', password: 'newpass123' })
+      .send({ username: testPhone('reset'), password: 'newpass123' })
       .expect(201);
 
     await request(server)

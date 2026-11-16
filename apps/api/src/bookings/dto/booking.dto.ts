@@ -1,13 +1,12 @@
 import { Type } from 'class-transformer';
 import {
-  IsEmail,
   IsEnum,
   IsObject,
   IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
   MinLength,
-  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { BookingSource } from '@shedflow/db';
@@ -17,12 +16,10 @@ class InviteeDto {
   @MinLength(1)
   name!: string;
 
-  @IsEmail()
-  email!: string;
-
-  @IsOptional()
   @IsString()
-  phone?: string;
+  @MinLength(3)
+  @MaxLength(32)
+  phone!: string;
 }
 
 class PublicInviteeDto {
@@ -30,17 +27,10 @@ class PublicInviteeDto {
   @MinLength(1)
   name!: string;
 
-  @IsOptional()
-  @ValidateIf(
-    (invitee: PublicInviteeDto) =>
-      typeof invitee.email === 'string' && invitee.email.trim().length > 0,
-  )
-  @IsEmail()
-  email?: string;
-
-  @IsOptional()
   @IsString()
-  phone?: string;
+  @MinLength(3)
+  @MaxLength(32)
+  phone!: string;
 }
 
 export class CreatePublicBookingDto {

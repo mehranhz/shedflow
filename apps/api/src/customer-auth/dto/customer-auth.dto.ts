@@ -1,8 +1,10 @@
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CustomerRegisterDto {
-  @IsEmail()
-  email!: string;
+  @IsString()
+  @MinLength(3)
+  @MaxLength(32)
+  phone!: string;
 
   @IsString()
   @MinLength(8)
@@ -19,8 +21,10 @@ export class CustomerRegisterDto {
 }
 
 export class CustomerLoginDto {
-  @IsEmail()
-  email!: string;
+  @IsString()
+  @MinLength(3)
+  @MaxLength(32)
+  phone!: string;
 
   @IsString()
   @MinLength(8)
@@ -28,8 +32,10 @@ export class CustomerLoginDto {
 }
 
 export class CustomerClaimDto {
-  @IsEmail()
-  email!: string;
+  @IsString()
+  @MinLength(3)
+  @MaxLength(32)
+  phone!: string;
 }
 
 export class CustomerClaimConfirmDto {

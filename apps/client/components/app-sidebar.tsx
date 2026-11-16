@@ -200,7 +200,7 @@ export function AppSidebar() {
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{profile.phone || profile.email}</span>
+                    <span className="truncate font-medium">{profile.phone}</span>
                     <span className="truncate text-xs text-muted-foreground">
                       {t("account")}
                     </span>
@@ -208,7 +208,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuLabel>{profile.phone || profile.email}</DropdownMenuLabel>
+                <DropdownMenuLabel>{profile.phone}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings">{t("nav.settings")}</Link>

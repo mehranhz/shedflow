@@ -1,24 +1,11 @@
-import {
-  IsEmail,
-  IsOptional,
-  IsString,
-  MaxLength,
-  MinLength,
-  ValidateIf,
-} from 'class-validator';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class RegisterDto {
-  /** Email registration. Omit when `username` (phone) is sent. */
-  @ValidateIf((dto: RegisterDto) => !dto.username)
-  @IsEmail()
-  email?: string;
-
-  /** Phone registration used by the staff sign-up form. */
-  @ValidateIf((dto: RegisterDto) => !dto.email)
+  /** Phone number. Staff sign-up sends this as `username`. */
   @IsString()
   @MinLength(3)
   @MaxLength(32)
-  username?: string;
+  username!: string;
 
   @IsString()
   @MinLength(8)

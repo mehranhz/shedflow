@@ -85,13 +85,22 @@ export function syntheticEmailForPhone(phone: string): string {
   return `phone.${digits}@users.shedflow.invalid`;
 }
 
-export function defaultWorkspaceName(email: string, name?: string): string {
+export function defaultWorkspaceName(identity: string, name?: string): string {
   const trimmed = name?.trim();
   if (trimmed) {
     return `${trimmed}'s workspace`;
   }
-  const local = email.split('@')[0]?.trim();
+  if (!identity.includes('@')) {
+    return 'My workspace';
+  }
+  const local = identity.split('@')[0]?.trim();
   return `${local && local.length > 0 ? local : 'user'}'s workspace`;
+}
+
+/** Drop the hidden mailbox before a user object leaves the API. */
+export function presentUser<T extends { email?: string }>(user: T): Omit<T, 'email'> {
+  const { email: _hidden, ...visible } = user;
+  return visible;
 }
 
 @Injectable()
@@ -120,64 +129,11 @@ export class AuthService {
     dto: RegisterDto,
     meta: RefreshTokenClientMeta = {},
   ): Promise<AuthSession> {
-    const phone = dto.username?.trim();
-    if (!dto.email?.trim() && phone) {
-      return this.registerWithPhone(phone, dto, meta);
+    const phone = dto.username?.trim() ?? '';
+    if (!phone || phone.includes('@')) {
+      throw new BadRequestException('Phone is required');
     }
-    const email = dto.email?.trim() ?? '';
-    if (!email) {
-      throw new BadRequestException('Email or phone is required');
-    }
-    const existing = await this.usersService.findByEmail(email);
-    if (existing) {
-      throw new ConflictException('Email is already registered');
-    }
-
-    const timezone = this.requireTimeZone(dto.timezone);
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-    const name = dto.name?.trim();
-    const organizationName =
-      dto.organizationName?.trim() ||
-      defaultWorkspaceName(email, name);
-
-    return this.transactions.runInTransaction(async () => {
-      const user = await this.usersService.create(email, passwordHash, {
-        name: name || null,
-        timezone,
-      });
-      const verify = await this.issueUserToken(
-        user.id,
-        UserTokenType.EMAIL_VERIFY,
-        EMAIL_VERIFY_TTL_MS,
-      );
-      this.logAuthLink(
-        DOMAIN_EVENTS.EmailVerificationRequested,
-        'verify-email',
-        verify.raw,
-      );
-      await this.outbox.emit(DOMAIN_EVENTS.EmailVerificationRequested, {
-        userId: user.id,
-        token: verify.raw,
-        email: user.email,
-      });
-      await this.audit.record({
-        actorUserId: user.id,
-        actorType: 'user',
-        action: 'auth.register',
-        resourceType: 'user',
-        resourceId: user.id,
-        ip: meta.ip,
-        userAgent: meta.userAgent,
-      });
-      const organization = await this.organizations.create(user.id, {
-        name: organizationName,
-        timezone,
-      });
-      return this.issueSession(this.usersService.toPublic(user), meta, {
-        organizationId: organization.id,
-        role: Role.OWNER,
-      });
-    });
+    return this.registerWithPhone(phone, dto, meta);
   }
 
   private async registerWithPhone(
@@ -306,7 +262,7 @@ export class AuthService {
                 },
               ),
               refreshToken: next.raw,
-              user: publicUser,
+              user: presentUser(publicUser),
             };
           }
         }
@@ -342,8 +298,8 @@ export class AuthService {
     });
   }
 
-  async forgotPassword(email: string): Promise<void> {
-    const user = await this.usersService.findByEmail(email);
+  async forgotPassword(phone: string): Promise<void> {
+    const user = await this.usersService.findByPhone(phone.trim());
     if (!user) {
       return;
     }
@@ -429,10 +385,8 @@ export class AuthService {
     password: string,
   ): Promise<PublicUser | null> {
     const value = identifier.trim();
-    const user = value.includes('@')
-      ? await this.usersService.findByEmail(value)
-      : await this.usersService.findByPhone(value);
-    if (!user || (!value.includes('@') && !user.phoneVerifiedAt)) {
+    const user = value.includes('@') ? null : await this.usersService.findByPhone(value);
+    if (!user || !user.phoneVerifiedAt) {
       await this.audit.record({
         actorType: 'user',
         action: 'auth.login.failure',
@@ -455,7 +409,7 @@ export class AuthService {
       return null;
     }
 
-    return this.usersService.toPublic(user);
+    return presentUser(this.usersService.toPublic(user));
   }
 
   async getProfile(
@@ -473,7 +427,7 @@ export class AuthService {
     if (impersonatingOrgId) {
       const activeOrganization =
         await this.organizations.findPublicById(impersonatingOrgId);
-      return {
+      return presentUser({
         ...this.usersService.toPublic(user),
         memberships: memberships.map((membership) => ({
           organizationId: membership.organizationId,
@@ -482,7 +436,7 @@ export class AuthService {
         })),
         activeOrganization,
         impersonatingOrgId,
-      };
+      });
     }
 
     const active = await this.pickActiveMembership(userId, activeOrgId);
@@ -490,7 +444,7 @@ export class AuthService {
       ? await this.organizations.findPublicById(active.organizationId)
       : null;
 
-    return {
+    return presentUser({
       ...this.usersService.toPublic(user),
       memberships: memberships.map((membership) => ({
         organizationId: membership.organizationId,
@@ -499,7 +453,7 @@ export class AuthService {
       })),
       activeOrganization,
       impersonatingOrgId: null,
-    };
+    });
   }
 
   /** Dashboard profile: organizations carry `id` and a nested membership. */
@@ -552,11 +506,9 @@ export class AuthService {
     }
     return {
       id: profile.id,
-      email: profile.email,
       name: profile.name ?? '',
       phone: profile.phone ?? '',
       createdAt: profile.createdAt,
-      emailVerifiedAt: profile.emailVerifiedAt,
       phoneVerifiedAt: profile.phoneVerifiedAt ?? null,
       memberships,
       activeOrganization: profile.activeOrganization,
@@ -607,7 +559,7 @@ export class AuthService {
     return {
       accessToken: await this.signCustomerAccess(user, customer, issued.id),
       refreshToken: issued.raw,
-      user,
+      user: presentUser(user),
     };
   }
 
@@ -660,7 +612,7 @@ export class AuthService {
         { phone: user.phone, sessionId },
       ),
       refreshToken,
-      user,
+      user: presentUser(user),
     };
   }
 
@@ -718,7 +670,7 @@ export class AuthService {
 
   private signAccessToken(
     userId: string,
-    email: string,
+    email?: string,
     orgId?: string,
     role?: Role,
     impersonatingOrgId?: string,
@@ -732,7 +684,7 @@ export class AuthService {
   ): Promise<string> {
     const payload: JwtPayload = {
       sub: userId,
-      email,
+      email: email ?? '',
       typ: ACCESS_TOKEN_TYPE,
       ...(orgId && role ? { orgId, role } : {}),
       ...(impersonatingOrgId ? { impersonatingOrgId } : {}),

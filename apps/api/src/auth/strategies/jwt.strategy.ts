@@ -40,7 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       const admins = parsePlatformAdmins(
         this.configService.get<string>('PLATFORM_ADMINS'),
       );
-      const email = publicUser.email.trim().toLowerCase();
+      const email = user.email.trim().toLowerCase();
       if (
         admins.size === 0 ||
         !admins.has(email) ||

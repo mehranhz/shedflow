@@ -81,8 +81,8 @@ export class ReminderService {
     const body = [
       `This is a reminder for ${booking.eventType.title}.`,
       `When: ${whenLabel}`,
-      `Host: ${booking.host.name ?? booking.host.email}`,
-      `Invitee: ${booking.customer.name} <${booking.customer.email}>`,
+      `Host: ${booking.host.name ?? booking.host.phone ?? 'Host'}`,
+      `Invitee: ${booking.customer.name}${booking.customer.phone ? ` · ${booking.customer.phone}` : ''}`,
     ].join('\n');
 
     const inviteeEmail = booking.customer.email;

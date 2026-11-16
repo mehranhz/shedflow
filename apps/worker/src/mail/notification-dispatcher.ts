@@ -48,7 +48,9 @@ type BookingContext = {
   eventTitle: string;
   hostEmail: string;
   hostName: string | null;
+  hostPhone: string | null;
   inviteeEmail: string;
+  inviteePhone: string | null;
   inviteeName: string;
 };
 
@@ -155,8 +157,8 @@ export class NotificationDispatcher {
   private async handleInvitation(job: DomainEventJob): Promise<void> {
     const invitationId = asString(job.payload.invitationId);
     const token = asString(job.payload.token);
-    const email = asString(job.payload.email)?.toLowerCase();
-    if (!invitationId || !token || !email) {
+    const phone = asString(job.payload.phone) ?? asString(job.payload.email);
+    if (!invitationId || !token || !phone) {
       this.logger.warn(`invitation missing payload id=${job.eventId}`);
       return;
     }
@@ -167,16 +169,21 @@ export class NotificationDispatcher {
     if (!invitation) {
       return;
     }
+    const inviteUrl = `${this.appUrl}/invite/${encodeURIComponent(token)}`;
+    this.logger.log(`invitation ${invitation.organization.name} phone=${phone} ${inviteUrl}`);
+    if (!phone.includes('@')) {
+      return;
+    }
     const rendered = await renderInvitation({
       organizationName: invitation.organization.name,
       role: invitation.role,
-      inviteUrl: `${this.appUrl}/invite/${encodeURIComponent(token)}`,
+      inviteUrl,
     });
     await this.deliver({
       organizationId: invitation.organizationId,
       bookingId: null,
       template: EMAIL_TEMPLATES.Invitation,
-      to: email,
+      to: phone,
       rendered,
       idempotencyKey: `${job.eventId}:${EMAIL_TEMPLATES.Invitation}`,
     });
@@ -340,7 +347,7 @@ export class NotificationDispatcher {
     }
     const reason = asString(job.payload.reason) ?? 'Payment failed';
     const inviteeText = `Hi ${booking.inviteeName}, ${reason} for ${booking.eventTitle}. Please try again.`;
-    const hostText = `Payment failed for ${booking.eventTitle} (${booking.inviteeEmail}): ${reason}`;
+    const hostText = `Payment failed for ${booking.eventTitle} (${booking.inviteePhone ?? booking.inviteeName}): ${reason}`;
     await this.deliver({
       organizationId: booking.organizationId,
       bookingId: booking.id,
@@ -381,7 +388,8 @@ export class NotificationDispatcher {
       locationLabel: booking.locationValue,
       inviteeName: booking.inviteeName,
       inviteeEmail: booking.inviteeEmail,
-      hostName: booking.hostName?.trim() || booking.hostEmail,
+      inviteePhone: booking.inviteePhone,
+      hostName: booking.hostName?.trim() || booking.hostPhone || 'Host',
       manageUrl: manageToken
         ? `${this.appUrl}/b/${booking.uid}/manage?token=${encodeURIComponent(manageToken)}`
         : `${this.appUrl}/b/${booking.uid}/manage`,
@@ -444,7 +452,9 @@ export class NotificationDispatcher {
       eventTitle: row.eventType.title,
       hostEmail: row.host.email,
       hostName: row.host.name,
+      hostPhone: row.host.phone,
       inviteeEmail: row.customer.email ?? '',
+      inviteePhone: row.customer.phone,
       inviteeName: row.customer.name,
     };
   }

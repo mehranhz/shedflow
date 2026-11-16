@@ -8,6 +8,7 @@ import { AppModule } from './../src/app.module';
 import { configureApp } from './../src/app.setup';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { totpCode } from './../src/customer-security/totp';
+import { testPhone } from './test-phone';
 
 config({ path: resolve(__dirname, '../../../.env') });
 config({ path: resolve(__dirname, '../../.env') });
@@ -45,12 +46,12 @@ describe('Customer security TOTP and sessions (e2e)', () => {
 
   it('requires enrolled TOTP on login, spends a backup code once, and revokes one session', async () => {
     const server = app.getHttpServer();
-    const email = `security-${Date.now()}@example.com`;
+    const phone = testPhone(`security-${Date.now()}`);
     const password = 'password123';
 
     const register = await request(server)
       .post('/v1/customer/auth/register')
-      .send({ email, password, name: 'Ada' })
+      .send({ phone, password, name: 'Ada' })
       .expect(201);
     const accessToken = register.body.data.accessToken as string;
 
@@ -72,7 +73,7 @@ describe('Customer security TOTP and sessions (e2e)', () => {
 
     const challenged = await request(server)
       .post('/v1/customer/auth/login')
-      .send({ email, password })
+      .send({ phone, password })
       .expect(200);
     expect(challenged.body.data.mfaRequired).toBe(true);
     expect(challenged.body.data.accessToken).toBeUndefined();
@@ -88,7 +89,7 @@ describe('Customer security TOTP and sessions (e2e)', () => {
 
     const withBackup = await request(server)
       .post('/v1/customer/auth/login')
-      .send({ email, password })
+      .send({ phone, password })
       .expect(200);
     const backupLogin = await request(server)
       .post('/v1/customer/auth/login/totp')
@@ -98,7 +99,7 @@ describe('Customer security TOTP and sessions (e2e)', () => {
 
     const reused = await request(server)
       .post('/v1/customer/auth/login')
-      .send({ email, password })
+      .send({ phone, password })
       .expect(200);
     await request(server)
       .post('/v1/customer/auth/login/totp')
@@ -128,24 +129,6 @@ describe('Customer security TOTP and sessions (e2e)', () => {
       .send({ refreshToken: secondRefresh })
       .expect(401);
 
-    const me = await request(server)
-      .get('/v1/customer/me')
-      .set('Authorization', `Bearer ${stillValid.body.accessToken}`)
-      .expect(200);
-    const updatedAt = me.body.user.updatedAt as string;
-    const missingCode = await request(server)
-      .post('/v1/customer/me/email')
-      .set('Authorization', `Bearer ${stillValid.body.accessToken}`)
-      .send({ email: 'ada-next@example.com', updatedAt })
-      .expect(400);
-    expect(missingCode.body.error.details.fieldErrors.totpCode).toEqual(expect.any(Array));
-
-    await request(server)
-      .post('/v1/customer/me/email')
-      .set('Authorization', `Bearer ${stillValid.body.accessToken}`)
-      .send({ email: 'ada-next@example.com', updatedAt, totpCode: totpCode(secret) })
-      .expect(202);
-
     await request(server)
       .post('/v1/customer/security/password')
       .set('Authorization', `Bearer ${stillValid.body.accessToken}`)
@@ -158,22 +141,22 @@ describe('Customer security TOTP and sessions (e2e)', () => {
 
     await request(server)
       .post('/v1/customer/auth/login')
-      .send({ email, password })
+      .send({ phone, password })
       .expect(401);
     const nextLogin = await request(server)
       .post('/v1/customer/auth/login')
-      .send({ email, password: 'password456' })
+      .send({ phone, password: 'password456' })
       .expect(200);
     expect(nextLogin.body.data.mfaRequired).toBe(true);
   });
 
   it('rate-limits repeated TOTP attempts', async () => {
     const server = app.getHttpServer();
-    const email = `limit-${Date.now()}@example.com`;
+    const phone = testPhone(`limit-${Date.now()}`);
     const password = 'password123';
     const register = await request(server)
       .post('/v1/customer/auth/register')
-      .send({ email, password })
+      .send({ phone, password })
       .expect(201);
     const enrolled = await request(server)
       .post('/v1/customer/security/totp/enroll')
@@ -188,7 +171,7 @@ describe('Customer security TOTP and sessions (e2e)', () => {
 
     const challenged = await request(server)
       .post('/v1/customer/auth/login')
-      .send({ email, password })
+      .send({ phone, password })
       .expect(200);
     const mfaToken = challenged.body.data.mfaToken as string;
     const bad = totpCode(secret) === '000000' ? '111111' : '000000';

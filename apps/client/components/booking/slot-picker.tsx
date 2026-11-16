@@ -100,7 +100,6 @@ export function SlotPicker({
   portalBooking?: {
     customerOrgId: string;
     name: string;
-    email: string;
     phone: string;
     timezone?: string | null;
     recurringEnabled?: boolean;
@@ -129,7 +128,6 @@ export function SlotPicker({
   const [day, setDay] = useState<Date | undefined>();
   const [slot, setSlot] = useState<Slot | null>(null);
   const [name, setName] = useState(portalBooking?.name ?? "");
-  const [email, setEmail] = useState(portalBooking?.email ?? "");
   const [phone, setPhone] = useState(portalBooking?.phone ?? "");
   const [repeats, setRepeats] = useState(false);
   const [occurrences, setOccurrences] = useState(4);
@@ -170,7 +168,6 @@ export function SlotPicker({
   const emptyMonth = !slotsQuery.isLoading && !slotsQuery.isError && daysWithSlots.size === 0;
   const LocationIcon = locationIcon(eventType.locationType);
   const receiptRequired = Boolean(eventType.requiresPaymentReceipt);
-  const trimmedEmail = email.trim();
   const portalMode = Boolean(portalBooking) && !reschedule;
   const detailsReady =
     Boolean(slot) &&
@@ -274,7 +271,6 @@ export function SlotPicker({
         invitee: {
           name: name.trim(),
           phone: verifiedPhone,
-          ...(trimmedEmail ? { email: trimmedEmail } : {}),
         },
         answers,
         metadata: { privacyAcceptedAt: new Date().toISOString() },
@@ -518,19 +514,6 @@ export function SlotPicker({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="invitee-email">{t("emailOptional")}</Label>
-              <Input
-                id="invitee-email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                readOnly={Boolean(portalBooking?.email)}
-                aria-readonly={portalBooking?.email ? true : undefined}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
               <Label htmlFor="invitee-phone">{t("phone")}</Label>
               <Input
                 id="invitee-phone"
@@ -539,6 +522,8 @@ export function SlotPicker({
                 autoComplete="tel"
                 required={!portalMode}
                 value={phone}
+                readOnly={Boolean(portalBooking?.phone)}
+                aria-readonly={portalBooking?.phone ? true : undefined}
                 onChange={(event) => setPhone(event.target.value)}
               />
             </div>

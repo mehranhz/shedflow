@@ -85,7 +85,7 @@ export default function CustomerDetailPage({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title={customer.name} description={customer.email} />
+        <PageHeader title={customer.name} description={customer.phone ?? ""} />
         <Button variant="outline" asChild>
           <Link href="/dashboard/customers">
             <ArrowLeft className="size-4" />
@@ -100,10 +100,6 @@ export default function CustomerDetailPage({
             <CardTitle className="text-base">{t("profile")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">{t("emailLabel")}</span>{" "}
-              {customer.email}
-            </p>
             <p>
               <span className="text-muted-foreground">{t("phoneLabel")}</span>{" "}
               {customer.phone ?? "—"}

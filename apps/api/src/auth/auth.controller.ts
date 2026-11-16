@@ -50,10 +50,10 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
   @Post('login')
   async login(@Body() dto: LoginDto, @Req() req: Request) {
-    const identifier = (dto.email ?? dto.username ?? dto.phone ?? '').trim();
+    const identifier = (dto.phone ?? dto.username ?? '').trim();
     const user = await this.authService.validateUser(identifier, dto.password);
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Invalid phone or password');
     }
     const mfaToken = await this.security.beginLogin(user.id);
     if (mfaToken) {
@@ -141,7 +141,7 @@ export class AuthController {
   @HttpCode(204)
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(dto.email);
+    return this.authService.forgotPassword(dto.phone);
   }
 
   @Public()

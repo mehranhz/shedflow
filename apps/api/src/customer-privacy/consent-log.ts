@@ -1,4 +1,6 @@
 export const CONSENT_PURPOSES = {
+  /** Current marketing-text consent. Older rows used `marketing_email`. */
+  marketingPhone: 'marketing_phone',
   marketingEmail: 'marketing_email',
   marketingOffers: 'marketing_offers',
 } as const;

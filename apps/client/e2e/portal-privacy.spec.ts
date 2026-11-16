@@ -4,7 +4,7 @@ import { CUSTOMER_DEMO, requireStack } from "./helpers";
 
 async function openPrivacy(page: Page): Promise<void> {
   await page.goto("/portal/login");
-  await page.getByLabel(/email/i).fill(CUSTOMER_DEMO.email);
+  await page.getByLabel(/^phone/i).fill(CUSTOMER_DEMO.phone);
   await page.getByLabel(/^password$/i).fill(CUSTOMER_DEMO.password);
   await page.getByRole("button", { name: /log in|ورود/i }).click();
   await expect(page).toHaveURL(/\/portal\/?$/, { timeout: 45_000 });
@@ -44,22 +44,22 @@ test.describe("portal privacy consent (T-059)", () => {
       "/portal/privacy",
     );
 
-    const email = page.getByRole("switch", { name: /marketing email|ایمیل بازاریابی/i });
-    await expect(email).toBeEnabled({ timeout: 20_000 });
-    const wasOn = (await email.getAttribute("aria-checked")) === "true";
+    const texts = page.getByRole("switch", { name: /marketing texts|پیامک بازاریابی/i });
+    await expect(texts).toBeEnabled({ timeout: 20_000 });
+    const wasOn = (await texts.getAttribute("aria-checked")) === "true";
 
-    await setSwitch(page, /marketing email|ایمیل بازاریابی/i, !wasOn);
+    await setSwitch(page, /marketing texts|پیامک بازاریابی/i, !wasOn);
     await page.getByRole("button", { name: /save privacy choices|ذخیره انتخاب‌های حریم خصوصی/i }).click();
     await expect(page.getByRole("status")).toContainText(/saved|ذخیره شد/i);
 
     await page.reload();
-    await expect(page.getByRole("switch", { name: /marketing email|ایمیل بازاریابی/i })).toHaveAttribute(
+    await expect(page.getByRole("switch", { name: /marketing texts|پیامک بازاریابی/i })).toHaveAttribute(
       "aria-checked",
       wasOn ? "false" : "true",
     );
     await expect(page.getByText(/recorded|ثبت در/i).first()).toBeVisible();
 
-    await setSwitch(page, /marketing email|ایمیل بازاریابی/i, wasOn);
+    await setSwitch(page, /marketing texts|پیامک بازاریابی/i, wasOn);
     await page.getByRole("button", { name: /save privacy choices|ذخیره انتخاب‌های حریم خصوصی/i }).click();
     await expect(page.getByRole("status")).toContainText(/saved|ذخیره شد/i);
   });
