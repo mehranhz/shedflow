@@ -7,6 +7,7 @@ export type RefreshToken = {
   replacedById: string | null;
   userAgent: string | null;
   ip: string | null;
+  lastUsedAt: Date;
   createdAt: Date;
 };
 
@@ -16,6 +17,7 @@ export type CreateRefreshTokenData = {
   expiresAt: Date;
   userAgent?: string | null;
   ip?: string | null;
+  lastUsedAt: Date;
 };
 
 export type UpdateRefreshTokenData = Partial<{

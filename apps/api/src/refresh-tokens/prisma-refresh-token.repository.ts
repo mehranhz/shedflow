@@ -42,6 +42,7 @@ export class PrismaRefreshTokenRepository
       replacedById: record.replacedById,
       userAgent: record.userAgent,
       ip: record.ip,
+      lastUsedAt: record.lastUsedAt,
       createdAt: record.createdAt,
     };
   }
@@ -51,11 +52,33 @@ export class PrismaRefreshTokenRepository
   }
 
   async revokeAllForUser(userId: string, revokedAt: Date): Promise<void> {
+    await this.revokeAllForUserExcept(userId, null, revokedAt);
+  }
+
+  async revokeAllForUserExcept(
+    userId: string,
+    exceptId: string | null,
+    revokedAt: Date,
+  ): Promise<void> {
     await this.run(async () => {
       await this.db.activeClient().refreshToken.updateMany({
-        where: { userId, revokedAt: null },
+        where: {
+          userId,
+          revokedAt: null,
+          ...(exceptId ? { id: { not: exceptId } } : {}),
+        },
         data: { revokedAt },
       });
+    });
+  }
+
+  listActiveForUser(userId: string, now: Date): Promise<RefreshToken[]> {
+    return this.run(async () => {
+      const rows = await this.db.activeClient().refreshToken.findMany({
+        where: { userId, revokedAt: null, expiresAt: { gt: now } },
+        orderBy: { lastUsedAt: 'desc' },
+      });
+      return rows.map((row) => this.toEntity(row));
     });
   }
 }

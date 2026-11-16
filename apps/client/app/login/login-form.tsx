@@ -14,6 +14,10 @@ import {
   Label,
 } from "@shedflow/ui/components";
 
+import { unwrapData } from "@/lib/api-envelope";
+import { apiBff } from "@/lib/bff";
+import { ClientApiError } from "@/lib/http";
+
 export function LoginForm() {
   const t = useTranslations("auth.login");
   const locale = useLocale();
@@ -23,6 +27,8 @@ export function LoginForm() {
 
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -31,23 +37,48 @@ export function LoginForm() {
     setError(null);
 
     startTransition(async () => {
-      const result = await signIn("credentials", {
-        phone,
-        password,
-        redirect: false,
-      });
-
-      if (!result || result.error) {
+      try {
+        const payload = mfaToken
+          ? await apiBff<unknown>("auth/login/totp", {
+              method: "POST",
+              body: JSON.stringify({ mfaToken, code: code.trim() }),
+            })
+          : await apiBff<unknown>("auth/login", {
+              method: "POST",
+              body: JSON.stringify({ username: phone, password }),
+            });
+        const data = unwrapData<Record<string, unknown>>(payload);
+        if (data.mfaRequired === true && typeof data.mfaToken === "string") {
+          setMfaToken(data.mfaToken);
+          return;
+        }
+        if (typeof data.accessToken !== "string" || typeof data.refreshToken !== "string") {
+          setError(t("invalidCredentials"));
+          return;
+        }
+        const result = await signIn("credentials", {
+          phone,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          redirect: false,
+        });
+        if (!result || result.error) {
+          setError(t("invalidCredentials"));
+          return;
+        }
+        router.push(callbackUrl);
+        router.refresh();
+      } catch (caught) {
         setError(
-          locale.startsWith("fa")
-            ? "شماره موبایل یا رمز عبور نادرست است."
-            : "Invalid phone or password.",
+          caught instanceof ClientApiError && caught.message
+            ? mfaToken
+              ? t("mfaInvalid")
+              : t("invalidCredentials")
+            : locale.startsWith("fa")
+              ? "شماره موبایل یا رمز عبور نادرست است."
+              : "Invalid phone or password.",
         );
-        return;
       }
-
-      router.push(callbackUrl);
-      router.refresh();
     });
   };
 
@@ -91,8 +122,28 @@ export function LoginForm() {
         />
       </div>
 
+      {mfaToken ? (
+        <div className="grid gap-2">
+          <Label htmlFor="mfa-code">{t("mfaCode")}</Label>
+          <Input
+            id="mfa-code"
+            name="code"
+            autoComplete="one-time-code"
+            required
+            value={code}
+            aria-describedby="mfa-hint"
+            onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+              setCode(event.target.value)
+            }
+          />
+          <p id="mfa-hint" className="text-sm text-muted-foreground">
+            {t("mfaHint")}
+          </p>
+        </div>
+      ) : null}
+
       <Button type="submit" disabled={isPending}>
-        {isPending ? t("submitting") : t("submit")}
+        {isPending ? t("submitting") : mfaToken ? t("mfaSubmit") : t("submit")}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">

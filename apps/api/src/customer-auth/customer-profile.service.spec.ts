@@ -395,6 +395,54 @@ describe('customer profile API validation (T-055)', () => {
     expect(db.users[0]?.email).toBe('ada@example.com');
     expect(db.tokens[0]?.usedAt).toBeNull();
   });
+
+  it('persists portal preferences and rejects a high-contrast override', async () => {
+    db.users[0]!.settings = { staff: { theme: 'dark' } };
+
+    await expect(
+      service.update(userId, orgId, {
+        updatedAt: updatedAt.toISOString(),
+        portal: {
+          reduceMotion: 'yes' as unknown as boolean,
+          highContrast: 'forced' as unknown as 'system',
+        },
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(db.users[0]?.settings).toEqual({ staff: { theme: 'dark' } });
+
+    const saved = await service.update(userId, orgId, {
+      timezone: 'Europe/Berlin',
+      locale: 'fa',
+      updatedAt: updatedAt.toISOString(),
+      portal: { reduceMotion: true, denseText: true, highContrast: 'system' },
+    });
+
+    expect(saved.user.portal).toEqual({
+      timezone: 'Europe/Berlin',
+      locale: 'fa',
+      reduceMotion: true,
+      denseText: true,
+      highContrast: 'system',
+    });
+    expect(db.users[0]?.settings).toEqual({
+      staff: { theme: 'dark' },
+      portal: {
+        timezone: 'Europe/Berlin',
+        locale: 'fa',
+        reduceMotion: true,
+        denseText: true,
+        highContrast: 'system',
+      },
+    });
+    expect(outbox.emit).toHaveBeenCalledWith(
+      DOMAIN_EVENTS.CustomerProfileUpdated,
+      expect.objectContaining({
+        userId,
+        fields: expect.arrayContaining(['timezone', 'locale', 'settings']),
+      }),
+      orgId,
+    );
+  });
 });
 
 function customer(

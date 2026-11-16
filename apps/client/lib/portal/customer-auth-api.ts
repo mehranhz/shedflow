@@ -31,8 +31,35 @@ async function postCustomerAuth<T>(
   return unwrapData<T>(payload);
 }
 
-export function loginCustomer(email: string, password: string) {
-  return postCustomerAuth<CustomerAuthSession>("login", { email, password });
+export type CustomerLoginResult =
+  | { mfaRequired: true; mfaToken: string }
+  | CustomerAuthSession;
+
+export async function loginCustomer(
+  email: string,
+  password: string,
+): Promise<CustomerLoginResult> {
+  const payload = await apiBff<unknown>("customer/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  const data = unwrapData<Record<string, unknown>>(payload);
+  if (data.mfaRequired === true && typeof data.mfaToken === "string") {
+    return { mfaRequired: true, mfaToken: data.mfaToken };
+  }
+  if (
+    typeof data.accessToken !== "string" ||
+    typeof data.refreshToken !== "string" ||
+    !data.user ||
+    typeof data.user !== "object"
+  ) {
+    throw new Error("Sign in failed");
+  }
+  return data as CustomerAuthSession;
+}
+
+export function completeCustomerMfaLogin(mfaToken: string, code: string) {
+  return postCustomerAuth<CustomerAuthSession>("login/totp", { mfaToken, code });
 }
 
 export function registerCustomer(input: {

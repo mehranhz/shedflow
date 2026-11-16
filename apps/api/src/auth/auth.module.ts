@@ -10,6 +10,7 @@ import { OrganizationsModule } from '../organizations/organizations.module';
 import { UsersModule } from '../users/users.module';
 import { RefreshTokensModule } from '../refresh-tokens/refresh-tokens.module';
 import { UserTokensModule } from '../user-tokens/user-tokens.module';
+import { CustomerSecurityModule } from '../customer-security/customer-security.module';
 import { ACCESS_TOKEN_TTL } from './auth.constants';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -22,6 +23,7 @@ import { LocalStrategy } from './strategies/local.strategy';
     UsersModule,
     RefreshTokensModule,
     UserTokensModule,
+    CustomerSecurityModule,
     MembershipsModule,
     forwardRef(() => OrganizationsModule),
     forwardRef(() => DeveloperModule),

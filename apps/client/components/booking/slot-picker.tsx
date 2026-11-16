@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -90,6 +90,7 @@ export function SlotPicker({
   embed,
   portalBooking,
   reschedule,
+  defaultTimeZone,
 }: {
   orgSlug: string;
   eventSlug: string;
@@ -109,14 +110,21 @@ export function SlotPicker({
     customerOrgId: string;
     onRescheduled?: (result: { uid: string }) => void | Promise<void>;
   };
+  defaultTimeZone?: string | null;
 }) {
   const t = useTranslations("booking.picker");
   const tAppt = useTranslations("portal.appointments");
   const tEvent = useTranslations("booking.event");
   const locale = useLocale();
-  const [timeZone, setTimeZone] = useState(() =>
-    coerceIanaTimeZone(portalBooking?.timezone ?? undefined),
-  );
+  const preferredZone = portalBooking?.timezone ?? defaultTimeZone;
+  const [timeZone, setTimeZone] = useState(() => coerceIanaTimeZone(preferredZone));
+  const zoneTouched = useRef(false);
+  useEffect(() => {
+    if (zoneTouched.current || !preferredZone) {
+      return;
+    }
+    setTimeZone(coerceIanaTimeZone(preferredZone));
+  }, [preferredZone]);
   const [month, setMonth] = useState(new Date());
   const [day, setDay] = useState<Date | undefined>();
   const [slot, setSlot] = useState<Slot | null>(null);
@@ -632,6 +640,7 @@ export function SlotPicker({
                   <TimezoneCombobox
                     value={timeZone}
                     onChange={(next) => {
+                      zoneTouched.current = true;
                       setTimeZone(coerceIanaTimeZone(next));
                       setSlot(null);
                     }}

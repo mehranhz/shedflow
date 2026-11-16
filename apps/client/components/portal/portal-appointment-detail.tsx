@@ -29,6 +29,7 @@ import {
   addCustomerAttachment,
   cancelCustomerBooking,
   fetchCustomerBooking,
+  fetchCustomerMe,
   saveCustomerNote,
   type CustomerBookingDetail,
 } from "@/lib/portal/customer-api";
@@ -44,6 +45,12 @@ export function PortalAppointmentDetail({ uid }: { uid: string }) {
   const queryClient = useQueryClient();
   const customerOrgId =
     activeBusiness?.organizationId ?? session?.customerOrgId ?? undefined;
+  const profile = useQuery({
+    queryKey: ["customer-me", customerOrgId],
+    queryFn: () => fetchCustomerMe(customerOrgId),
+    enabled: Boolean(customerOrgId),
+    retry: false,
+  });
   const booking = useQuery({
     queryKey: ["customer-booking", customerOrgId, uid],
     queryFn: () => fetchCustomerBooking(customerOrgId!, uid),
@@ -82,6 +89,7 @@ export function PortalAppointmentDetail({ uid }: { uid: string }) {
     <DetailBody
       booking={booking.data}
       customerOrgId={customerOrgId}
+      profileTimeZone={profile.data?.user.timezone}
       onChanged={invalidate}
     />
   );
@@ -90,10 +98,12 @@ export function PortalAppointmentDetail({ uid }: { uid: string }) {
 function DetailBody({
   booking,
   customerOrgId,
+  profileTimeZone,
   onChanged,
 }: {
   booking: CustomerBookingDetail;
   customerOrgId: string;
+  profileTimeZone?: string;
   onChanged: () => Promise<void>;
 }) {
   const t = useTranslations("portal.appointments");
@@ -291,6 +301,7 @@ function DetailBody({
           eventSlug={eventSlug}
           eventType={toPublicEvent(booking)}
           organization={toPublicOrg(booking)}
+          defaultTimeZone={profileTimeZone}
           reschedule={{
             bookingUid: booking.uid,
             customerOrgId,

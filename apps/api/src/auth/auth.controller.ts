@@ -23,6 +23,9 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { CustomerSecurityService } from '../customer-security/customer-security.service';
+import { MfaLoginDto } from '../customer-security/dto/customer-security.dto';
+import { UsersService } from '../users/users.service';
 import type { AuthenticatedUser, PublicUser } from '../users/user';
 import type { RefreshTokenClientMeta } from '../refresh-tokens/refresh-token';
 
@@ -31,6 +34,8 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly otp: OtpService,
+    private readonly security: CustomerSecurityService,
+    private readonly users: UsersService,
   ) {}
 
   @Public()
@@ -50,7 +55,31 @@ export class AuthController {
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
     }
+    const mfaToken = await this.security.beginLogin(user.id);
+    if (mfaToken) {
+      return {
+        success: true,
+        data: { mfaRequired: true, mfaToken },
+      };
+    }
     const session = await this.authService.login(user, this.clientMeta(req));
+    return { ...session, success: true, data: session };
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 15 * 60 * 1000 } })
+  @HttpCode(200)
+  @Post('login/totp')
+  async loginTotp(@Body() dto: MfaLoginDto, @Req() req: Request) {
+    const userId = await this.security.consumeLogin(dto.mfaToken, dto.code);
+    const user = await this.users.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+    const session = await this.authService.login(
+      this.users.toPublic(user),
+      this.clientMeta(req),
+    );
     return { ...session, success: true, data: session };
   }
 

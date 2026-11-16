@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { appendFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { Prisma } from '@shedflow/db';
 import { DOMAIN_EVENTS, isValidTimeZone } from '@shedflow/shared';
 import { Clock } from '../common/clock/clock';
 import { TransactionManager } from '../common/persistence';
@@ -44,6 +45,14 @@ export type CustomerBusinessProfile = {
   updatedAt: Date;
 };
 
+export type PortalPreferences = {
+  timezone: string;
+  locale: string;
+  reduceMotion: boolean;
+  denseText: boolean;
+  highContrast: 'system';
+};
+
 export type CustomerProfile = {
   user: {
     id: string;
@@ -53,6 +62,7 @@ export type CustomerProfile = {
     photoUrl: string | null;
     timezone: string;
     locale: string;
+    portal: PortalPreferences;
     updatedAt: Date;
   };
   businesses: CustomerBusiness[];
@@ -73,7 +83,55 @@ type ProfilePatch = {
     phone?: string | null;
     updatedAt: string;
   };
+  portal?: {
+    reduceMotion?: boolean;
+    denseText?: boolean;
+    highContrast?: 'system';
+  };
 };
+
+export function readPortalPreferences(
+  settings: unknown,
+  timezone: string,
+  locale: string,
+): PortalPreferences {
+  const root =
+    settings && typeof settings === 'object' && !Array.isArray(settings)
+      ? (settings as Record<string, unknown>)
+      : {};
+  const portal =
+    root.portal && typeof root.portal === 'object' && !Array.isArray(root.portal)
+      ? (root.portal as Record<string, unknown>)
+      : {};
+  return {
+    timezone,
+    locale,
+    reduceMotion: portal.reduceMotion === true,
+    denseText: portal.denseText === true,
+    highContrast: 'system',
+  };
+}
+
+function settingsWithPortal(
+  current: unknown,
+  portal: PortalPreferences,
+): Prisma.InputJsonValue {
+  const base =
+    current && typeof current === 'object' && !Array.isArray(current)
+      ? { ...(current as Record<string, unknown>) }
+      : {};
+  return { ...base, portal } as Prisma.InputJsonValue;
+}
+
+function samePortal(left: PortalPreferences, right: PortalPreferences): boolean {
+  return (
+    left.timezone === right.timezone &&
+    left.locale === right.locale &&
+    left.reduceMotion === right.reduceMotion &&
+    left.denseText === right.denseText &&
+    left.highContrast === right.highContrast
+  );
+}
 
 type LinkedCustomer = {
   id: string;
@@ -403,6 +461,7 @@ export class CustomerProfileService {
       photoUrl: string | null;
       timezone: string;
       locale: string;
+      settings?: unknown;
       updatedAt: Date;
     },
     customers: LinkedCustomer[],
@@ -427,6 +486,7 @@ export class CustomerProfileService {
         photoUrl: user.photoUrl,
         timezone: user.timezone,
         locale: user.locale,
+        portal: readPortalPreferences(user.settings, user.timezone, user.locale),
         updatedAt: user.updatedAt,
       },
       businesses,
@@ -498,6 +558,31 @@ export class CustomerProfileService {
         patch.locale = locale;
       }
     }
+    if (input.portal) {
+      if (
+        input.portal.reduceMotion !== undefined &&
+        typeof input.portal.reduceMotion !== 'boolean'
+      ) {
+        fieldErrors['portal.reduceMotion'] = ['Reduce motion must be true or false'];
+      }
+      if (input.portal.denseText !== undefined && typeof input.portal.denseText !== 'boolean') {
+        fieldErrors['portal.denseText'] = ['Denser text must be true or false'];
+      }
+      if (input.portal.highContrast !== undefined && input.portal.highContrast !== 'system') {
+        fieldErrors['portal.highContrast'] = ['High contrast follows the system'];
+      }
+      if (
+        fieldErrors['portal.reduceMotion'] == null &&
+        fieldErrors['portal.denseText'] == null &&
+        fieldErrors['portal.highContrast'] == null
+      ) {
+        patch.portal = {
+          reduceMotion: input.portal.reduceMotion,
+          denseText: input.portal.denseText,
+          highContrast: input.portal.highContrast,
+        };
+      }
+    }
     if (input.business?.name !== undefined) {
       const name = input.business.name.trim().replace(/\s+/g, ' ');
       if (!name || name.length > 120) {
@@ -536,6 +621,7 @@ export class CustomerProfileService {
       photoUrl: string | null;
       timezone: string;
       locale: string;
+      settings?: unknown;
     },
     patch: Omit<ProfilePatch, 'updatedAt' | 'business'>,
   ): {
@@ -545,6 +631,7 @@ export class CustomerProfileService {
     photoUrl?: string | null;
     timezone?: string;
     locale?: string;
+    settings?: Prisma.InputJsonValue;
   } {
     const data: {
       name?: string;
@@ -553,6 +640,7 @@ export class CustomerProfileService {
       photoUrl?: string | null;
       timezone?: string;
       locale?: string;
+      settings?: Prisma.InputJsonValue;
     } = {};
     if (patch.name !== undefined && patch.name !== (user.name ?? '')) {
       data.name = patch.name;
@@ -569,6 +657,19 @@ export class CustomerProfileService {
     }
     if (patch.locale !== undefined && patch.locale !== user.locale) {
       data.locale = patch.locale;
+    }
+    const currentPortal = readPortalPreferences(user.settings, user.timezone, user.locale);
+    const nextPortal: PortalPreferences = {
+      timezone: patch.timezone ?? user.timezone,
+      locale: patch.locale ?? user.locale,
+      reduceMotion: patch.portal?.reduceMotion ?? currentPortal.reduceMotion,
+      denseText: patch.portal?.denseText ?? currentPortal.denseText,
+      highContrast: 'system',
+    };
+    const portalTouched =
+      patch.portal !== undefined || patch.timezone !== undefined || patch.locale !== undefined;
+    if (portalTouched && !samePortal(currentPortal, nextPortal)) {
+      data.settings = settingsWithPortal(user.settings, nextPortal);
     }
     return data;
   }

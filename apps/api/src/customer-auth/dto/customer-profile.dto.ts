@@ -1,6 +1,8 @@
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEmail,
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
@@ -8,6 +10,20 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+
+export class PortalPreferencesDto {
+  @IsOptional()
+  @IsBoolean()
+  reduceMotion?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  denseText?: boolean;
+
+  @IsOptional()
+  @IsIn(['system'])
+  highContrast?: 'system';
+}
 
 export class BusinessProfileDto {
   @IsOptional()
@@ -62,6 +78,11 @@ export class UpdateCustomerProfileDto {
   @ValidateNested()
   @Type(() => BusinessProfileDto)
   business?: BusinessProfileDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PortalPreferencesDto)
+  portal?: PortalPreferencesDto;
 }
 
 export class RequestEmailChangeDto {
@@ -71,6 +92,11 @@ export class RequestEmailChangeDto {
   @IsString()
   @MinLength(4)
   updatedAt!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  totpCode?: string;
 }
 
 export class ConfirmEmailChangeDto {

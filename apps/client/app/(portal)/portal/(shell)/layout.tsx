@@ -37,7 +37,13 @@ export default async function PortalAuthenticatedShellLayout({
       initialBusinesses={me?.businesses ?? []}
       initialActiveOrgId={me?.activeCustomerOrgId ?? session.customerOrgId}
     >
-      <PortalShell>{children}</PortalShell>
+      <PortalShell
+        locale={me?.user.locale}
+        reduceMotion={me?.user.portal?.reduceMotion === true}
+        denseText={me?.user.portal?.denseText === true}
+      >
+        {children}
+      </PortalShell>
     </PortalBusinessProvider>
   );
 }

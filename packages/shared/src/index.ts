@@ -11,6 +11,7 @@ export * from './questions.js';
 export * from './idempotency.js';
 export * from './auth.js';
 export * from './api-keys.js';
+export * from './notification-prefs.js';
 
 // Node-only modules (dns/net/crypto) are NOT re-exported here — importing
 // `@shedflow/shared` from the Next.js client would pull them into the browser

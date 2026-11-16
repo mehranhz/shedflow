@@ -4,60 +4,20 @@ import {
   Delete,
   Get,
   Headers,
+  Patch,
   Post,
   Put,
+  Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
-import {
-  IsBoolean,
-  IsOptional,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsString, MaxLength, MinLength } from 'class-validator';
 import type { Request } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Idempotent } from '../common/idempotency/idempotent.decorator';
+import { CustomerJwtGuard } from '../customer-payments/customer-jwt.guard';
 import type { AuthenticatedUser } from '../users/user';
+import { UpdateNotificationPrefsDto } from './dto/update-notification-prefs.dto';
 import { CustomerNotificationsService } from './customer-notifications.service';
-
-class UpdatePrefsDto {
-  @IsOptional()
-  @IsBoolean()
-  emailEnabled?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  smsEnabled?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  pushEnabled?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  remindersEnabled?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  marketingEnabled?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  receiptsEnabled?: boolean;
-
-  @IsOptional()
-  @IsString()
-  quietHoursStart?: string | null;
-
-  @IsOptional()
-  @IsString()
-  quietHoursEnd?: string | null;
-
-  @IsOptional()
-  @IsString()
-  timezone?: string;
-}
 
 class SmsOptInDto {
   @IsString()
@@ -79,25 +39,49 @@ class PushSubscribeDto {
 }
 
 @Controller('customer/notifications')
+@UseGuards(CustomerJwtGuard)
 export class CustomerNotificationsController {
   constructor(private readonly notifications: CustomerNotificationsService) {}
 
   @Get('prefs')
-  getPrefs(@CurrentUser() user: AuthenticatedUser) {
-    return this.notifications.getPrefs(user.id);
+  getPrefs(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('organizationId') organizationId?: string,
+  ) {
+    return this.notifications.getPrefs(user.id, organizationId);
+  }
+
+  @Patch('prefs')
+  patchPrefs(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('organizationId') organizationId: string | undefined,
+    @Body() dto: UpdateNotificationPrefsDto,
+    @Req() req: Request,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.notifications.updatePrefs(user.id, dto, {
+      organizationId,
+      ip: req.ip,
+      userAgent,
+    });
   }
 
   @Put('prefs')
-  @Idempotent()
-  updatePrefs(
+  putPrefs(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: UpdatePrefsDto,
+    @Query('organizationId') organizationId: string | undefined,
+    @Body() dto: UpdateNotificationPrefsDto,
+    @Req() req: Request,
+    @Headers('user-agent') userAgent?: string,
   ) {
-    return this.notifications.updatePrefs(user.id, dto);
+    return this.notifications.updatePrefs(user.id, dto, {
+      organizationId,
+      ip: req.ip,
+      userAgent,
+    });
   }
 
   @Post('sms/opt-in')
-  @Idempotent()
   optInSms(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: SmsOptInDto,
@@ -122,7 +106,6 @@ export class CustomerNotificationsController {
   }
 
   @Post('push/subscribe')
-  @Idempotent()
   subscribePush(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: PushSubscribeDto,

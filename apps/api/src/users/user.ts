@@ -33,6 +33,8 @@ export type AuthenticatedUser = PublicUser & {
   scopes?: string[];
   /** Set when JWT carries platform impersonation (T-038). */
   impersonatingOrgId?: string;
+  /** Refresh-token id for the current access token (T-058). */
+  sessionId?: string;
 };
 
 export type CreateUserData = {

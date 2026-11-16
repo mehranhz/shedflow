@@ -34,7 +34,7 @@
 
 ## T-056 — Preferences: timezone, language, accessibility
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-055, T-047  
 **Apps:** `apps/client`, `shedflow-back`
 
@@ -60,7 +60,7 @@
 
 ## T-057 — Notification channel preferences
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-055, T-025  
 **Apps:** `shedflow-back`, `apps/client`
 
@@ -87,7 +87,7 @@
 
 ## T-058 — Security: password, 2FA, sessions & devices
 
-**Status:** TODO  
+**Status:** DONE  
 **Depends on:** T-055, T-004  
 **Apps:** `shedflow-back`, `apps/client`
 

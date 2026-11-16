@@ -6,16 +6,10 @@ import { useTransition } from "react";
 
 import {
   isAppLocale,
-  localeCookieName,
   localeNames,
   locales,
-  type AppLocale,
+  writeLocaleCookie,
 } from "@/i18n/config";
-
-function persistLocale(locale: AppLocale) {
-  const maxAge = 60 * 60 * 24 * 365;
-  document.cookie = `${localeCookieName}=${locale};path=/;max-age=${maxAge};samesite=lax`;
-}
 
 export function LocaleSwitcher({
   className,
@@ -34,7 +28,7 @@ export function LocaleSwitcher({
     if (!isAppLocale(next) || next === locale) {
       return;
     }
-    persistLocale(next);
+    writeLocaleCookie(next);
     startTransition(() => {
       router.refresh();
     });

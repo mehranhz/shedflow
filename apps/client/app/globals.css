@@ -49,3 +49,27 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* User override from the portal preference center (T-056). */
+.portal-shell[data-reduce-motion="reduce"],
+.portal-shell[data-reduce-motion="reduce"] *,
+.portal-shell[data-reduce-motion="reduce"] *::before,
+.portal-shell[data-reduce-motion="reduce"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.portal-shell[data-dense-text="true"] {
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
+
+@media (prefers-contrast: more) {
+  .portal-shell[data-high-contrast="system"] {
+    --foreground: CanvasText;
+    --background: Canvas;
+    --border: CanvasText;
+  }
+}

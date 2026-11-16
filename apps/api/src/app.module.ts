@@ -18,6 +18,10 @@ import { DeveloperModule } from './developer/developer.module';
 import { DomainEventsModule } from './domain-events/domain-events.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { CustomerAuthModule } from './customer-auth/customer-auth.module';
+import { CustomerNotificationsModule } from './customer-notifications/customer-notifications.module';
+import { CustomerPrivacyModule } from './customer-privacy/customer-privacy.module';
+import { CustomerSecurityModule } from './customer-security/customer-security.module';
+import { CustomerPrivacyModule } from './customer-privacy/customer-privacy.module';
 import { CustomerPortalModule } from './customer/customer-portal.module';
 import { EventTypesModule } from './event-types/event-types.module';
 import { FallbackModule } from './fallback/fallback.module';
@@ -57,6 +61,9 @@ import { UsersModule } from './users/users.module';
     CustomersModule,
     CustomerPortalModule,
     CustomerAuthModule,
+    CustomerNotificationsModule,
+    CustomerSecurityModule,
+    CustomerPrivacyModule,
     BookingsModule,
     DeveloperModule,
     FlagsModule,

@@ -106,6 +106,7 @@ class InMemoryRefreshTokenRepository
       replacedById: null,
       userAgent: data.userAgent ?? null,
       ip: data.ip ?? null,
+      lastUsedAt: data.lastUsedAt,
       createdAt: new Date(),
     };
   }
@@ -115,11 +116,34 @@ class InMemoryRefreshTokenRepository
   }
 
   async revokeAllForUser(userId: string, revokedAt: Date): Promise<void> {
+    await this.revokeAllForUserExcept(userId, null, revokedAt);
+  }
+
+  async revokeAllForUserExcept(
+    userId: string,
+    exceptId: string | null,
+    revokedAt: Date,
+  ): Promise<void> {
     for (const token of this.rows.values()) {
-      if (token.userId === userId && token.revokedAt == null) {
-        this.rows.set(token.id, { ...token, revokedAt });
+      if (token.userId !== userId || token.revokedAt != null) {
+        continue;
       }
+      if (exceptId && token.id === exceptId) {
+        continue;
+      }
+      this.rows.set(token.id, { ...token, revokedAt });
     }
+  }
+
+  async listActiveForUser(userId: string, now: Date): Promise<RefreshToken[]> {
+    return [...this.rows.values()]
+      .filter(
+        (token) =>
+          token.userId === userId &&
+          token.revokedAt == null &&
+          token.expiresAt.getTime() > now.getTime(),
+      )
+      .sort((left, right) => right.lastUsedAt.getTime() - left.lastUsedAt.getTime());
   }
 }
 

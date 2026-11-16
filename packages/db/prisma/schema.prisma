@@ -42,6 +42,8 @@ model User {
   phoneVerifiedAt DateTime? @map("phone_verified_at") @db.Timestamptz(3)
   /// Optional portrait link. The file stays with the customer; we store the URL only.
   photoUrl        String?   @map("photo_url")
+  /// Portal preference center (T-056). Shape: `{ portal: { timezone, locale, reduceMotion, denseText, highContrast } }`.
+  settings        Json      @default("{}")
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(3)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -69,6 +71,9 @@ model User {
   supportMessagesSent SupportMessage[] @relation("SupportMessageSender")
   // Wave 16 GDPR DSR (T-077)
   dsrRequests         DsrRequest[]
+  totp                UserTotp?
+  backupCodes         UserBackupCode[]
+  consentLogs         ConsentLog[]
 
   @@map("users")
 }
@@ -82,6 +87,7 @@ model RefreshToken {
   replacedById String?   @map("replaced_by_id") @db.Uuid
   userAgent    String?   @map("user_agent")
   ip           String?
+  lastUsedAt   DateTime  @default(now()) @map("last_used_at") @db.Timestamptz(3)
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -123,6 +129,37 @@ model EmailChangeToken {
   @@map("email_change_tokens")
 }
 
+/// Customer TOTP (T-058). The secret is envelope-encrypted. Pending secret is enrollment before confirm.
+model UserTotp {
+  id                      String    @id @default(uuid()) @db.Uuid
+  userId                  String    @unique @map("user_id") @db.Uuid
+  pendingSecretCiphertext String?   @map("pending_secret_ciphertext")
+  secretCiphertext        String?   @map("secret_ciphertext")
+  enabledAt               DateTime? @map("enabled_at") @db.Timestamptz(3)
+  failedAttempts          Int       @default(0) @map("failed_attempts")
+  windowStartedAt         DateTime? @map("window_started_at") @db.Timestamptz(3)
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_totp")
+}
+
+/// Single-use backup codes for customer TOTP (T-058). Only the SHA-256 hash is stored.
+model UserBackupCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash")
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_backup_codes")
+}
+
 model Organization {
   id                           String       @id @default(uuid()) @db.Uuid
   name                         String
@@ -157,6 +194,7 @@ model Organization {
   orgSharedDocuments     OrgSharedDocument[]
   documentDownloadAudits DocumentDownloadAudit[]
   notificationPreferences NotificationPreference[]
+  consentLogs             ConsentLog[]
   // Wave 14 engagement
   customerFavorites    CustomerFavorite[]
   waitlistEntries      WaitlistEntry[]
@@ -1354,7 +1392,8 @@ model DocumentDownloadAudit {
   @@map("document_download_audits")
 }
 
-/// Default prefs port for T-057/T-075 until Wave 12 lands full UI.
+/// User-scoped notification prefs (T-057). organizationId null is the global row;
+/// a non-null organizationId is an optional per-business override.
 model NotificationPreference {
   id                String   @id @default(uuid()) @db.Uuid
   userId            String   @map("user_id") @db.Uuid
@@ -1365,6 +1404,8 @@ model NotificationPreference {
   remindersEnabled  Boolean  @default(true) @map("reminders_enabled")
   marketingEnabled  Boolean  @default(false) @map("marketing_enabled")
   receiptsEnabled   Boolean  @default(true) @map("receipts_enabled")
+  waitlistEnabled   Boolean  @default(true) @map("waitlist_enabled")
+  messagesEnabled   Boolean  @default(true) @map("messages_enabled")
   /// Quiet hours in user local time (HH:mm); null = no quiet hours.
   quietHoursStart   String?  @map("quiet_hours_start")
   quietHoursEnd     String?  @map("quiet_hours_end")
@@ -1395,6 +1436,26 @@ model SmsConsent {
 
   @@index([userId, revokedAt])
   @@map("sms_consents")
+}
+
+/// Append-only privacy consent (T-059). Rows are inserted, never rewritten.
+model ConsentLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  organizationId String?  @map("organization_id") @db.Uuid
+  purpose        String
+  granted        Boolean
+  consentedAt    DateTime @map("consented_at") @db.Timestamptz(3)
+  ip             String?
+  userAgent      String?  @map("user_agent")
+  source         String   @default("portal")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, consentedAt])
+  @@map("consent_logs")
 }
 
 model PushSubscription {

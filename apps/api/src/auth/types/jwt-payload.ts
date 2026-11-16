@@ -13,5 +13,7 @@ export type JwtPayload = {
   actorType?: 'STAFF' | 'CUSTOMER';
   customerOrgId?: string;
   customerId?: string;
+  /** Refresh-token id carried so session revoke can spare the current device. */
+  sid?: string;
   typ: typeof ACCESS_TOKEN_TYPE;
 };

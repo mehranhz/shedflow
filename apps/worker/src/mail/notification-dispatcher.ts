@@ -6,7 +6,12 @@ import {
   NotificationStatus,
   Prisma,
 } from '@shedflow/db';
-import { DOMAIN_EVENTS, EMAIL_TEMPLATES, type EmailTemplateName } from '@shedflow/shared';
+import {
+  DOMAIN_EVENTS,
+  EMAIL_TEMPLATES,
+  emailTemplateCategory,
+  type EmailTemplateName,
+} from '@shedflow/shared';
 import {
   renderBookingCancelledHost,
   renderBookingCancelledInvitee,
@@ -22,6 +27,7 @@ import {
   type RenderedEmail,
 } from '@shedflow/emails';
 import { PrismaService } from '../prisma/prisma.service';
+import { allowsUserNotification } from './notification-gate';
 import { DomainEventJob } from '../queue/pg-boss.service';
 import { buildIcs } from './ics';
 import { MailAttachment, Mailer } from './mailer';
@@ -438,7 +444,7 @@ export class NotificationDispatcher {
       eventTitle: row.eventType.title,
       hostEmail: row.host.email,
       hostName: row.host.name,
-      inviteeEmail: row.customer.email,
+      inviteeEmail: row.customer.email ?? '',
       inviteeName: row.customer.name,
     };
   }
@@ -453,6 +459,29 @@ export class NotificationDispatcher {
     idempotencyKey: string;
     attachments?: MailAttachment[];
   }): Promise<void> {
+    if (!input.to) {
+      return;
+    }
+    const category = emailTemplateCategory(input.template);
+    if (category !== 'security' && category !== 'confirmation') {
+      const recipient = await this.prisma.user.findFirst({
+        where: { email: { equals: input.to, mode: 'insensitive' } },
+        select: { id: true },
+      });
+      const allowed = await allowsUserNotification(
+        this.prisma,
+        recipient?.id ?? null,
+        input.organizationId,
+        category,
+      );
+      if (!allowed) {
+        this.logger.debug(
+          `preference skip template=${input.template} category=${category}`,
+        );
+        return;
+      }
+    }
+
     if (input.bookingId) {
       const existing = await this.prisma.notificationLog.findFirst({
         where: {

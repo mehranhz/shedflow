@@ -302,6 +302,7 @@ export class AuthService {
                   customerOrgId: customer.organizationId,
                   customerId: customer.id,
                   phone: publicUser.phone,
+                  sessionId: next.id,
                 },
               ),
               refreshToken: next.raw,
@@ -310,7 +311,7 @@ export class AuthService {
           }
         }
       }
-      return this.toSession(publicUser, next.raw, organizationId);
+      return this.toSession(publicUser, next.raw, organizationId, undefined, next.id);
     });
   }
 
@@ -604,7 +605,7 @@ export class AuthService {
   ): Promise<AuthSession> {
     const issued = await this.createRefreshToken(user.id, meta);
     return {
-      accessToken: await this.signCustomerAccess(user, customer),
+      accessToken: await this.signCustomerAccess(user, customer, issued.id),
       refreshToken: issued.raw,
       user,
     };
@@ -613,6 +614,7 @@ export class AuthService {
   signCustomerAccess(
     user: PublicUser,
     customer?: { organizationId: string; customerId: string } | null,
+    sessionId?: string,
   ): Promise<string> {
     return this.signAccessToken(
       user.id,
@@ -625,6 +627,7 @@ export class AuthService {
         customerOrgId: customer?.organizationId,
         customerId: customer?.customerId,
         phone: user.phone,
+        sessionId,
       },
     );
   }
@@ -635,7 +638,7 @@ export class AuthService {
     membership?: { organizationId: string; role: Role },
   ): Promise<AuthSession> {
     const issued = await this.createRefreshToken(user.id, meta);
-    return this.toSession(user, issued.raw, undefined, membership);
+    return this.toSession(user, issued.raw, undefined, membership, issued.id);
   }
 
   private async toSession(
@@ -643,6 +646,7 @@ export class AuthService {
     refreshToken: string,
     preferredOrgId?: string,
     membership?: { organizationId: string; role: Role },
+    sessionId?: string,
   ): Promise<AuthSession> {
     const active =
       membership ?? (await this.pickActiveMembership(user.id, preferredOrgId));
@@ -653,7 +657,7 @@ export class AuthService {
         active?.organizationId,
         active?.role,
         undefined,
-        { phone: user.phone },
+        { phone: user.phone, sessionId },
       ),
       refreshToken,
       user,
@@ -671,6 +675,7 @@ export class AuthService {
       expiresAt: new Date(this.clock.now().getTime() + REFRESH_TOKEN_TTL_MS),
       userAgent: meta.userAgent ?? null,
       ip: meta.ip ?? null,
+      lastUsedAt: this.clock.now(),
     });
     return { raw, id: entity.id, entity };
   }
@@ -722,6 +727,7 @@ export class AuthService {
       customerOrgId?: string;
       customerId?: string;
       phone?: string | null;
+      sessionId?: string;
     },
   ): Promise<string> {
     const payload: JwtPayload = {
@@ -734,6 +740,7 @@ export class AuthService {
       ...(extras?.actorType ? { actorType: extras.actorType } : {}),
       ...(extras?.customerOrgId ? { customerOrgId: extras.customerOrgId } : {}),
       ...(extras?.customerId ? { customerId: extras.customerId } : {}),
+      ...(extras?.sessionId ? { sid: extras.sessionId } : {}),
     };
     return this.jwtService.signAsync(payload, {
       expiresIn: ACCESS_TOKEN_TTL,

@@ -65,4 +65,71 @@ describe('ReminderService', () => {
       }),
     );
   });
+
+  it('skips reminder.send for a user who opted out and still emails the host', async () => {
+    const startAt = new Date('2030-01-01T12:00:00.000Z');
+    const prisma = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue(confirmedBooking(startAt)),
+      },
+      notificationPreference: {
+        findMany: jest.fn().mockImplementation(async ({ where }) => {
+          if (where.userId === 'invitee-user') {
+            return [
+              {
+                organizationId: null,
+                emailEnabled: true,
+                smsEnabled: false,
+                pushEnabled: false,
+                remindersEnabled: false,
+                marketingEnabled: false,
+                receiptsEnabled: true,
+                waitlistEnabled: true,
+                messagesEnabled: true,
+                quietHoursStart: null,
+                quietHoursEnd: null,
+                timezone: 'UTC',
+              },
+            ];
+          }
+          return [];
+        }),
+      },
+      notificationLog: { findFirst: jest.fn().mockResolvedValue(null), create: jest.fn() },
+    };
+    const mailer = new LoggingMailer();
+    const service = new ReminderService(
+      prisma as unknown as PrismaService,
+      { enqueueJob: jest.fn() } as unknown as PgBossService,
+      mailer,
+    );
+
+    await service.handleSend({
+      bookingId: 'b1',
+      template: 'reminder-1h',
+      startAt: startAt.toISOString(),
+    });
+
+    expect(mailer.sent.map((message) => message.to)).toEqual(['host@example.com']);
+    expect(prisma.notificationLog.create).toHaveBeenCalledTimes(1);
+  });
 });
+
+function confirmedBooking(startAt: Date) {
+  return {
+    id: 'b1',
+    organizationId: 'org-1',
+    status: BookingStatus.CONFIRMED,
+    startAt,
+    endAt: new Date(startAt.getTime() + 30 * 60 * 1000),
+    timezone: 'UTC',
+    host: { id: 'host-user', email: 'host@example.com', name: 'Host' },
+    customer: {
+      id: 'cust-1',
+      userId: 'invitee-user',
+      email: 'invitee@example.com',
+      name: 'Ada',
+    },
+    eventType: { title: 'Consult' },
+  };
+}

@@ -1,10 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Alert, AlertDescription, AlertTitle, Button, Skeleton } from "@shedflow/ui/components";
 
 import { SlotPicker } from "@/components/booking/slot-picker";
+import { fetchCustomerMe } from "@/lib/portal/customer-api";
 import { publicScheduling } from "@/lib/scheduling";
 import type { PublicEventType, PublicOrg } from "@/lib/types";
 
@@ -22,6 +24,13 @@ export function PublicEventLoader({
   embed: boolean;
 }) {
   const t = useTranslations("booking.event");
+  const { status } = useSession();
+  const profile = useQuery({
+    queryKey: ["customer-me", "slot-timezone"],
+    queryFn: () => fetchCustomerMe(),
+    enabled: status === "authenticated",
+    retry: false,
+  });
   const query = useQuery({
     queryKey: ["public-event", orgSlug, eventSlug],
     queryFn: () => publicScheduling.eventType(orgSlug, eventSlug),
@@ -76,6 +85,7 @@ export function PublicEventLoader({
       eventType={eventType}
       organization={organization}
       embed={embed}
+      defaultTimeZone={profile.data?.user.timezone}
     />
   );
 }

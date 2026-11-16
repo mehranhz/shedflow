@@ -23,10 +23,14 @@ export function TimezoneCombobox({
   value,
   onChange,
   className,
+  id,
+  labelledBy,
 }: {
   value: string;
   onChange: (next: string) => void;
   className?: string;
+  id?: string;
+  labelledBy?: string;
 }) {
   const t = useTranslations("booking.timezone");
   const [open, setOpen] = useState(false);
@@ -36,9 +40,11 @@ export function TimezoneCombobox({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-labelledby={labelledBy}
           className={cn("justify-between font-normal", className)}
         >
           <span className="flex min-w-0 items-center gap-2">

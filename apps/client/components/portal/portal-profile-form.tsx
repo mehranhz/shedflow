@@ -110,6 +110,7 @@ export function PortalProfileForm() {
   const [locale, setLocale] = useState("en");
   const [email, setEmail] = useState("");
   const [nextEmail, setNextEmail] = useState("");
+  const [emailTotp, setEmailTotp] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [businessPhone, setBusinessPhone] = useState("");
 
@@ -226,8 +227,9 @@ export function PortalProfileForm() {
     setEmailError(null);
     setNotice(null);
     try {
-      await requestCustomerEmailChange(nextEmail, loaded.user.updatedAt);
+      await requestCustomerEmailChange(nextEmail, loaded.user.updatedAt, emailTotp.trim() || undefined);
       setNextEmail("");
+      setEmailTotp("");
       setNotice(t("emailSent"));
     } catch (error) {
       const errors = readFieldErrors(error);
@@ -426,6 +428,23 @@ export function PortalProfileForm() {
             onChange={(event) => setNextEmail(event.target.value)}
           />
           <FieldError id="profile-email-error" messages={fieldErrors.email} />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="profile-email-totp">{t("emailTotp")}</Label>
+          <Input
+            id="profile-email-totp"
+            name="totpCode"
+            inputMode="text"
+            autoComplete="one-time-code"
+            value={emailTotp}
+            aria-invalid={fieldErrors.totpCode ? true : undefined}
+            aria-describedby="profile-email-totp-hint"
+            onChange={(event) => setEmailTotp(event.target.value)}
+          />
+          <p id="profile-email-totp-hint" className="text-sm text-muted-foreground">
+            {t("emailTotpHint")}
+          </p>
+          <FieldError id="profile-email-totp-error" messages={fieldErrors.totpCode} />
         </div>
         {emailError ? <p className="text-sm text-destructive">{emailError}</p> : null}
         <Button

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { appendFile, mkdir } from 'node:fs/promises';
@@ -11,6 +12,7 @@ import { Clock } from '../common/clock/clock';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { AuthService, type AuthSession, syntheticEmailForPhone } from './auth.service';
+import { CustomerSecurityService } from '../customer-security/customer-security.service';
 import type { RefreshTokenClientMeta } from '../refresh-tokens/refresh-token';
 
 const OTP_TTL_MS = 5 * 60 * 1000;
@@ -24,6 +26,7 @@ export class OtpService {
     private readonly users: UsersService,
     private readonly auth: AuthService,
     private readonly clock: Clock,
+    private readonly security: CustomerSecurityService,
   ) {}
 
   async request(username: string): Promise<{ success: true }> {
@@ -76,12 +79,19 @@ export class OtpService {
       throw new BadRequestException('Invalid or expired code');
     }
 
+    const existing = await this.users.findByPhone(phone);
+    if (existing && (await this.security.isEnabled(existing.id))) {
+      throw new UnauthorizedException(
+        'Two-factor authentication is required. Sign in with your password and authenticator code.',
+      );
+    }
+
     await this.prisma.otpChallenge.update({
       where: { id: stored.id },
       data: { usedAt: now },
     });
 
-    let user = await this.users.findByPhone(phone);
+    let user = existing;
     if (!user) {
       const passwordHash = await bcrypt.hash(randomUUID(), 10);
       user = await this.users.create(syntheticEmailForPhone(phone), passwordHash, {

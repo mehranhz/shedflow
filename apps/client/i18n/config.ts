@@ -25,3 +25,12 @@ export function isAppLocale(value: unknown): value is AppLocale {
 export function localeDirection(locale: AppLocale): "ltr" | "rtl" {
   return rtlLocales.has(locale) ? "rtl" : "ltr";
 }
+
+/** Persist the locale without recreating the account. The portal shell reads this cookie. */
+export function writeLocaleCookie(locale: AppLocale): void {
+  if (typeof document === "undefined") {
+    return;
+  }
+  const maxAge = 60 * 60 * 24 * 365;
+  document.cookie = `${localeCookieName}=${locale};path=/;max-age=${maxAge};samesite=lax`;
+}

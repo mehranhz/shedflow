@@ -5,6 +5,7 @@ import {
   NotificationStatus,
 } from '@shedflow/db';
 import { EMAIL_TEMPLATES } from '@shedflow/shared';
+import { allowsUserNotification } from '../mail/notification-gate';
 import { Mailer } from '../mail/mailer';
 import { PrismaService } from '../prisma/prisma.service';
 import { PgBossService } from '../queue/pg-boss.service';
@@ -84,26 +85,50 @@ export class ReminderService {
       `Invitee: ${booking.customer.name} <${booking.customer.email}>`,
     ].join('\n');
 
-    const recipients: Array<{ to: string; template: string; replyTo: string }> = [
+    const inviteeEmail = booking.customer.email;
+    const recipients: Array<{
+      to: string;
+      template: string;
+      replyTo: string;
+      userId: string | null;
+    }> = [
       {
         to: booking.host.email,
         template:
           payload.template === 'reminder-24h'
             ? EMAIL_TEMPLATES.Reminder24hHost
             : EMAIL_TEMPLATES.Reminder1hHost,
-        replyTo: booking.customer.email,
+        replyTo: inviteeEmail ?? booking.host.email,
+        userId: booking.host.id,
       },
-      {
-        to: booking.customer.email,
+    ];
+    if (inviteeEmail) {
+      recipients.push({
+        to: inviteeEmail,
         template:
           payload.template === 'reminder-24h'
             ? EMAIL_TEMPLATES.Reminder24hInvitee
             : EMAIL_TEMPLATES.Reminder1hInvitee,
         replyTo: booking.host.email,
-      },
-    ];
+        userId: booking.customer.userId,
+      });
+    }
 
     for (const recipient of recipients) {
+      const userId = recipient.userId;
+      const allowed = await allowsUserNotification(
+        this.prisma,
+        userId,
+        booking.organizationId,
+        'reminder',
+        'email',
+      );
+      if (!allowed) {
+        this.logger.debug(
+          `reminder skip preference user=${userId ?? 'guest'} booking=${booking.id}`,
+        );
+        continue;
+      }
       const existing = await this.prisma.notificationLog.findFirst({
         where: {
           bookingId: booking.id,

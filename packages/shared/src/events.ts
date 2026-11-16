@@ -32,6 +32,12 @@ export const DOMAIN_EVENTS = {
   CustomerProfileUpdated: 'customer.profile_updated',
   CustomerEmailChangeRequested: 'customer.email_change_requested',
   CustomerEmailChanged: 'customer.email_changed',
+  CustomerPasswordChanged: 'customer.password_changed',
+  CustomerTotpEnabled: 'customer.totp_enabled',
+  CustomerTotpDisabled: 'customer.totp_disabled',
+  CustomerSessionRevoked: 'customer.session_revoked',
+  CustomerConsentRecorded: 'customer.consent_recorded',
+  CustomerUnlinked: 'customer.unlinked',
 } as const;
 
 /** Notification log / Resend template ids used by the worker (T-025 / T-026). */

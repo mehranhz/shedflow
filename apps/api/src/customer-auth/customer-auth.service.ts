@@ -12,6 +12,7 @@ import { Clock } from '../common/clock/clock';
 import { MembershipRepository } from '../memberships/membership.repository';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService, type AuthSession } from '../auth/auth.service';
+import { CustomerSecurityService } from '../customer-security/customer-security.service';
 import type { RefreshTokenClientMeta } from '../refresh-tokens/refresh-token';
 import { UsersService } from '../users/users.service';
 import type { PublicUser } from '../users/user';
@@ -33,6 +34,13 @@ export type CustomerSession = AuthSession & {
   actorType: 'CUSTOMER';
 };
 
+export type CustomerMfaChallenge = {
+  mfaRequired: true;
+  mfaToken: string;
+};
+
+export type CustomerLoginResult = CustomerSession | CustomerMfaChallenge;
+
 @Injectable()
 export class CustomerAuthService {
   private readonly logger = new Logger(CustomerAuthService.name);
@@ -43,6 +51,7 @@ export class CustomerAuthService {
     private readonly auth: AuthService,
     private readonly memberships: MembershipRepository,
     private readonly clock: Clock,
+    private readonly security: CustomerSecurityService,
   ) {}
 
   async register(
@@ -69,7 +78,7 @@ export class CustomerAuthService {
     email: string,
     password: string,
     meta: RefreshTokenClientMeta,
-  ): Promise<CustomerSession> {
+  ): Promise<CustomerLoginResult> {
     const normalized = normalizeEmail(email);
     const user = await this.users.findByEmail(normalized);
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
@@ -86,7 +95,31 @@ export class CustomerAuthService {
     if (staff && businesses.length === 0) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    const mfaToken = await this.security.beginLogin(user.id);
+    if (mfaToken) {
+      return { mfaRequired: true, mfaToken };
+    }
     return this.session(this.users.toPublic(user), meta, businesses);
+  }
+
+  async completeLogin(
+    mfaToken: string,
+    code: string,
+    meta: RefreshTokenClientMeta,
+  ): Promise<CustomerSession> {
+    const userId = await this.security.consumeLogin(mfaToken, code);
+    return this.establishSession(userId, meta);
+  }
+
+  async establishSession(
+    userId: string,
+    meta: RefreshTokenClientMeta,
+  ): Promise<CustomerSession> {
+    const user = await this.users.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+    return this.session(this.users.toPublic(user), meta);
   }
 
   async requestClaim(email: string): Promise<void> {
@@ -140,7 +173,7 @@ export class CustomerAuthService {
     return this.session(this.users.toPublic(user), meta);
   }
 
-  async switchBusiness(user: PublicUser, organizationId: string) {
+  async switchBusiness(user: PublicUser & { sessionId?: string }, organizationId: string) {
     const customer = await this.prisma.customer.findFirst({
       where: { userId: user.id, organizationId },
     });
@@ -148,10 +181,14 @@ export class CustomerAuthService {
       throw new HttpException('Customer link not found', 404);
     }
     return {
-      accessToken: await this.auth.signCustomerAccess(user, {
-        organizationId: customer.organizationId,
-        customerId: customer.id,
-      }),
+      accessToken: await this.auth.signCustomerAccess(
+        user,
+        {
+          organizationId: customer.organizationId,
+          customerId: customer.id,
+        },
+        user.sessionId,
+      ),
       customerOrgId: customer.organizationId,
       customerId: customer.id,
     };

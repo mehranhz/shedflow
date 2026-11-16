@@ -17,6 +17,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Idempotent } from '../common/idempotency/idempotent.decorator';
 import type { BookingAnswers } from '@shedflow/shared';
 import type { AuthenticatedUser } from '../users/user';
+import { CustomerSecurityService } from '../customer-security/customer-security.service';
 import { CustomerAuthService } from './customer-auth.service';
 import { CustomerBookingsService } from './customer-bookings.service';
 import {
@@ -42,6 +43,7 @@ export class CustomerSessionController {
     private readonly customers: CustomerAuthService,
     private readonly bookings: CustomerBookingsService,
     private readonly profiles: CustomerProfileService,
+    private readonly security: CustomerSecurityService,
   ) {}
 
   @Get('me')
@@ -71,11 +73,12 @@ export class CustomerSessionController {
   @Post('me/email')
   @HttpCode(202)
   @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000 } })
-  requestEmailChange(
+  async requestEmailChange(
     @CurrentUser() user: AuthenticatedUser,
     @Headers('if-match') ifMatch: string | undefined,
     @Body() dto: RequestEmailChangeDto,
   ) {
+    await this.security.assertStepUp(user.id, dto.totpCode);
     return this.profiles.requestEmailChange(user.id, dto, ifMatch);
   }
 

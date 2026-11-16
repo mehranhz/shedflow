@@ -14,6 +14,11 @@ import {
   Label,
 } from "@shedflow/ui/components";
 
+import { ClientApiError } from "@/lib/http";
+import {
+  completeCustomerMfaLogin,
+  loginCustomer,
+} from "@/lib/portal/customer-auth-api";
 import { postCustomerLoginPath } from "@/lib/portal/routing";
 
 export function PortalLoginForm() {
@@ -24,6 +29,8 @@ export function PortalLoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -32,19 +39,35 @@ export function PortalLoginForm() {
     setError(null);
 
     startTransition(async () => {
-      const result = await signIn("customer-portal", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (!result || result.error) {
-        setError(t("invalidCredentials"));
-        return;
+      try {
+        const session = mfaToken
+          ? await completeCustomerMfaLogin(mfaToken, code.trim())
+          : await loginCustomer(email, password);
+        if ("mfaRequired" in session) {
+          setMfaToken(session.mfaToken);
+          return;
+        }
+        const result = await signIn("customer-portal", {
+          email,
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          redirect: false,
+        });
+        if (!result || result.error) {
+          setError(t("invalidCredentials"));
+          return;
+        }
+        router.push(postCustomerLoginPath(next));
+        router.refresh();
+      } catch (caught) {
+        setError(
+          caught instanceof ClientApiError && caught.status === 429
+            ? t("mfaInvalid")
+            : mfaToken
+              ? t("mfaInvalid")
+              : t("invalidCredentials"),
+        );
       }
-
-      router.push(postCustomerLoginPath(next));
-      router.refresh();
     });
   };
 
@@ -84,8 +107,26 @@ export function PortalLoginForm() {
         />
       </div>
 
+      {mfaToken ? (
+        <div className="grid gap-2">
+          <Label htmlFor="mfa-code">{t("mfaCode")}</Label>
+          <Input
+            id="mfa-code"
+            name="code"
+            autoComplete="one-time-code"
+            required
+            value={code}
+            aria-describedby="mfa-hint"
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setCode(event.target.value)}
+          />
+          <p id="mfa-hint" className="text-sm text-muted-foreground">
+            {t("mfaHint")}
+          </p>
+        </div>
+      ) : null}
+
       <Button type="submit" disabled={isPending} className="min-h-11">
-        {isPending ? t("submitting") : t("submit")}
+        {isPending ? t("submitting") : mfaToken ? t("mfaSubmit") : t("submit")}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">

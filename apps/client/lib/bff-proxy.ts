@@ -56,6 +56,9 @@ function isPublicApiPath(path: string[]): boolean {
   if (path[0] === "customer" && path[1] === "auth") {
     return true;
   }
+  if (path[0] === "auth" && path[1] === "login") {
+    return true;
+  }
   return false;
 }
 

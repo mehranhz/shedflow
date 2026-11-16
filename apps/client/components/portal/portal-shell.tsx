@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useRef, useTransition } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { usePathname, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import {
   Avatar,
@@ -21,6 +22,7 @@ import { PortalBottomNav } from "@/components/portal/portal-bottom-nav";
 import { PortalAnalyticsBridge } from "@/components/portal/portal-analytics-bridge";
 import { usePortalBusiness } from "@/components/portal/portal-business-context";
 import { brandStyle } from "@/lib/booking-brand";
+import { isAppLocale, writeLocaleCookie } from "@/i18n/config";
 
 const desktopLinks = [
   { href: "/portal", key: "home", icon: Home, exact: true },
@@ -29,12 +31,40 @@ const desktopLinks = [
   { href: "/portal/account", key: "account", icon: UserRound, exact: false },
 ] as const satisfies readonly { href: string; key: string; icon: typeof Home; exact?: boolean }[];
 
-export function PortalShell({ children }: { children: React.ReactNode }) {
+export function PortalShell({
+  children,
+  locale,
+  reduceMotion = false,
+  denseText = false,
+}: {
+  children: React.ReactNode;
+  locale?: string | null;
+  reduceMotion?: boolean;
+  denseText?: boolean;
+}) {
   const t = useTranslations("portal.shell");
   const nav = useTranslations("portal.nav");
   const pathname = usePathname();
+  const router = useRouter();
+  const currentLocale = useLocale();
   const { data: session } = useSession();
   const { activeBusiness } = usePortalBusiness();
+  const [, startTransition] = useTransition();
+  const syncedLocale = useRef(false);
+
+  useEffect(() => {
+    if (syncedLocale.current || !isAppLocale(locale)) {
+      return;
+    }
+    syncedLocale.current = true;
+    if (locale === currentLocale) {
+      return;
+    }
+    writeLocaleCookie(locale);
+    startTransition(() => {
+      router.refresh();
+    });
+  }, [currentLocale, locale, router, startTransition]);
 
   const brand = activeBusiness?.brandColor;
   const initials =
@@ -43,8 +73,11 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       key={activeBusiness?.organizationId ?? "none"}
-      className="flex min-h-dvh flex-col bg-background"
+      className="portal-shell flex min-h-dvh flex-col bg-background transition-colors duration-300"
       style={brandStyle(brand)}
+      data-reduce-motion={reduceMotion ? "reduce" : "off"}
+      data-dense-text={denseText ? "true" : "false"}
+      data-high-contrast="system"
     >
       <PortalAnalyticsBridge />
       <PortalPwaRegister />

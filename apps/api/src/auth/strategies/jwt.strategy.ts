@@ -48,17 +48,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ) {
         throw new UnauthorizedException();
       }
-      return {
-        ...publicUser,
-        orgId: payload.impersonatingOrgId,
-        role: payload.role ?? Role.ADMIN,
-        actorType: 'user',
-        impersonatingOrgId: payload.impersonatingOrgId,
-      };
+      return this.withSession(
+        {
+          ...publicUser,
+          orgId: payload.impersonatingOrgId,
+          role: payload.role ?? Role.ADMIN,
+          actorType: 'user',
+          impersonatingOrgId: payload.impersonatingOrgId,
+        },
+        payload,
+      );
     }
 
     if (!payload.orgId) {
-      return publicUser;
+      return this.withSession(publicUser, payload);
     }
 
     const membership = await this.memberships.findByUserInOrganization(
@@ -66,14 +69,27 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       user.id,
     );
     if (!membership || membership.status !== MembershipStatus.ACTIVE) {
-      return publicUser;
+      return this.withSession(publicUser, payload);
     }
 
-    return {
-      ...publicUser,
-      orgId: payload.orgId,
-      role: membership.role,
-      actorType: 'user',
-    };
+    return this.withSession(
+      {
+        ...publicUser,
+        orgId: payload.orgId,
+        role: membership.role,
+        actorType: 'user',
+      },
+      payload,
+    );
+  }
+
+  private withSession(
+    user: AuthenticatedUser,
+    payload: JwtPayload,
+  ): AuthenticatedUser {
+    if (!payload.sid) {
+      return user;
+    }
+    return { ...user, sessionId: payload.sid };
   }
 }

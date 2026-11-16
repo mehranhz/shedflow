@@ -22,6 +22,13 @@ export type CustomerMe = {
     photoUrl?: string | null;
     timezone?: string;
     locale?: string;
+    portal?: {
+      timezone: string;
+      locale: string;
+      reduceMotion: boolean;
+      denseText: boolean;
+      highContrast: "system";
+    };
     updatedAt?: string;
   };
   businesses: CustomerBusiness[];
@@ -37,6 +44,11 @@ export type CustomerProfileInput = {
   timezone?: string;
   locale?: string;
   updatedAt: string;
+  portal?: {
+    reduceMotion?: boolean;
+    denseText?: boolean;
+    highContrast?: "system";
+  };
   business?: {
     name?: string;
     phone?: string | null;
@@ -134,11 +146,16 @@ export async function updateCustomerProfile(
 export async function requestCustomerEmailChange(
   email: string,
   updatedAt: string,
+  totpCode?: string,
 ): Promise<void> {
   await apiBff("customer/me/email", {
     method: "POST",
     ifMatch: profileEtag(updatedAt),
-    body: JSON.stringify({ email, updatedAt }),
+    body: JSON.stringify({
+      email,
+      updatedAt,
+      ...(totpCode ? { totpCode } : {}),
+    }),
   });
 }
 
@@ -218,6 +235,131 @@ export function saveCustomerNote(
       body: JSON.stringify({ customerNote }),
     },
   );
+}
+
+export type NotificationPrefs = {
+  organizationId: string | null;
+  scope: "user" | "organization";
+  override: boolean;
+  emailEnabled: boolean;
+  smsEnabled: boolean;
+  pushEnabled: boolean;
+  smsAvailable: boolean;
+  pushAvailable: boolean;
+  remindersEnabled: boolean;
+  marketingEnabled: boolean;
+  receiptsEnabled: boolean;
+  waitlistEnabled: boolean;
+  messagesEnabled: boolean;
+  confirmationsEnabled: true;
+  securityEmailsRequired: true;
+  quietHoursStart: string | null;
+  quietHoursEnd: string | null;
+  timezone: string;
+  updatedAt: string | null;
+};
+
+export type NotificationPrefsInput = {
+  emailEnabled?: boolean;
+  smsEnabled?: boolean;
+  pushEnabled?: boolean;
+  remindersEnabled?: boolean;
+  marketingEnabled?: boolean;
+  receiptsEnabled?: boolean;
+  waitlistEnabled?: boolean;
+  messagesEnabled?: boolean;
+  quietHoursStart?: string | null;
+  quietHoursEnd?: string | null;
+  timezone?: string;
+};
+
+function notificationPrefsPath(organizationId?: string | null): string {
+  if (!organizationId) {
+    return "customer/notifications/prefs";
+  }
+  return `customer/notifications/prefs?organizationId=${encodeURIComponent(organizationId)}`;
+}
+
+export async function fetchNotificationPrefs(
+  organizationId?: string | null,
+): Promise<NotificationPrefs> {
+  const payload = await apiBff<unknown>(notificationPrefsPath(organizationId));
+  return unwrapData<NotificationPrefs>(payload);
+}
+
+export async function updateNotificationPrefs(
+  input: NotificationPrefsInput,
+  organizationId?: string | null,
+): Promise<NotificationPrefs> {
+  const payload = await apiBff<unknown>(notificationPrefsPath(organizationId), {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  return unwrapData<NotificationPrefs>(payload);
+}
+
+export type SecurityOverview = {
+  totpEnabled: boolean;
+  backupCodesRemaining: number;
+};
+
+export type SecuritySession = {
+  id: string;
+  device: string;
+  userAgent: string | null;
+  ip: string | null;
+  lastUsedAt: string;
+  createdAt: string;
+  current: boolean;
+};
+
+export function fetchSecurityOverview(): Promise<SecurityOverview> {
+  return apiBff<SecurityOverview>("customer/security");
+}
+
+export function fetchSecuritySessions(): Promise<{ sessions: SecuritySession[] }> {
+  return apiBff<{ sessions: SecuritySession[] }>("customer/security/sessions");
+}
+
+export function changeCustomerPassword(input: {
+  currentPassword: string;
+  newPassword: string;
+  revokeOtherSessions?: boolean;
+  totpCode?: string;
+}): Promise<{ changed: true }> {
+  return apiBff("customer/security/password", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function enrollCustomerTotp(): Promise<{ secret: string; otpauthUrl: string }> {
+  return apiBff("customer/security/totp/enroll", { method: "POST" });
+}
+
+export function confirmCustomerTotp(code: string): Promise<{ backupCodes: string[] }> {
+  return apiBff("customer/security/totp/confirm", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+export function disableCustomerTotp(password: string, code: string): Promise<void> {
+  return apiBff("customer/security/totp/disable", {
+    method: "POST",
+    body: JSON.stringify({ password, code }),
+  });
+}
+
+export function revokeCustomerSession(id: string): Promise<void> {
+  return apiBff(`customer/security/sessions/${id}`, { method: "DELETE" });
+}
+
+export function revokeOtherCustomerSessions(): Promise<void> {
+  return apiBff("customer/security/sessions/revoke-all", {
+    method: "POST",
+    body: JSON.stringify({ keepCurrent: true }),
+  });
 }
 
 export function addCustomerAttachment(

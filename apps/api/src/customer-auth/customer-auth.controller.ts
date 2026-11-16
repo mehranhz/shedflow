@@ -9,6 +9,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { Public } from '../auth/decorators/public.decorator';
 import type { RefreshTokenClientMeta } from '../refresh-tokens/refresh-token';
+import { MfaLoginDto } from '../customer-security/dto/customer-security.dto';
 import { CustomerAuthService } from './customer-auth.service';
 import {
   CustomerClaimConfirmDto,
@@ -34,6 +35,14 @@ export class CustomerAuthController {
   @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
   async login(@Body() dto: CustomerLoginDto, @Req() req: Request) {
     const session = await this.customers.login(dto.email, dto.password, meta(req));
+    return { success: true, data: session };
+  }
+
+  @Post('login/totp')
+  @HttpCode(200)
+  @Throttle({ default: { limit: 30, ttl: 15 * 60 * 1000 } })
+  async loginTotp(@Body() dto: MfaLoginDto, @Req() req: Request) {
+    const session = await this.customers.completeLogin(dto.mfaToken, dto.code, meta(req));
     return { success: true, data: session };
   }
 
